@@ -20,8 +20,8 @@
 
 -export([
     create_galaxy/2,
-    create_region/2,
-    create_system/3,
+    create_region/3,
+    create_system/5,
     create_planet/3,
     create_moon/3,
     create_asteroid_belt/3,
@@ -42,11 +42,12 @@ start_link(ImplMod) ->
 create_galaxy(Id, Pos) ->
     gen_server:call(?SERVER, {create_galaxy, Id, Pos}).
 
-create_region(GalaxyId, Region) ->
-    ok.
+create_region(GalaxyId, Name, DisplayName) ->
+    gen_server:call(?SERVER, {create_region, GalaxyId, Name, DisplayName}).
 
-create_system(GalaxyId, RegionId, System) ->
-    ok.
+create_system(GalaxyId, Region, Name, Pos, DisplayName) ->
+    gen_server:call(?SERVER, {create_system, GalaxyId, Region, Name, Pos,
+        DisplayName}).
 
 create_planet(GalaxyId, SystemId, Planet) ->
     ok.
@@ -74,16 +75,29 @@ init([ImplMod]) ->
 handle_call({create_galaxy, Id, Pos}, _From,
            #state{implmod=ImplMod, implstate=ImplState} = State) ->
     {ok, galaxy_created} = ImplMod:create_galaxy(
-        #galaxy{id=Id, pos=Pos}, ImplState),
+        #galaxy{id=Id, pos=Pos, regions=[]}, ImplState),
     galaxy_sim_sup:start_simulation(Id),
     {reply, ok, State};
+
+handle_call({create_region, GalaxyId, Name, DisplayName}, _From,
+           #state{implmod=ImplMod, implstate=ImplState} = State) ->
+    {ok, region_created} = ImplMod:create_region(
+        #region{name=Name, galaxy_id=GalaxyId, display_name=DisplayName},
+            ImplState),
+    {reply, ok, State};
+
+handle_call({create_system, GalaxyId, Region, Name, Pos, DisplayName},
+        _From, #state{implmod=ImplMod, implstate=ImplState} = State) ->
+    {ok, system_created} = ImplMod:create_system(
+        #system{name=Name, galaxy_id=GalaxyId, region=Region, pos=Pos,
+            display_name=DisplayName}, ImplState),
+    {reply, ok, State};
+
 
 handle_call({get_systems, GalaxyId}, _From,
            #state{implmod=ImplMod, implstate=ImplState} = State) ->
     {ok, SystemList} = ImplMod:get_systems(GalaxyId, ImplState),
     {reply, {ok, SystemList}, State};
-
-
 
 handle_call(Request, _From, State) ->
     error_logger:info_report({unknown_request, Request}),

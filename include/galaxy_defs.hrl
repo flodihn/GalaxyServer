@@ -4,26 +4,30 @@
     regions=[]}).
 
 -record(region, {
-    id,
-    pos,
-    systems}).
+    name,
+    display_name,
+    galaxy_id,
+    systems=[]}).
 
 -record(system, {
-    id,
     name,
+    galaxy_id,
     region,
+    pos,
+    display_name,
     star_type=yellow,
+    planets=[],
     moons=[],
     asteroid_belts=[],
-    orbit,
-    structures}).
+    structures=[]}).
 
 -record(planet, {
-    id,
     name,
+    galaxy_id,
     type,
     system,
-    moons,
+    resources=[],
+    moons=[],
     orbit,
     structures=[]}).
 
@@ -47,6 +51,17 @@
     type,
     size,
     location}).
+
+-record(resource_type, {
+    name,
+    display_name}).
+
+-record(resource, {
+    resource_type,
+    capacity=100,
+    rate=4}).
+
+
 
 -define(PLANET_TYPE_FOREST, 0).
 -define(PLANET_TYPE_GIANT_FOREST, 1).

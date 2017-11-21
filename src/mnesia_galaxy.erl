@@ -1,6 +1,6 @@
 -module(mnesia_galaxy).
 
--define(DB_GALAXY_TABLE, galaxy).
+-define(DB_GALAXY_TABLE, galaxies).
 
 -include("galaxy_defs.hrl").
 
@@ -10,37 +10,45 @@
 
 -export([
     create_galaxy/2,
-    create_region/3,
+    create_region/2,
     system_exists/3,
-    create_system/4,
+    create_system/2,
     list_systems/2
     ]).
 
 init() ->
     mnesia:start(),
     GalaxyAttributes = record_info(fields, galaxy),
-    create_table(?DB_GALAXY_TABLE, GalaxyAttributes, []),
+    create_table(?DB_GALAXY_TABLE, galaxy, GalaxyAttributes, []),
    {ok, []}.
 
 create_galaxy_tables(GalaxyId) ->
     RegionsTable = get_regions_table(GalaxyId),
     RegionAttributes = record_info(fields, region),
-    create_table(RegionsTable, RegionAttributes, []),
+    create_table(RegionsTable, region, RegionAttributes, [galaxy_id]),
 
     SystemsTable = get_systems_table(GalaxyId),
     SystemAttributes = record_info(fields, system),
-    create_table(SystemsTable, SystemAttributes, [pos]).
+    create_table(SystemsTable, system, SystemAttributes, [galaxy_id]),
+
+    PlanetsTable = get_planets_table(GalaxyId),
+    PlanetsAttributes = record_info(fields, planet),
+    create_table(PlanetsTable, planet, PlanetsAttributes, [galaxy_id]).
  
-create_table(TableName, Attributes, IndexList) ->
+ 
+create_table(TableName, RecordName, Attributes, IndexList) ->
     case lists:member(TableName, mnesia:system_info(tables)) of
         true ->
             {ok, already_exists};
         false ->
             change_to_disc_schema(),
             mnesia:create_table(TableName, 
-                [{disc_copies, [node()]},
-                {type, set},
-                {attributes, Attributes}]),
+                [
+                    {record_name, RecordName},
+                    {disc_copies, [node()]},
+                    {type, set},
+                    {attributes, Attributes}
+                ]),
             ok = create_indexes(TableName, IndexList),
             {ok, created}
     end.
@@ -76,9 +84,15 @@ create_galaxy(Galaxy, _State) ->
             {error, Reason}
     end.
 
-create_region(GalaxyId, Region = #region{}, State) ->
+create_region(Region = #region{}, _State) ->
+    GalaxyId = Region#region.galaxy_id,
     RegionTable = get_regions_table(GalaxyId),
     WriteRegion = fun() ->
+        [Galaxy] = mnesia:read(?DB_GALAXY_TABLE, GalaxyId, write),
+        mnesia:write(?DB_GALAXY_TABLE, Galaxy#galaxy{
+            regions=lists:append(
+                Galaxy#galaxy.regions, [Region#region.name])},
+            write),
         mnesia:write(RegionTable, Region, write)
     end,
     case mnesia:transaction(WriteRegion) of
@@ -88,23 +102,17 @@ create_region(GalaxyId, Region = #region{}, State) ->
             {error, Reason}
     end;
 
-create_region(GalaxyId, Region, _State) when is_atom(GalaxyId) ->
-    {error, not_region_record};
+create_region(_Name, _State) ->
+    {error, bad_region_record}.
 
-create_region(RegionId, Region = #region{}, State) ->
-    {error, region_id_not_atom};
-
-create_region(_, _, _) ->
-    {error, unknown}.
-
-create_system(GalaxyId, RegionId, System = #system{}, _State) ->
-    SystemsTable = get_systems_table(GalaxyId),
-    RegionsTable = get_regions_table(GalaxyId),
+create_system(System = #system{}, _State) ->
+    SystemsTable = get_systems_table(System#system.galaxy_id),
+    RegionsTable = get_regions_table(System#system.galaxy_id),
     WriteSystem = fun() ->
-        {ok, Region} = mnesia:read(RegionsTable, RegionId),
+        [Region] = mnesia:read(RegionsTable, System#system.region),
         mnesia:write(SystemsTable, System, write),
         mnesia:write(RegionsTable, Region#region{systems=lists:append(
-            Region#region.systems, System#system.id)}, write)
+            Region#region.systems, [System#system.name])}, write)
     end,
     case mnesia:transaction(WriteSystem) of
         {atomic, ok} ->
@@ -113,21 +121,27 @@ create_system(GalaxyId, RegionId, System = #system{}, _State) ->
             {error, Reason}
     end;
 
-create_system(_GalaxyId, RegionId, System, _State) when is_atom(RegionId) ->
-    {error, not_system_record};
-
-create_system(_GalaxyId, RegionId, System = #system{}, _State) ->
-    {error, region_id_not_atom};
-
-create_system(_, _, _, _) ->
-    {error, unknown}.
+create_system(_System, _State) ->
+    {error, bad_region_record}.
 
 list_systems(GalaxyId, _State) ->
     SystemsTable = get_systems_table(GalaxyId),
-    [X -> 
+    Iterator = fun(_Record, _) -> [] end,
+    ReadAll = fun() ->
+        mnesia:foldl(Iterator, [], SystemsTable)
+    end,
+    case mnesia:transaction(ReadAll) of
+        {atomic, AllSystems} ->
+            {ok, AllSystems};
+        {aborted, Reason} ->
+            {error, Reason}
+    end.
 
 get_regions_table(GalaxyId) ->
     list_to_atom(binary_to_list(GalaxyId) ++ "_regions").
 
 get_systems_table(GalaxyId) ->
     list_to_atom(binary_to_list(GalaxyId) ++ "_systems").
+
+get_planets_table(GalaxyId) ->
+    list_to_atom(binary_to_list(GalaxyId) ++ "_planets").
