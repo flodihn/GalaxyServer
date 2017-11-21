@@ -1,3 +1,5 @@
+% Mnesia table records
+
 -record(galaxy, {
     id,
     pos,
@@ -16,6 +18,7 @@
     pos,
     display_name,
     star_type=yellow,
+    star_size=100,
     planets=[],
     moons=[],
     asteroid_belts=[],
@@ -24,22 +27,25 @@
 -record(planet, {
     name,
     galaxy_id,
-    type,
     system,
+    display_name,
+    orbit,
+    size=3,
+    major_biome=desert,
+    minor_biomes=[],
+    temperature=cold,
+    seed=0,
     resources=[],
     moons=[],
-    orbit,
     structures=[]}).
 
 -record(moon, {
-    id,
     name,
     planet,
     orbit,
     structures=[]}).
 
 -record(asteroid_belt, {
-    id,
     name,
     system,
     orbit,
@@ -56,12 +62,17 @@
     name,
     display_name}).
 
+% Non mnesia table records
+
 -record(resource, {
     resource_type,
-    capacity=100,
-    rate=4}).
+    capacity=1000,
+    rate=2}).
 
-
+-record(orbit, {
+    distance,
+    angle=0,
+    speed=1}).
 
 -define(PLANET_TYPE_FOREST, 0).
 -define(PLANET_TYPE_GIANT_FOREST, 1).

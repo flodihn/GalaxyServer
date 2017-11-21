@@ -1,6 +1,7 @@
 -module(mnesia_galaxy).
 
 -define(DB_GALAXY_TABLE, galaxies).
+-define(DB_RESOURCE_TYPE_TABLE, resource_types).
 
 -include("galaxy_defs.hrl").
 
@@ -13,6 +14,7 @@
     create_region/2,
     system_exists/3,
     create_system/2,
+    create_planet/2,
     list_systems/2
     ]).
 
@@ -20,6 +22,9 @@ init() ->
     mnesia:start(),
     GalaxyAttributes = record_info(fields, galaxy),
     create_table(?DB_GALAXY_TABLE, galaxy, GalaxyAttributes, []),
+    ResourceTypeAttributes = record_info(fields, resource_type),
+    create_table(?DB_RESOURCE_TYPE_TABLE, resource_type,
+        ResourceTypeAttributes, []),
    {ok, []}.
 
 create_galaxy_tables(GalaxyId) ->
@@ -34,7 +39,6 @@ create_galaxy_tables(GalaxyId) ->
     PlanetsTable = get_planets_table(GalaxyId),
     PlanetsAttributes = record_info(fields, planet),
     create_table(PlanetsTable, planet, PlanetsAttributes, [galaxy_id]).
- 
  
 create_table(TableName, RecordName, Attributes, IndexList) ->
     case lists:member(TableName, mnesia:system_info(tables)) of
@@ -102,7 +106,7 @@ create_region(Region = #region{}, _State) ->
             {error, Reason}
     end;
 
-create_region(_Name, _State) ->
+create_region(_Region, _State) ->
     {error, bad_region_record}.
 
 create_system(System = #system{}, _State) ->
@@ -121,8 +125,28 @@ create_system(System = #system{}, _State) ->
             {error, Reason}
     end;
 
+
 create_system(_System, _State) ->
-    {error, bad_region_record}.
+    {error, bad_system_record}.
+
+create_planet(Planet = #planet{}, _State) ->
+    SystemsTable = get_systems_table(Planet#planet.galaxy_id),
+    PlanetsTable = get_planets_table(Planet#planet.galaxy_id),
+    WritePlanet = fun() ->
+        [System] = mnesia:read(SystemsTable, Planet#planet.system),
+        mnesia:write(PlanetsTable, Planet, write),
+        mnesia:write(SystemsTable, System#system{planets=lists:append(
+            System#system.planets, [Planet#planet.name])}, write)
+    end,
+    case mnesia:transaction(WritePlanet) of
+        {atomic, ok} ->
+            {ok, planet_created};
+        {aborted, Reason} ->
+            {error, Reason}
+    end;
+
+create_planet(_Planet, _State) ->
+    {error, bad_planet_record}.
 
 list_systems(GalaxyId, _State) ->
     SystemsTable = get_systems_table(GalaxyId),

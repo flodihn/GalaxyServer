@@ -22,7 +22,7 @@
     create_galaxy/2,
     create_region/3,
     create_system/5,
-    create_planet/3,
+    create_planet/5,
     create_moon/3,
     create_asteroid_belt/3,
     create_structure/3]).
@@ -49,8 +49,9 @@ create_system(GalaxyId, Region, Name, Pos, DisplayName) ->
     gen_server:call(?SERVER, {create_system, GalaxyId, Region, Name, Pos,
         DisplayName}).
 
-create_planet(GalaxyId, SystemId, Planet) ->
-    ok.
+create_planet(GalaxyId, System, Name, Orbit, DisplayName) ->
+    gen_server:call(?SERVER, {create_planet, GalaxyId, System, Name, Orbit,
+        DisplayName}).
 
 create_moon(GalaxyId, PlanetId, Moon) ->
     ok.
@@ -81,18 +82,23 @@ handle_call({create_galaxy, Id, Pos}, _From,
 
 handle_call({create_region, GalaxyId, Name, DisplayName}, _From,
            #state{implmod=ImplMod, implstate=ImplState} = State) ->
-    {ok, region_created} = ImplMod:create_region(
-        #region{name=Name, galaxy_id=GalaxyId, display_name=DisplayName},
-            ImplState),
+    {ok, region_created} = ImplMod:create_region(#region{name=Name,
+            galaxy_id=GalaxyId, display_name=DisplayName}, ImplState),
     {reply, ok, State};
 
 handle_call({create_system, GalaxyId, Region, Name, Pos, DisplayName},
         _From, #state{implmod=ImplMod, implstate=ImplState} = State) ->
-    {ok, system_created} = ImplMod:create_system(
-        #system{name=Name, galaxy_id=GalaxyId, region=Region, pos=Pos,
+    {ok, system_created} = ImplMod:create_system(#system{name=Name, 
+            galaxy_id=GalaxyId, region=Region, pos=Pos,
             display_name=DisplayName}, ImplState),
     {reply, ok, State};
 
+handle_call({create_planet, GalaxyId, System, Name, Orbit, DisplayName},
+        _From, #state{implmod=ImplMod, implstate=ImplState} = State) ->
+    {ok, planet_created} = ImplMod:create_planet(#planet{name=Name,
+        galaxy_id=GalaxyId, system=System, orbit=Orbit,
+        display_name=DisplayName}, ImplState),
+    {reply, ok, State};
 
 handle_call({get_systems, GalaxyId}, _From,
            #state{implmod=ImplMod, implstate=ImplState} = State) ->
