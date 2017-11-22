@@ -3,13 +3,15 @@
 -record(galaxy, {
     id,
     pos,
-    regions=[]}).
+    regions=[],
+    metadata}).
 
 -record(region, {
     name,
     display_name,
     galaxy_id,
-    systems=[]}).
+    systems=[],
+    metadata}).
 
 -record(system, {
     name,
@@ -22,7 +24,8 @@
     planets=[],
     moons=[],
     asteroid_belts=[],
-    structures=[]}).
+    structures=[],
+    metadata}).
 
 -record(planet, {
     name,
@@ -36,37 +39,62 @@
     temperature=cold,
     seed=0,
     resources=[],
+    resource_generators=[],
+    resource_converters=[],
     moons=[],
-    structures=[]}).
+    structures=[],
+    metadata}).
 
 -record(moon, {
     name,
     planet,
     orbit,
-    structures=[]}).
+    resources=[],
+    structures=[],
+    metadata}).
 
 -record(asteroid_belt, {
     name,
     system,
     orbit,
-    structures=[]}).
+    resources=[],
+    structures=[],
+    metadata}).
 
 -record(structure, {
     id,
-    name,
     type,
-    size,
-    location}).
+    display_name,
+    metadata
+    }).
+
+-record(resource_converter, {
+    id,
+    link_id,
+    structure_id,
+    consumes=[],
+    produces=[],
+    metadata
+    }).
+
+-record(resource_generator, {
+    id,
+    link_id,
+    struchure_id,
+    display_name,
+    metadata}).
 
 -record(resource_type, {
     name,
-    display_name}).
+    display_name,
+    metadata}).
 
 % Non mnesia table records
 
 -record(resource, {
-    resource_type,
+    type,
     capacity=1000,
+    stockpile=0,
     rate=2}).
 
 -record(orbit, {

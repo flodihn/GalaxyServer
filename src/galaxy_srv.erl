@@ -25,7 +25,9 @@
     create_planet/5,
     create_moon/3,
     create_asteroid_belt/3,
-    create_structure/3]).
+    create_structure/3,
+    create_resource_type/2,
+    add_resource/6]).
 
 -record(state, {implmod, implstate}).
 
@@ -64,6 +66,13 @@ create_structure(GalaxyId, LinkId, Structure) ->
 
 get_systems(GalaxyId) ->
     gen_server:call(?SERVER, {get_systems, GalaxyId}).
+
+create_resource_type(Name, DisplayName) ->
+    gen_server:call(?SERVER, {create_resource_type, Name, DisplayName}).
+
+add_resource(GalaxyId, ResourceType, LinkId, LinkType, Capacity, Rate) ->
+    gen_server:call(?SERVER, {add_resource, GalaxyId, ResourceType,
+        LinkId, LinkType, Capacity, Rate}).
 
 %% ------------------------------------------------------------------
 %% gen_server Function Definitions
@@ -104,6 +113,25 @@ handle_call({get_systems, GalaxyId}, _From,
            #state{implmod=ImplMod, implstate=ImplState} = State) ->
     {ok, SystemList} = ImplMod:get_systems(GalaxyId, ImplState),
     {reply, {ok, SystemList}, State};
+
+handle_call({create_resource_type, Name, DisplayName}, _From,
+           #state{implmod=ImplMod, implstate=ImplState} = State) ->
+    {ok, resource_type_created} = ImplMod:create_resource_type(
+        #resource_type{name=Name, display_name=DisplayName}, ImplState),
+    {reply, ok, State};
+
+handle_call({add_resource, GalaxyId, ResourceType, LinkId, LinkType,
+        Capacity, Rate}, _From, #state{implmod=ImplMod,
+        implstate=ImplState} = State) ->
+    {ok, resource_added} = ImplMod:add_resource(
+        GalaxyId,
+        LinkId,
+        LinkType,
+        #resource{type=ResourceType, capacity=Capacity, rate=Rate},
+        ImplState),
+    {reply, ok, State};
+
+
 
 handle_call(Request, _From, State) ->
     error_logger:info_report({unknown_request, Request}),

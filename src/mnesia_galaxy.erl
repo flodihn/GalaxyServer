@@ -2,6 +2,7 @@
 
 -define(DB_GALAXY_TABLE, galaxies).
 -define(DB_RESOURCE_TYPE_TABLE, resource_types).
+-define(DB_ARTIFACT_TABLE, artifacts).
 
 -include("galaxy_defs.hrl").
 
@@ -15,16 +16,23 @@
     system_exists/3,
     create_system/2,
     create_planet/2,
-    list_systems/2
+    list_systems/2,
+    create_resource_type/2,
+    add_resource/5
     ]).
 
 init() ->
     mnesia:start(),
     GalaxyAttributes = record_info(fields, galaxy),
     create_table(?DB_GALAXY_TABLE, galaxy, GalaxyAttributes, []),
+    
     ResourceTypeAttributes = record_info(fields, resource_type),
     create_table(?DB_RESOURCE_TYPE_TABLE, resource_type,
         ResourceTypeAttributes, []),
+
+    ArtifactsAttributes = record_info(fields, resource_type),
+    create_table(?DB_ARTIFACT_TABLE, artifact,
+        ArtifactsAttributes, []),
    {ok, []}.
 
 create_galaxy_tables(GalaxyId) ->
@@ -160,6 +168,34 @@ list_systems(GalaxyId, _State) ->
         {aborted, Reason} ->
             {error, Reason}
     end.
+
+create_resource_type(ResourceType, _State) ->
+    WriteResourceType = fun() ->
+        mnesia:write(?DB_RESOURCE_TYPE_TABLE, ResourceType, write)
+    end,
+    case mnesia:transaction(WriteResourceType) of
+        {atomic, ok} ->
+            {ok, resource_type_created};
+        {aborted, Reason} ->
+            {error, Reason}
+    end.
+
+add_resource(GalaxyId, LinkId, planet, Resource, _State) ->
+    PlanetsTable = get_planets_table(GalaxyId),
+    WriteResource = fun() ->
+        [Planet] = mnesia:read(PlanetsTable, LinkId),
+        mnesia:write(PlanetsTable, Planet#planet{resources=lists:append(
+            Planet#planet.resources, [Resource])}, write)
+    end,
+    case mnesia:transaction(WriteResource) of
+        {atomic, ok} ->
+            {ok, resource_added};
+        {aborted, Reason} ->
+            {error, Reason}
+    end;
+
+add_resource(_GalaxyId, _LinkId, _BadLinkType , _Resource, _State) ->
+    {error, bad_link_type}.
 
 get_regions_table(GalaxyId) ->
     list_to_atom(binary_to_list(GalaxyId) ++ "_regions").
