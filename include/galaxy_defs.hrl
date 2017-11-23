@@ -61,41 +61,37 @@
     structures=[],
     metadata}).
 
--record(structure, {
-    id,
-    type,
-    display_name,
-    metadata
-    }).
-
--record(resource_converter, {
-    id,
-    link_id,
-    structure_id,
-    consumes=[],
+-record(structure_type, {
+    name,
+    category,
+    rate,
     produces=[],
+    input_storage_space=1000,
+    output_storage_space=1000,
+    display_name,
     metadata
     }).
-
--record(resource_generator, {
-    id,
-    link_id,
-    struchure_id,
-    display_name,
-    metadata}).
 
 -record(resource_type, {
     name,
+    category,
+    storage_space=1,
     display_name,
+    build_materials=[],
     metadata}).
 
 % Non mnesia table records
 
 -record(resource, {
-    type,
-    capacity=1000,
-    stockpile=0,
-    rate=2}).
+    name,
+    amount,
+    metadata}).
+
+-record(structure, {
+    name,
+    resources=[],
+    used_storage_space=0
+    }).
 
 -record(orbit, {
     distance,

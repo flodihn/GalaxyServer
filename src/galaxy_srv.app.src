@@ -2,12 +2,12 @@
     [
         {description, ""},
         {vsn, "1"},
-        {registered, [galax_sup, galaxy_sim_sup]},
+        {registered, []},
         {applications, [
             kernel,
             stdlib
         ]},
     {mod, {galaxy_srv_app, [galaxy_sup, galaxy_sim_sup, galaxy_srv,
-        mnesia_galaxy]}},
+        mnesia_galaxy, galaxy_helper]}},
     {env, []}
 ]}.

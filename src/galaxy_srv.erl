@@ -25,9 +25,11 @@
     create_planet/5,
     create_moon/3,
     create_asteroid_belt/3,
-    create_structure/3,
-    create_resource_type/2,
-    add_resource/6]).
+    create_resource_type/4,
+    create_resource_type/5,
+    create_structure_type/7,
+    add_resource/6,
+    add_structure/4]).
 
 -record(state, {implmod, implstate}).
 
@@ -61,18 +63,32 @@ create_moon(GalaxyId, PlanetId, Moon) ->
 create_asteroid_belt(GalaxyId, LinkId, AsteroidBelt) ->
     ok.
 
-create_structure(GalaxyId, LinkId, Structure) ->
-    ok.
-
 get_systems(GalaxyId) ->
     gen_server:call(?SERVER, {get_systems, GalaxyId}).
 
-create_resource_type(Name, DisplayName) ->
-    gen_server:call(?SERVER, {create_resource_type, Name, DisplayName}).
+create_resource_type(Name, Category, StorageSpace, DisplayName) ->
+    create_resource_type(Name, Category, StorageSpace, [], DisplayName).
 
-add_resource(GalaxyId, ResourceType, LinkId, LinkType, Capacity, Rate) ->
-    gen_server:call(?SERVER, {add_resource, GalaxyId, ResourceType,
+create_resource_type(Name, Category, StorageSpace, BuildMaterials,
+        DisplayName) ->
+    gen_server:call(?SERVER, {create_resource_type, Name, Category,
+        StorageSpace, BuildMaterials, DisplayName}).
+
+create_structure_type(Name, Category, Rate, Produces,
+        InputStorageSpace, OutputStorageSpace, DisplayName) ->
+    gen_server:call(?SERVER, {create_structure_type, Name, Category, Rate,
+        Produces, InputStorageSpace, OutputStorageSpace,
+        DisplayName}).
+
+add_resource(GalaxyId, ResourceName, LinkId, LinkType, Capacity, Rate) ->
+    gen_server:call(?SERVER, {add_resource, GalaxyId, ResourceName,
         LinkId, LinkType, Capacity, Rate}).
+
+add_structure(GalaxyId, StructureName, LinkId, LinkType) ->
+    gen_server:call(?SERVER, {add_structure, GalaxyId, StructureName,
+        LinkId, LinkType}).
+
+
 
 %% ------------------------------------------------------------------
 %% gen_server Function Definitions
@@ -114,24 +130,51 @@ handle_call({get_systems, GalaxyId}, _From,
     {ok, SystemList} = ImplMod:get_systems(GalaxyId, ImplState),
     {reply, {ok, SystemList}, State};
 
-handle_call({create_resource_type, Name, DisplayName}, _From,
-           #state{implmod=ImplMod, implstate=ImplState} = State) ->
-    {ok, resource_type_created} = ImplMod:create_resource_type(
-        #resource_type{name=Name, display_name=DisplayName}, ImplState),
-    {reply, ok, State};
-
-handle_call({add_resource, GalaxyId, ResourceType, LinkId, LinkType,
-        Capacity, Rate}, _From, #state{implmod=ImplMod,
+handle_call({create_resource_type, Name, Category, StorageSpace, 
+        DisplayName, BuildMaterials}, _From, #state{implmod=ImplMod,
         implstate=ImplState} = State) ->
-    {ok, resource_added} = ImplMod:add_resource(
-        GalaxyId,
-        LinkId,
-        LinkType,
-        #resource{type=ResourceType, capacity=Capacity, rate=Rate},
-        ImplState),
+    {ok, resource_type_created} = ImplMod:create_resource_type(
+        #resource_type{name=Name, category=Category,
+        storage_space=StorageSpace, display_name=DisplayName,
+        build_materials=BuildMaterials}, ImplState),
     {reply, ok, State};
 
+handle_call({create_structure_type, Name, Category, Rate, Produces, 
+        InputStorageSpace, OutputStorageSpace, DisplayName},
+        _From, #state{implmod=ImplMod, implstate=ImplState} = State) ->
+    {ok, structure_type_created} = ImplMod:create_structure_type(
+        #structure_type{name=Name, category=Category, rate=Rate, 
+            produces=Produces, input_storage_space=InputStorageSpace,
+            output_storage_space=OutputStorageSpace,
+            display_name=DisplayName}, ImplState),
+    {reply, ok, State};
 
+handle_call({add_resource, GalaxyId, ResourceName, LinkId, LinkType,
+        Amount, Rate}, _From, #state{implmod=ImplMod,
+        implstate=ImplState} = State) ->
+    case ImplMod:get_resource(GalaxyId, LinkId, LinkType, ResourceName,
+            State) of
+        {ok, Resource} ->
+            {ok, resource_added} = ImplMod:add_resource(
+                GalaxyId, LinkId, LinkType, Resource#resource{
+                    amount=Resource#resource.amount + Amount},
+                ImplState),
+            {reply, ok, State};
+        {error, resource_not_found} ->
+            {ok, resource_added} = ImplMod:add_resource(
+                GalaxyId, LinkId, LinkType, #resource{name=ResourceName,
+                    amount=Amount},
+                ImplState),
+            {reply, ok, State};
+        {error, planet_not_found} ->
+            {reply, {error, link_id_not_found}, State}
+    end;
+
+handle_call({add_structure, GalaxyId, StructureName, LinkId, LinkType},
+        _From, #state{implmod=ImplMod, implstate=ImplState} = State) ->
+    {ok, structure_added} = ImplMod:add_structure(GalaxyId,
+        StructureName, LinkId, LinkType, ImplState),
+    {reply, ok, State};
 
 handle_call(Request, _From, State) ->
     error_logger:info_report({unknown_request, Request}),
