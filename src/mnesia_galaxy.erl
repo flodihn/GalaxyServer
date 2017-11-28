@@ -16,9 +16,13 @@
     system_exists/3,
     create_system/2,
     create_planet/2,
-    list_systems/2,
+    get_planet/3,
+    update_planet/2,
+    get_systems/2,
     create_resource_type/2,
     create_structure_type/2,
+    get_resource_type/2,
+    get_structure_type/2,
     get_resource/5,
     add_resource/5,
     add_structure/5
@@ -141,6 +145,19 @@ create_system(System = #system{}, _State) ->
 create_system(_System, _State) ->
     {error, bad_system_record}.
 
+get_systems(GalaxyId, _State) ->
+    SystemsTable = get_systems_table(GalaxyId),
+    Iterator = fun(Record, Acc) -> lists:append(Acc, [Record]) end,
+    T = fun() ->
+        mnesia:foldl(Iterator, [], SystemsTable)
+    end,
+    case mnesia:transaction(T) of
+        {atomic, AllSystems} ->
+            {ok, AllSystems};
+        {aborted, Reason} ->
+            {error, Reason}
+    end.
+
 create_planet(Planet = #planet{}, _State) ->
     SystemsTable = get_systems_table(Planet#planet.galaxy_id),
     PlanetsTable = get_planets_table(Planet#planet.galaxy_id),
@@ -155,22 +172,30 @@ create_planet(Planet = #planet{}, _State) ->
             {ok, planet_created};
         {aborted, Reason} ->
             {error, Reason}
-    end;
+    end.
 
-create_planet(_Planet, _State) ->
-    {error, bad_planet_record}.
-
-list_systems(GalaxyId, _State) ->
-    SystemsTable = get_systems_table(GalaxyId),
-    Iterator = fun(_Record, _) -> [] end,
+update_planet(Planet = #planet{}, _State) ->
+    PlanetsTable = get_planets_table(Planet#planet.galaxy_id),
     T = fun() ->
-        mnesia:foldl(Iterator, [], SystemsTable)
+        mnesia:write(PlanetsTable, Planet, write)
     end,
     case mnesia:transaction(T) of
-        {atomic, AllSystems} ->
-            {ok, AllSystems};
+        {atomic, ok} ->
+            {ok, planet_updated};
         {aborted, Reason} ->
             {error, Reason}
+    end.
+
+get_planet(GalaxyId, PlanetName, _State) ->
+    PlanetsTable = get_planets_table(GalaxyId),
+    T = fun() ->
+        mnesia:read(PlanetsTable, PlanetName)
+    end,
+    case mnesia:transaction(T) of
+        {atomic, [Planet]} ->
+            {ok, Planet};
+        {aborted, _Reason} ->
+            {error, planet_not_found}
     end.
 
 create_resource_type(ResourceType, _State) ->
@@ -184,6 +209,19 @@ create_resource_type(ResourceType, _State) ->
             {error, Reason}
     end.
 
+get_resource_type(ResourceName, _State) ->
+    T = fun() ->
+        mnesia:read(?DB_RESOURCE_TYPE_TABLE, ResourceName)
+    end,
+    case mnesia:transaction(T) of
+        {atomic, [ResourceType]} ->
+            {ok, ResourceType};
+        {atomic, []} ->
+            {error, not_found};
+        {aborted, Reason} ->
+            {error, Reason}
+    end.
+
 create_structure_type(StructureType, _State) ->
     T = fun() ->
         mnesia:write(?DB_STRUCTURE_TYPE_TABLE, StructureType, write)
@@ -193,6 +231,17 @@ create_structure_type(StructureType, _State) ->
             {ok, structure_type_created};
         {aborted, Reason} ->
             {error, Reason}
+    end.
+
+get_structure_type(StructureName, _State) ->
+    T = fun() ->
+        mnesia:read(?DB_STRUCTURE_TYPE_TABLE, StructureName)
+    end,
+    case mnesia:transaction(T) of
+        {atomic, [StructureType]} ->
+            {ok, StructureType};
+        {aborted, _Reason} ->
+            {error, planet_not_found}
     end.
 
 get_resource(GalaxyId, LinkId, planet, Resource, _State) ->

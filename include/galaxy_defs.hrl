@@ -64,7 +64,8 @@
 -record(structure_type, {
     name,
     category,
-    rate,
+
+    rate=1,
     produces=[],
     input_storage_space=1000,
     output_storage_space=1000,
@@ -75,22 +76,24 @@
 -record(resource_type, {
     name,
     category,
-    storage_space=1,
+    storage_space = 1,
     display_name,
-    build_materials=[],
+    build_materials = [],
     metadata}).
 
 % Non mnesia table records
 
 -record(resource, {
     name,
-    amount,
-    metadata}).
+    amount}).
 
 -record(structure, {
+    uid,
     name,
-    resources=[],
-    used_storage_space=0
+    output_resources=[],
+    input_resources=[],
+    output_storage_space=0,
+    input_storage_space=0
     }).
 
 -record(orbit, {
