@@ -16,16 +16,40 @@ init() ->
     galaxy_srv:create_resource_type(<<"tie-fighter">>, <<"starfighter">>,
         10, [#resource{name=list_to_binary("quadanium"), amount=10}],
         <<"TIE/LN Fighter">>),
+    galaxy_srv:create_resource_type(<<"small_spaceship">>, <<"spaceship">>,
+        10, [#resource{name=list_to_binary("metal"), amount=10}],
+        <<"Small spaceship">>),
+ 
     %galaxy_srv:create_structure_type(<<"tie-fighter_facility">>,
     %    <<"shipyard">>, 3, [<<"tie-fighter">>], 1000, 720,
     %    <<"TIE-Fighter Production Facility">>),
     galaxy_srv:create_structure_type(
         <<"quadanium_mine">>,
         <<"mine">>,
-        [#resource{name=list_to_binary("quadanium"), amount=10}],
+        1,
+        [
+            #resource{
+                name = list_to_binary("quadanium"),
+                amount = 10}
+        ],
         0,
         1000,
         <<"Quadanium Mine">>),
+
+    galaxy_srv:create_structure_type(
+        <<"small_shipyard">>,
+        <<"shipyard">>,
+        3,
+        [
+            #resource{
+                name = list_to_binary("small_spaceship"),
+                amount = 1}
+        ],
+        1000,
+        1000,
+        <<"Small Shipyard">>),
+
+
 
     galaxy_srv:add_structure(<<"test">>,
         #structure{name=list_to_binary("quadanium_mine")}, <<"terra">>,

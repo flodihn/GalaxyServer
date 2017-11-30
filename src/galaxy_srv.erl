@@ -170,7 +170,7 @@ handle_call({get_resource_type, Name}, _From, #state{implmod=ImplMod,
     {ok, ResourceType} = ImplMod:get_resource_type(Name, ImplState),
     {reply, {ok, ResourceType}, State};
 
-handle_call({create_structure_type, Name, Category, Produces, Rate,
+handle_call({create_structure_type, Name, Category, Rate, Produces,
         InputStorageSpace, OutputStorageSpace, DisplayName},
         _From, #state{implmod=ImplMod, implstate=ImplState} = State) ->
     {ok, structure_type_created} = ImplMod:create_structure_type(

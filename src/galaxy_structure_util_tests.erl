@@ -4,7 +4,7 @@
 
 -include("galaxy_defs.hrl").
 
--define(STRUCTURE_MINE_TYPE, #structure_type{
+-define(STRUCTURE_TYPE_MINE, #structure_type{
                         name = <<"test_mine">>,
                         rate = 1,
                         produces = [#resource{
@@ -13,7 +13,7 @@
                         input_storage_space=0,
                         output_storage_space=1000}).
 
--define(STRUCTURE_FACTORY_TYPE, #structure_type{
+-define(STRUCTURE_TYPE_FACTORY, #structure_type{
                         name = <<"test_factory">>,
                         rate = 3,
                         produces = [#resource{
@@ -22,7 +22,20 @@
                         input_storage_space=500,
                         output_storage_space=100}).
 
--define(RESOURCE_METAL_TYPE, #resource_type{
+-define(STRUCTURE_TYPE_SMALL_SHIPYARD, #structure_type{
+                        name = <<"small_shipyard">>,
+                        category = <<"shipyard">>,
+                        rate = 1,
+                        produces = [#resource{
+                            name = <<"small_spaceship">>,
+                            amount = 3600}
+                        ],
+                        input_storage_space = 1000,
+                        output_storage_space = 120,
+                        display_name = <<"Test Shipyard">>,
+                        metadata = []}).
+
+-define(RESOURCE_TYPE_METAL, #resource_type{
                         name = <<"metal">>,
                         category = <<"metal">>,
                         storage_space = 1,
@@ -30,20 +43,32 @@
                         build_materials = [],
                         metadata = []}).
 
--define(RESOURCE_HEAVY_METAL_TYPE, #resource_type{
-                        name = <<"heavy_jmetal">>,
+-define(RESOURCE_TYPE_HEAVY_METAL, #resource_type{
+                        name = <<"heavy_metal">>,
                         category = <<"metal">>,
                         storage_space = 2,
                         display_name = <<"Generic metal">>,
                         build_materials = [],
                         metadata = []}).
 
--define(RESOURCE_PLASTIC_TYPE, #resource_type{
+-define(RESOURCE_TYPE_PLASTIC, #resource_type{
                         name = <<"plastic">>,
                         category = <<"plastic">>,
                         storage_space = 1,
                         display_name = <<"Generic plastic">>,
                         build_materials = [],
+                        metadata = []}).
+
+-define(RESOURCE_TYPE_SMALL_SPACESHIP, #resource_type{
+                        name = <<"small_spaceship">>,
+                        category = <<"starfighter">>,
+                        storage_space = 10,
+                        display_name = <<"Small Starfighter">>,
+                        build_materials = [
+                            #resource{
+                                name = <<"metal">>,
+                                amount = 10}
+                        ],
                         metadata = []}).
 
 test_setup() ->
@@ -52,20 +77,24 @@ test_setup() ->
         fun(StructureName) -> 
             case StructureName of
                 <<"test_mine">> ->
-                    {ok, ?STRUCTURE_MINE_TYPE};
+                    {ok, ?STRUCTURE_TYPE_MINE};
                 <<"test_factory">> -> 
-                    {ok, ?STRUCTURE_FACTORY_TYPE}
+                    {ok, ?STRUCTURE_TYPE_FACTORY};
+                <<"small_shipyard">> ->
+                    {ok, ?STRUCTURE_TYPE_SMALL_SHIPYARD}
             end
         end),
      meck:expect(galaxy_srv, get_resource_type,
         fun(ResourceName) -> 
             case ResourceName of
                 <<"metal">> ->
-                        {ok, ?RESOURCE_METAL_TYPE};
+                        {ok, ?RESOURCE_TYPE_METAL};
                 <<"heavy_metal">> ->
-                        {ok, ?RESOURCE_HEAVY_METAL_TYPE};
+                        {ok, ?RESOURCE_TYPE_HEAVY_METAL};
                 <<"plastic">> -> 
-                        {ok, ?RESOURCE_PLASTIC_TYPE}
+                        {ok, ?RESOURCE_TYPE_PLASTIC};
+                <<"small_spaceship">> ->
+                        {ok, ?RESOURCE_TYPE_SMALL_SPACESHIP}
                 end
             end).
 
@@ -83,10 +112,19 @@ test_setup() ->
                     ?_test(test_add_resource_in_existing_list())},
                 {"Structure over output space capacity",
                     ?_test(test_output_space_over_capacity())},
+                {"Structure over output space capacity (heavy resource)",
+                    ?_test(test_output_space_over_capacity_heavy())},
+                {"Structure over output space capacity (half resource)",
+                    ?_test(
+                        test_output_space_over_capacity_half_resource())},
                 {"Mine resource production",
                     ?_test(test_mine_resource_production())},
                 {"Hourly resource rate conversion",
-                    ?_test(test_hourly_resource_rate())}
+                    ?_test(test_hourly_resource_rate())},
+                {"Truncate floating point",
+                    ?_test(test_truncate_floating_point())},
+                {"Simulate structure",
+                    ?_test(test_simulate_structure())}
             ]
         }.
 
@@ -141,30 +179,95 @@ test_mine_resource_production() ->
 
 test_output_space_over_capacity() ->
     UsedSpace = 998,
+    MaxSpace = 1000,
     Resource = #resource{
         name = <<"metal">>,
         amount = 10}, 
-
-    HeavyResource = #resource{
-        name = <<"heavy_metal">>,
-        amount = 10}, 
-
+    ResourceType = #resource_type{
+        name = <<"metal">>,
+        category = <<"metal">>,
+        storage_space = 1,
+        display_name = <<"Generic metal">>,
+        build_materials = [],
+        metadata = []},
     StructureType = #structure_type{
         name = <<"test_structure">>,
-        output_storage_space=1000},
-
+        output_storage_space = MaxSpace},
     Structure = #structure{
         uid = ignore,
         name = <<"test_structure">>,
         output_resources = [],
         output_storage_space = UsedSpace},
 
-    ?assertEqual(2, galaxy_structure_util:cap_output_capacity(
-        Structure, StructureType, Resource)),
+    ?assertEqual(
+        #resource{
+            name = <<"metal">>,
+            amount = 2.0},
+        galaxy_structure_util:cap_output_capacity(
+            Structure, StructureType, Resource, ResourceType)).
 
-    ?assertEqual(2, galaxy_structure_util:cap_output_capacity(
-        Structure, StructureType, HeavyResource)).
-    
+test_output_space_over_capacity_heavy() ->
+    UsedSpace = 998,
+    MaxSpace = 1000,
+    HeavyResource = #resource{
+        name = <<"heavy_metal">>,
+        amount = 10}, 
+    HeavyResourceType = #resource_type{
+        name = <<"metal">>,
+        category = <<"metal">>,
+        storage_space = 2,
+        display_name = <<"Generic metal">>,
+        build_materials = [],
+        metadata = []},
+    StructureType = #structure_type{
+        name = <<"test_structure">>,
+        output_storage_space = MaxSpace},
+    Structure = #structure{
+        uid = ignore,
+        name = <<"test_structure">>,
+        output_resources = [],
+        output_storage_space = UsedSpace},
+
+    % Since heavy metal takes 2 storage space, we can only fit
+    % 1 unit of the resource.
+    ?assertEqual(
+        #resource{
+            name = <<"heavy_metal">>,
+            amount = 1.0},
+        galaxy_structure_util:cap_output_capacity(
+            Structure, StructureType, HeavyResource, HeavyResourceType)).
+
+test_output_space_over_capacity_half_resource() ->
+    UsedSpace = 999,
+    MaxSpace = 1000,
+    HeavyResource = #resource{
+        name = <<"heavy_metal">>,
+        amount = 10}, 
+    HeavyResourceType = #resource_type{
+        name = <<"metal">>,
+        category = <<"metal">>,
+        storage_space = 2,
+        display_name = <<"Generic metal">>,
+        build_materials = [],
+        metadata = []},
+    StructureType = #structure_type{
+        name = <<"test_structure">>,
+        output_storage_space = MaxSpace},
+    Structure = #structure{
+        uid = ignore,
+        name = <<"test_structure">>,
+        output_resources = [],
+        output_storage_space = UsedSpace},
+
+    % Since heavy metal takes 2 storage space, we can only fit
+    % 0.5 unit of the resource with 1 space.
+    ?assertEqual(
+        #resource{
+            name = <<"heavy_metal">>,
+            amount = 0.5},
+        galaxy_structure_util:cap_output_capacity(
+            Structure, StructureType, HeavyResource, HeavyResourceType)).
+
 test_hourly_resource_rate() ->
     OneSecondDeltaTime = 1.0,
     OneAndHalfSecondDeltaTime = 1.5,
@@ -185,3 +288,37 @@ test_hourly_resource_rate() ->
         0.263111,
         galaxy_structure_util:hourly_resource_rate(
             256, ThreePointSevenSecondDeltaTime)).
+
+test_truncate_floating_point() ->
+    ?assertEqual(
+        6.6666,
+        galaxy_structure_util:truncate(6.6666666666, 4)),
+    ?assertEqual(
+        101.34,
+        galaxy_structure_util:truncate(101.34123456789, 2)).
+
+test_simulate_structure() ->
+   Structure = #structure{
+        name = <<"small_shipyard">>,
+        output_resources = [],
+        input_resources = [],
+        output_storage_space = 0,
+        input_storage_space = 0},
+    ExpectedStructure = #structure{
+            name = <<"small_shipard">>,
+            output_resources = [
+                #resource{
+                    name = <<"small_space_ship">>,
+                    amount = 1}
+            ],
+            input_resources = [
+                #resource{
+                    name = <<"metal">>,
+                    amount = 10}
+            ],
+            input_storage_space = 0,
+            output_storage_space = 10},
+    DeltaTime = 1.0,
+    ?assertEqual(
+        {ok, ExpectedStructure},
+        galaxy_structure_util:simulate_structure(Structure, DeltaTime)).
