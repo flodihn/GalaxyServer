@@ -64,10 +64,11 @@
 -record(structure_type, {
     name,
     category,
-    rate=1,
+    production_rate = 1,
     produces = [],
     input_storage_space = 1000,
     output_storage_space = 1000,
+    output_queue = [],
     display_name,
     metadata
     }).
@@ -78,6 +79,7 @@
     storage_space = 1,
     display_name,
     build_materials = [],
+    build_time = 0,
     metadata}).
 
 % Non mnesia table records
@@ -86,9 +88,14 @@
     name,
     amount}).
 
+-record(queue_item, {
+    resource,
+    finish_time}).
+
 -record(structure, {
     uid,
     name,
+    build_queue = [],
     output_resources = [],
     input_resources = [],
     output_storage_space=0,

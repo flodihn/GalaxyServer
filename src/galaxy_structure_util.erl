@@ -19,28 +19,45 @@ t() ->
             #resource{name = <<"plastic">>, amount = 50}],
         output_storage_space = 970,
         input_storage_space = 0},
-    simulate_structure(Structure, 1.0).
+    simulate_structure(Structure, 3.0).
 
 simulate_structure(Structure, DeltaTime) ->
      {ok, StructureType} = galaxy_srv:get_structure_type(
         Structure#structure.name),
-    ProductionRate = StructureType#structure_type.rate,
-    UpdatedStructure = produce_resources(Structure, StructureType,
-        DeltaTime, ProductionRate),
-    {ok, UpdatedStructure}.
-
-produce_resources(Structure, _StructureType, _DeltaTime, 0) ->
-    Structure;
-
-produce_resources(Structure, StructureType, DeltaTime, ProductionRate) ->
     ResourceList = StructureType#structure_type.produces,
-    UpdatedStructure = convert_resources(ResourceList, Structure,
+    ProductionRate = StructureType#structure_type.production_rate,
+    {ok, UpdatedStructure} = convert_resources(ResourceList, Structure,
         StructureType, DeltaTime),
-    produce_resources(UpdatedStructure, StructureType, DeltaTime,
-        ProductionRate - 1).
+    timer:sleep(2500),
+    {ok, UpdatedStructure2} = process_build_queue(UpdatedStructure),
+    {ok, UpdatedStructure2}.
+
+process_build_queue(Structure) ->
+    BuildQueue = Structure#structure.build_queue,
+    process_build_queue(BuildQueue, [], Structure).
+
+process_build_queue([], NewBuildQueue, Structure) ->
+    {ok, Structure#structure{build_queue = NewBuildQueue}};
+
+process_build_queue([QueueItem | Rest], NewBuildQueue, Structure) ->
+    FinishTime = QueueItem#queue_item.finish_time,
+    Resource = QueueItem#queue_item.resource,
+    case has_timestamp_happened(FinishTime) of
+        true ->
+            {ok, UpdatedStructure} = add_output_resource(Resource,
+                Structure),
+            process_build_queue(Rest, NewBuildQueue, UpdatedStructure);
+        false ->
+            UpdatedBuildQueue = lists:append(NewBuildQueue, [QueueItem]),
+            process_build_queue(Rest, UpdatedBuildQueue, Structure)
+    end.
+
+has_timestamp_happened(TimeStamp) ->
+    Now = erlang:timestamp(),
+    timer:now_diff(Now, TimeStamp) >= 0.
 
 convert_resources([], Structure, _StructureType, _DeltaTime) ->
-    Structure;
+    {ok, Structure};
 
 convert_resources([Resource | Rest], Structure, StructureType, DeltaTime) ->
     {ok, ResourceType} = galaxy_srv:get_resource_type(
@@ -50,16 +67,12 @@ convert_resources([Resource | Rest], Structure, StructureType, DeltaTime) ->
     HasOutputStorageSpace = has_output_storage_space(Resource,
         Structure, StructureType),
 
-    BuildMaterials = ResourceType#resource_type.build_materials,
-
     case {HasBuildMaterials, HasOutputStorageSpace} of
         {true, true} ->
-            {ok, UpdatedStructure} = remove_input_resources(BuildMaterials,
-                Structure),
-            {ok, UpdatedStructure2} = add_output_resource(Resource,
-                UpdatedStructure),
-            convert_resources(Rest, UpdatedStructure2, StructureType,
-                DeltaTime);
+            {ok, UpdatedStructure} = add_build_queue(Resource, ResourceType,
+                    Structure, StructureType),
+                convert_resources(Rest, UpdatedStructure, StructureType,
+                    DeltaTime);
         {false, true} ->
             error_logger:info_report({convert_resources,
                 missing_build_materials, ResourceType}),
@@ -75,17 +88,6 @@ convert_resources([Resource | Rest], Structure, StructureType, DeltaTime) ->
                 missing_storage_space}),
             convert_resources(Rest, Structure, StructureType, DeltaTime)
     end.
-
-    %UpdatedResourceList = add_resource_to_list(
-    %     HourlyResource,
-    %     Structure#structure.output_resources),
-    % UpdatedOutputStorageSpace = OutputStorageSpace + HourlyStorageSpace,
-    % UpdatedStructure = Structure#structure{
-    %     output_resources = UpdatedResourceList,
-    %     output_storage_space = UpdatedOutputStorageSpace},
-    % convert_resources(Rest, UpdatedStructure, DeltaTime).
-
-    %BuildingMaterials = ResourceType#resource_type.build_materials,
 
 has_build_materials(#resource_type{} = ResourceType, Structure) ->
     BuildMaterials = ResourceType#resource_type.build_materials,
@@ -118,6 +120,25 @@ has_output_storage_space(Resource, Structure, StructureType) ->
     UsedStorageSpace = Structure#structure.output_storage_space,
     MaxStorage = StructureType#structure_type.output_storage_space,
     UsedStorageSpace + ResourceSpace =< MaxStorage.
+
+add_build_queue(Resource, ResourceType, Structure, StructureType) ->
+    case reached_max_production_rate(Structure, StructureType) of
+        true ->
+            {ok, Structure};
+        false ->
+            BuildQueue = Structure#structure.build_queue,
+            BuildTime = ResourceType#resource_type.build_time,
+            FinishTime = get_finish_time(BuildTime),
+            QueueItem = #queue_item{
+                resource = Resource,
+                finish_time = FinishTime},
+            UpdatedBuildQueue = lists:append(BuildQueue, [QueueItem]),
+            BuildMaterials = ResourceType#resource_type.build_materials,
+            {ok, UpdatedStructure} = remove_input_resources(BuildMaterials,
+                Structure),
+            {ok, UpdatedStructure#structure{
+                build_queue = UpdatedBuildQueue}}
+    end.    
 
 add_output_resource(Resource, Structure) ->
     ResourceStorageSpace = galaxy_util:resource_storage_space(Resource),
@@ -183,6 +204,17 @@ cap_output_capacity(Structure, StructureType, Resource, ResourceType) ->
                 false -> Resource#resource{amount = MaxAmount}
             end
     end.
+
+get_finish_time(BuildTime) ->
+    {MegaSeconds, Seconds, _MilliSeconds} = erlang:timestamp(),
+    FinishTime = {MegaSeconds, Seconds + BuildTime, 0},
+    FinishTime.
+
+reached_max_production_rate(Structure, StructureType) ->
+    ProductionRate = StructureType#structure_type.production_rate,
+    BuildQueue = Structure#structure.build_queue,
+    length(BuildQueue) >= ProductionRate.
+    
 
 %output_resources([], AccumulatedResources,  UpdatedStructure,
 %        _StructureType, _DeltaTime) ->

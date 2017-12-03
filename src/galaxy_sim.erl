@@ -78,6 +78,11 @@ code_change(_OldVsn, GalaxyId, _Extra) ->
 get_galaxy_name(GalaxyId) ->
     list_to_atom(binary_to_list(GalaxyId) ++ "_galaxy").
 
+get_system_name(GalaxyId, SystemName) ->
+    list_to_atom(
+        binary_to_list(GalaxyId) ++ 
+        list_to_list(SystemName) ++ "_galaxy").
+
 get_delta_time(Now, Past) ->
     timer:now_diff(Now, Past) / 1000000.
 

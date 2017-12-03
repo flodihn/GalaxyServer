@@ -6,7 +6,7 @@
 
 -define(STRUCTURE_TYPE_MINE, #structure_type{
                         name = <<"test_mine">>,
-                        rate = 1,
+                        production_rate = 1,
                         produces = [#resource{
                             name = <<"metal">>,
                             amount = 10}],
@@ -15,7 +15,7 @@
 
 -define(STRUCTURE_TYPE_FACTORY, #structure_type{
                         name = <<"test_factory">>,
-                        rate = 3,
+                        production_rate = 3,
                         produces = [#resource{
                             name = <<"spaceship">>,
                             amount = 1}],
@@ -25,7 +25,7 @@
 -define(STRUCTURE_TYPE_SMALL_SHIPYARD, #structure_type{
                         name = <<"small_shipyard">>,
                         category = <<"shipyard">>,
-                        rate = 1,
+                        production_rate = 1,
                         produces = [#resource{
                             name = <<"small_spaceship">>,
                             amount = 3600}

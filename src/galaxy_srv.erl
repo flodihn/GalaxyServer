@@ -28,12 +28,11 @@
     get_planet/2,
     create_moon/3,
     create_asteroid_belt/3,
-    create_resource_type/4,
     create_resource_type/5,
+    create_resource_type/6,
     get_resource_type/1,
     create_structure_type/7,
     get_structure_type/1,
-    add_resource/6,
     add_structure/4]).
 
 -record(state, {implmod, implstate}).
@@ -77,29 +76,27 @@ create_asteroid_belt(GalaxyId, LinkId, AsteroidBelt) ->
 get_systems(GalaxyId) ->
     gen_server:call(?SERVER, {get_systems, GalaxyId}).
 
-create_resource_type(Name, Category, StorageSpace, DisplayName) ->
-    create_resource_type(Name, Category, StorageSpace, [], DisplayName).
+create_resource_type(Name, Category, StorageSpace, BuildTime,
+        DisplayName) ->
+    create_resource_type(Name, Category, StorageSpace, [], BuildTime,
+        DisplayName).
 
 create_resource_type(Name, Category, StorageSpace, BuildMaterials,
-        DisplayName) ->
+        BuildTime, DisplayName) ->
     gen_server:call(?SERVER, {create_resource_type, Name, Category,
-        StorageSpace, BuildMaterials, DisplayName}).
+        StorageSpace, BuildMaterials, BuildTime, DisplayName}).
 
 get_resource_type(Name) ->
     gen_server:call(?SERVER, {get_resource_type, Name}).
 
-create_structure_type(Name, Category, Rate, Produces, InputStorageSpace,
-        OutputStorageSpace, DisplayName) ->
+create_structure_type(Name, Category, ProductionRate, Produces,
+        InputStorageSpace, OutputStorageSpace, DisplayName) ->
     gen_server:call(?SERVER, {create_structure_type, Name, Category,
-        Rate, Produces, InputStorageSpace, OutputStorageSpace,
+        ProductionRate, Produces, InputStorageSpace, OutputStorageSpace,
         DisplayName}).
 
 get_structure_type(Name) ->
     gen_server:call(?SERVER, {get_structure_type, Name}).
-
-add_resource(GalaxyId, ResourceName, LinkId, LinkType, Capacity, Rate) ->
-    gen_server:call(?SERVER, {add_resource, GalaxyId, ResourceName,
-        LinkId, LinkType, Capacity, Rate}).
 
 add_structure(GalaxyId, StructureName, LinkId, LinkType) ->
     gen_server:call(?SERVER, {add_structure, GalaxyId, StructureName,
@@ -157,12 +154,12 @@ handle_call({get_systems, GalaxyId}, _From,
     {reply, {ok, SystemList}, State};
 
 handle_call({create_resource_type, Name, Category, StorageSpace, 
-        BuildMaterials, DisplayName}, _From, #state{implmod=ImplMod,
-        implstate=ImplState} = State) ->
+        BuildMaterials, BuildTime, DisplayName}, _From,
+        #state{implmod=ImplMod, implstate=ImplState} = State) ->
     {ok, resource_type_created} = ImplMod:create_resource_type(
-        #resource_type{name=Name, category=Category,
-        storage_space=StorageSpace, build_materials=BuildMaterials,
-        display_name=DisplayName}, ImplState),
+        #resource_type{name = Name, category = Category,
+        storage_space = StorageSpace, build_materials = BuildMaterials,
+        build_time = BuildTime, display_name=DisplayName}, ImplState),
     {reply, ok, State};
 
 handle_call({get_resource_type, Name}, _From, #state{implmod=ImplMod,
@@ -170,41 +167,21 @@ handle_call({get_resource_type, Name}, _From, #state{implmod=ImplMod,
     {ok, ResourceType} = ImplMod:get_resource_type(Name, ImplState),
     {reply, {ok, ResourceType}, State};
 
-handle_call({create_structure_type, Name, Category, Rate, Produces,
-        InputStorageSpace, OutputStorageSpace, DisplayName},
+handle_call({create_structure_type, Name, Category, ProductionRate,
+        Produces, InputStorageSpace, OutputStorageSpace, DisplayName},
         _From, #state{implmod=ImplMod, implstate=ImplState} = State) ->
     {ok, structure_type_created} = ImplMod:create_structure_type(
-        #structure_type{name=Name, category=Category, rate=Rate,
-            produces=Produces, input_storage_space=InputStorageSpace,
-            output_storage_space=OutputStorageSpace,
-            display_name=DisplayName}, ImplState),
+        #structure_type{name=Name, category=Category,
+            production_rate = ProductionRate, produces = Produces,
+            input_storage_space = InputStorageSpace,
+            output_storage_space = OutputStorageSpace,
+            display_name = DisplayName}, ImplState),
     {reply, ok, State};
 
 handle_call({get_structure_type, Name}, _From, #state{implmod=ImplMod,
         implstate=ImplState} = State) ->
     {ok, StructureType} = ImplMod:get_structure_type(Name, ImplState),
     {reply, {ok, StructureType}, State};
-
-handle_call({add_resource, GalaxyId, ResourceName, LinkId, LinkType,
-        Amount, Rate}, _From, #state{implmod=ImplMod,
-        implstate=ImplState} = State) ->
-    case ImplMod:get_resource(GalaxyId, LinkId, LinkType, ResourceName,
-            State) of
-        {ok, Resource} ->
-            {ok, resource_added} = ImplMod:add_resource(
-                GalaxyId, LinkId, LinkType, Resource#resource{
-                    amount=Resource#resource.amount + Amount},
-                ImplState),
-            {reply, ok, State};
-        {error, resource_not_found} ->
-            {ok, resource_added} = ImplMod:add_resource(
-                GalaxyId, LinkId, LinkType, #resource{name=ResourceName,
-                    amount=Amount},
-                ImplState),
-            {reply, ok, State};
-        {error, planet_not_found} ->
-            {reply, {error, link_id_not_found}, State}
-    end;
 
 handle_call({add_structure, GalaxyId, StructureName, LinkId, LinkType},
         _From, #state{implmod=ImplMod, implstate=ImplState} = State) ->
