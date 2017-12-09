@@ -110,6 +110,8 @@ test_setup() ->
                     ?_test(test_add_resource_in_empty_list())},
                 {"Add resource in existing list", 
                     ?_test(test_add_resource_in_existing_list())},
+                {"Accumulate resource in existing list", 
+                    ?_test(test_accumulate_resource_in_existing_list())},
                 {"Structure over output space capacity",
                     ?_test(test_output_space_over_capacity())},
                 {"Structure over output space capacity (heavy resource)",
@@ -147,6 +149,18 @@ test_setup() ->
             galaxy_structure_util:add_resource_to_list(
                 #resource{name = <<"metal">>, amount = 10},
                 [#resource{name = <<"plastic">>, amount = 15}])).
+
+    test_accumulate_resource_in_existing_list() ->
+        ExistingList = [#resource{name = <<"metal">>, amount = 15}],
+        ?assertEqual(
+            [
+                #resource{name = <<"metal">>, amount = 20}
+            ],
+            galaxy_structure_util:add_resource_to_list(
+                #resource{name = <<"metal">>, amount = 10},
+                ExistingList)).
+
+
 
 test_mine_resource_production() ->
     TestStructure = #structure{name = <<"test_mine">>},

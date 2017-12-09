@@ -19,10 +19,13 @@
          terminate/2, code_change/3]).
 
 -export([
+    start_simulation/0,
     create_galaxy/2,
+    get_galaxies/0,
     create_region/3,
     create_system/5,
     get_systems/1,
+    get_system/2,
     create_planet/5,
     update_planet/1,
     get_planet/2,
@@ -47,8 +50,14 @@ start_link(ImplMod) ->
 %% ------------------------------------------------------------------
 %% Galaxy Server API Function Definitions
 %% ------------------------------------------------------------------
-create_galaxy(Id, Pos) ->
+start_simulation() ->
+    gen_server:cast(?SERVER, start_simulation).
+
+create_galaxy(Id, Pos) when is_binary(Id) ->
     gen_server:call(?SERVER, {create_galaxy, Id, Pos}).
+
+get_galaxies() ->
+    gen_server:call(?SERVER, {get_galaxies}).
 
 create_region(GalaxyId, Name, DisplayName) ->
     gen_server:call(?SERVER, {create_region, GalaxyId, Name, DisplayName}).
@@ -75,6 +84,9 @@ create_asteroid_belt(GalaxyId, LinkId, AsteroidBelt) ->
 
 get_systems(GalaxyId) ->
     gen_server:call(?SERVER, {get_systems, GalaxyId}).
+
+get_system(GalaxyId, SystemName) ->
+    gen_server:call(?SERVER, {get_system, GalaxyId, SystemName}).
 
 create_resource_type(Name, Category, StorageSpace, BuildTime,
         DisplayName) ->
@@ -110,13 +122,18 @@ init([ImplMod]) ->
     State = ImplMod:init(),
     {ok, #state{implmod=ImplMod, implstate=State}}.
 
+
 handle_call({create_galaxy, Id, Pos}, _From,
            #state{implmod=ImplMod, implstate=ImplState} = State) ->
     {ok, galaxy_created} = ImplMod:create_galaxy(
         #galaxy{id=Id, pos=Pos, regions=[]}, ImplState),
     error_logger:info_report({starting_simulation, {galaxy_id, Id}}),
-    galaxy_sim_sup:start_simulation(Id),
     {reply, ok, State};
+
+handle_call({get_galaxies}, _From,
+           #state{implmod=ImplMod, implstate=ImplState} = State) ->
+    {ok, GalaxyList} = ImplMod:get_galaxies(ImplState),
+    {reply, {ok, GalaxyList}, State};
 
 handle_call({create_region, GalaxyId, Name, DisplayName}, _From,
            #state{implmod=ImplMod, implstate=ImplState} = State) ->
@@ -126,9 +143,14 @@ handle_call({create_region, GalaxyId, Name, DisplayName}, _From,
 
 handle_call({create_system, GalaxyId, Region, Name, Pos, DisplayName},
         _From, #state{implmod=ImplMod, implstate=ImplState} = State) ->
-    {ok, system_created} = ImplMod:create_system(#system{name=Name, 
-            galaxy_id=GalaxyId, region=Region, pos=Pos,
-            display_name=DisplayName}, ImplState),
+    System = #system{
+            name = Name, 
+            galaxy_id = GalaxyId,
+            region = Region,
+            pos = Pos,
+            display_name = DisplayName},
+    {ok, system_created} = ImplMod:create_system(System, ImplState),
+    %galaxy_sim:simulate_system(System),
     {reply, ok, State};
 
 handle_call({create_planet, GalaxyId, System, Name, Orbit, DisplayName},
@@ -136,12 +158,12 @@ handle_call({create_planet, GalaxyId, System, Name, Orbit, DisplayName},
     {ok, planet_created} = ImplMod:create_planet(#planet{name=Name,
         galaxy_id=GalaxyId, system=System, orbit=Orbit,
         display_name=DisplayName}, ImplState),
-    {reply, ok, State};
+    {reply, {ok, planet_created}, State};
 
 handle_call({update_planet, Planet}, _From, #state{implmod=ImplMod,
         implstate=ImplState} = State) ->
     {ok, planet_updated} = ImplMod:update_planet(Planet, ImplState),
-    {reply, ok, State};
+    {reply, {ok, planet_updated}, State};
 
 handle_call({get_planet, GalaxyId, PlanetName},
         _From, #state{implmod=ImplMod, implstate=ImplState} = State) ->
@@ -152,6 +174,11 @@ handle_call({get_systems, GalaxyId}, _From,
            #state{implmod=ImplMod, implstate=ImplState} = State) ->
     {ok, SystemList} = ImplMod:get_systems(GalaxyId, ImplState),
     {reply, {ok, SystemList}, State};
+
+handle_call({get_system, GalaxyId, SystemName}, _From,
+           #state{implmod=ImplMod, implstate=ImplState} = State) ->
+    {ok, System} = ImplMod:get_system(GalaxyId, SystemName, ImplState),
+    {reply, {ok, System}, State};
 
 handle_call({create_resource_type, Name, Category, StorageSpace, 
         BuildMaterials, BuildTime, DisplayName}, _From,
@@ -198,6 +225,12 @@ handle_call(Request, _From, State) ->
     error_logger:info_report({unknown_request, Request}),
     {reply, ok, State}.
 
+handle_cast(start_simulation, #state{implmod=ImplMod,
+        implstate=ImplState} = State) ->
+    error_logger:info_report({starting_simulation}),
+    start_galaxy_simulations(ImplMod, State),
+    {noreply, State};
+
 handle_cast(_Msg, State) ->
     {noreply, State}.
 
@@ -213,4 +246,10 @@ code_change(_OldVsn, State, _Extra) ->
 %% ------------------------------------------------------------------
 %% Internal Function Definitions
 %% ------------------------------------------------------------------
-
+start_galaxy_simulations(ImplMod, ImplState) ->
+        % This is not really good, but putting the wait_for_tables it into the
+    % ImplMod:init did not work.
+    timer:sleep(1000),
+    {ok, GalaxyList} = ImplMod:get_galaxies(ImplState),
+    [galaxy_sim_sup:start_simulation(Galaxy#galaxy.id) || 
+        Galaxy <- GalaxyList].

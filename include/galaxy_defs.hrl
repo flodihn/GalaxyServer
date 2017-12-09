@@ -98,8 +98,8 @@
     build_queue = [],
     output_resources = [],
     input_resources = [],
-    output_storage_space=0,
-    input_storage_space=0
+    output_storage_space = 0,
+    input_storage_space = 0
     }).
 
 -record(orbit, {

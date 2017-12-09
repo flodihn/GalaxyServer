@@ -25,20 +25,6 @@ resource_storage_space(ResourceList) when is_list(ResourceList) ->
 resource_storage_space([], Acc) ->
     Acc;
 
-%add_output_resource(NewResource, Structure) ->
-%    ExistingResource = Structure#structure.output_resources
-%     case lists:keytake(NewResource#resource.name, 2, ExistingResources) of
-%        {value, ExistingResource, ResourceList} ->
-%            #resource{
-%                name=ExistingName,
-%                amount=ExistingAmount} = ExistingResource,
-%            NewAmount = ExistingAmount + NewResource#resource.amount,
-%            lists:append(ResourceList, [
-%                #resource{name=ExistingName, amount=NewAmount}]);
-%        false ->
-%            lists:append(ExistingResources, [NewResource])
-%    end.
-
 resource_storage_space([Resource | Rest], Acc) ->
     StorageSpace = galaxy_srv:get_resource_type(Resource),
     resource_storage_space(Rest, Acc + StorageSpace).

@@ -13,7 +13,10 @@
 %% ===================================================================
 
 start() ->
-    application:start(galaxy_srv).
+    application:start(sasl),
+    application:start(galaxy_srv),
+    observer:start(),
+    galaxy_srv:start_simulation().
 
 start(_StartType, _StartArgs) ->
     galaxy_srv_sup:start_link().

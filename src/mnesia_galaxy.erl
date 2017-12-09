@@ -12,13 +12,15 @@
 
 -export([
     create_galaxy/2,
+    get_galaxies/1,
     create_region/2,
     system_exists/3,
     create_system/2,
+    get_systems/2,
+    get_system/3,
     create_planet/2,
     get_planet/3,
     update_planet/2,
-    get_systems/2,
     create_resource_type/2,
     create_structure_type/2,
     get_resource_type/2,
@@ -41,7 +43,7 @@ init() ->
     create_table(?DB_STRUCTURE_TYPE_TABLE, structure_type,
         StructureTypeAttributes, [category], set),
  
-   {ok, []}.
+    {ok, []}.
 
 create_galaxy_tables(GalaxyId) ->
     RegionsTable = get_regions_table(GalaxyId),
@@ -104,6 +106,18 @@ create_galaxy(Galaxy, _State) ->
             {error, Reason}
     end.
 
+get_galaxies(_State) ->
+    Iterator = fun(Record, Acc) -> lists:append(Acc, [Record]) end,
+    T = fun() ->
+        mnesia:foldl(Iterator, [], ?DB_GALAXY_TABLE)
+    end,
+    case mnesia:transaction(T) of
+        {atomic, AllGalaxies} ->
+            {ok, AllGalaxies};
+        {aborted, Reason} ->
+            {error, Reason}
+    end.
+
 create_region(Region = #region{}, _State) ->
     GalaxyId = Region#region.galaxy_id,
     RegionTable = get_regions_table(GalaxyId),
@@ -141,7 +155,6 @@ create_system(System = #system{}, _State) ->
             {error, Reason}
     end;
 
-
 create_system(_System, _State) ->
     {error, bad_system_record}.
 
@@ -156,6 +169,18 @@ get_systems(GalaxyId, _State) ->
             {ok, AllSystems};
         {aborted, Reason} ->
             {error, Reason}
+    end.
+
+get_system(GalaxyId, SystemName, _State) ->
+    SystemsTable = get_systems_table(GalaxyId),
+    T = fun() ->
+        mnesia:read(SystemsTable, SystemName)
+    end,
+    case mnesia:transaction(T) of
+        {atomic, [System]} ->
+            {ok, System};
+        {aborted, _Reason} ->
+            {error, system_not_found}
     end.
 
 create_planet(Planet = #planet{}, _State) ->

@@ -7,28 +7,46 @@
 -endif.
 
 -export([
+    simulate_structures/2,
     simulate_structure/2,
     t/0
     ]).
 
 t() ->
+    %Structure = #structure{
+    %    name = <<"small_shipyard">>,
+    %    output_resources = [],
+    %    input_resources = [#resource{name = <<"metal">>, amount = 25},
+    %        #resource{name = <<"plastic">>, amount = 50}],
+    %    output_storage_space = 970,
+    %    input_storage_space = 0},
     Structure = #structure{
-        name = <<"small_shipyard">>,
+        name = <<"quadanium_mine">>,
         output_resources = [],
-        input_resources = [#resource{name = <<"metal">>, amount = 25},
-            #resource{name = <<"plastic">>, amount = 50}],
+        input_resources = [],
         output_storage_space = 970,
         input_storage_space = 0},
+ 
     simulate_structure(Structure, 3.0).
+
+simulate_structures(StructureList, DeltaTime) ->
+    simulate_structures(StructureList, [], DeltaTime).
+
+simulate_structures([], UpdatedStructures, _DeltaTime) ->
+    {ok, UpdatedStructures};
+
+simulate_structures([Structure | Rest], UpdatedStructures, DeltaTime) ->
+    {ok, UpdatedStructure} = simulate_structure(Structure, DeltaTime),
+    simulate_structures(Rest, lists:append(
+        UpdatedStructures, [UpdatedStructure]), DeltaTime).
 
 simulate_structure(Structure, DeltaTime) ->
      {ok, StructureType} = galaxy_srv:get_structure_type(
         Structure#structure.name),
     ResourceList = StructureType#structure_type.produces,
     ProductionRate = StructureType#structure_type.production_rate,
-    {ok, UpdatedStructure} = convert_resources(ResourceList, Structure,
-        StructureType, DeltaTime),
-    timer:sleep(2500),
+    {ok, UpdatedStructure} = create_or_convert_resources(ResourceList,
+        Structure, StructureType, DeltaTime),
     {ok, UpdatedStructure2} = process_build_queue(UpdatedStructure),
     {ok, UpdatedStructure2}.
 
@@ -56,37 +74,57 @@ has_timestamp_happened(TimeStamp) ->
     Now = erlang:timestamp(),
     timer:now_diff(Now, TimeStamp) >= 0.
 
-convert_resources([], Structure, _StructureType, _DeltaTime) ->
+create_or_convert_resources([], Structure, _StructureType, _DeltaTime) ->
     {ok, Structure};
 
-convert_resources([Resource | Rest], Structure, StructureType, DeltaTime) ->
+create_or_convert_resources([Resource | Rest], Structure, StructureType,
+        DeltaTime) ->
     {ok, ResourceType} = galaxy_srv:get_resource_type(
         Resource#resource.name),
+    case ResourceType#resource_type.build_materials of
+        [] ->
+            {ok, UpdatedStructure} = create_resource(Resource, Structure,
+                StructureType, DeltaTime),
+            create_or_convert_resources(Rest, UpdatedStructure,
+                StructureType, DeltaTime);
+        _BuildMaterials ->
+            {ok, UpdatedStructure} = convert_resource(Resource,
+                ResourceType, Structure, StructureType),
+            create_or_convert_resources(Rest, UpdatedStructure,
+                StructureType, DeltaTime)
+    end.
 
+create_resource(Resource, Structure, StructureType, DeltaTime) ->
+
+    Amount = Resource#resource.amount,
+    HourlyResourceAmount = galaxy_util:hourly_resource_rate(Amount,
+        DeltaTime),
+    HourlyResource = Resource#resource{amount = HourlyResourceAmount},    
+
+    HasOutputStorageSpace = has_output_storage_space(HourlyResource,
+        Structure, StructureType),
+
+    case HasOutputStorageSpace of
+        true ->
+            {ok, UpdatedStructure} = add_output_resource(HourlyResource,
+                Structure),
+            {ok, UpdatedStructure};
+        false ->
+            {ok, Structure}
+    end.
+
+convert_resource(Resource, ResourceType, Structure, StructureType) ->
     HasBuildMaterials = has_build_materials(ResourceType, Structure),
     HasOutputStorageSpace = has_output_storage_space(Resource,
-        Structure, StructureType),
+            Structure, StructureType),
 
     case {HasBuildMaterials, HasOutputStorageSpace} of
         {true, true} ->
             {ok, UpdatedStructure} = add_build_queue(Resource, ResourceType,
                     Structure, StructureType),
-                convert_resources(Rest, UpdatedStructure, StructureType,
-                    DeltaTime);
-        {false, true} ->
-            error_logger:info_report({convert_resources,
-                missing_build_materials, ResourceType}),
-            convert_resources(Rest, Structure, StructureType, DeltaTime);
-        {true, false} ->
-            error_logger:info_report({convert_resources,
-                missing_storage_space}),
-            convert_resources(Rest, Structure, StructureType, DeltaTime);
-        {false, false} ->
-            error_logger:info_report({convert_resources,
-                missing_build_materials, ResourceType}),
-            error_logger:info_report({convert_resources,
-                missing_storage_space}),
-            convert_resources(Rest, Structure, StructureType, DeltaTime)
+            {ok, UpdatedStructure};
+        {_, _} ->
+            {ok, Structure}
     end.
 
 has_build_materials(#resource_type{} = ResourceType, Structure) ->
@@ -214,7 +252,6 @@ reached_max_production_rate(Structure, StructureType) ->
     ProductionRate = StructureType#structure_type.production_rate,
     BuildQueue = Structure#structure.build_queue,
     length(BuildQueue) >= ProductionRate.
-    
 
 %output_resources([], AccumulatedResources,  UpdatedStructure,
 %        _StructureType, _DeltaTime) ->
