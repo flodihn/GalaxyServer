@@ -1,0 +1,57 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<title>/Volumes/Work/Projects/StarWarsSquadrons/GalaxyServer/.eunit/galaxy_srv_sup.COVER.html</title>
+</head><body style='background-color: white; color: black'>
+<pre>
+File generated from /Volumes/Work/Projects/StarWarsSquadrons/GalaxyServer/.eunit/galaxy_srv_sup.erl by COVER 2017-12-11 at 14:08:50
+
+****************************************************************************
+
+        |  -module(galaxy_srv_sup).
+        |  
+        |  -behaviour(supervisor).
+        |  
+        |  -include("galaxy_defs.hrl").
+        |  
+        |  %% API
+        |  -export([start_link/0]).
+        |  
+        |  %% Supervisor callbacks
+        |  -export([init/1]).
+        |  
+        |  %% ===================================================================
+        |  %% API functions
+        |  %% ===================================================================
+        |  
+        |  start_link() -&gt;
+<font color=red>     0..|      supervisor:start_link({local, ?MODULE}, ?MODULE, []).</font>
+        |  
+        |  %% ===================================================================
+        |  %% Supervisor callbacks
+        |  %% ===================================================================
+        |  
+        |  init([]) -&gt;
+<font color=red>     0..|      RestartStrategy = one_for_one,</font>
+<font color=red>     0..|      MaxRestarts = 10, </font>
+<font color=red>     0..|      MaxSecondsBetweenRestarts = 30, </font>
+        |  
+<font color=red>     0..|      SupFlags = {RestartStrategy, MaxRestarts, MaxSecondsBetweenRestarts},</font>
+<font color=red>     0..|      Restart = transient,</font>
+<font color=red>     0..|      Shutdown = 6000,</font>
+        |  
+<font color=red>     0..|      GalaxySrv = {galaxy_srv, {galaxy_srv, start_link, [mnesia_galaxy]},</font>
+        |          Restart, Shutdown, worker, []},
+        |  
+<font color=red>     0..|      GalaxySimSup = {galaxy_sim_sup, {galaxy_sim_sup, start_link, []},</font>
+        |          Restart, Shutdown, supervisor, [dynamic]},
+        |  
+<font color=red>     0..|      GalaxyResourceEventManager= {galaxy_resource_event_manager, {</font>
+        |          gen_event, start_link, [{local, ?GALAXY_RESOURCE_EVENT_MANAGER}]},
+        |          Restart, Shutdown, worker, []},
+        |  
+<font color=red>     0..|      {ok, {SupFlags, [GalaxySrv, GalaxySimSup, GalaxyResourceEventManager]}}.</font>
+</pre>
+</body>
+</html>

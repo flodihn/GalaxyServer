@@ -1,0 +1,10 @@
+{application,resource_srv,
+             [{description,[]},
+              {vsn,"1"},
+              {registered,[]},
+              {applications,[kernel,stdlib]},
+              {mod,{resource_srv_app,[]}},
+              {env,[]},
+              {modules,[mnesia_resource,resource_srv,resource_srv_app,
+                        resource_srv_sup,resource_structure,
+                        resource_structure_tests]}]}.

@@ -1,0 +1,273 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<title>/Volumes/Work/Projects/StarWarsSquadrons/GalaxyServer/.eunit/galaxy_srv.COVER.html</title>
+</head><body style='background-color: white; color: black'>
+<pre>
+File generated from /Volumes/Work/Projects/StarWarsSquadrons/GalaxyServer/.eunit/galaxy_srv.erl by COVER 2017-12-11 at 14:08:50
+
+****************************************************************************
+
+        |  -module(galaxy_srv).
+        |  -behaviour(gen_server).
+        |  
+        |  -include("galaxy_defs.hrl").
+        |  
+        |  -define(SERVER, ?MODULE).
+        |  
+        |  %% ------------------------------------------------------------------
+        |  %% API Function Exports
+        |  %% ------------------------------------------------------------------
+        |  
+        |  -export([start_link/1]).
+        |  
+        |  %% ------------------------------------------------------------------
+        |  %% gen_server Function Exports
+        |  %% ------------------------------------------------------------------
+        |  
+        |  -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
+        |           terminate/2, code_change/3]).
+        |  
+        |  -export([
+        |      add_event_handler/1,
+        |      start_simulation/0,
+        |      create_galaxy/2,
+        |      get_galaxies/0,
+        |      create_region/3,
+        |      create_system/5,
+        |      get_systems/1,
+        |      get_system/2,
+        |      create_planet/5,
+        |      update_planet/1,
+        |      get_planet/2,
+        |      create_moon/3,
+        |      create_asteroid_belt/3,
+        |      create_resource_type/5,
+        |      create_resource_type/6,
+        |      get_resource_type/1,
+        |      create_structure_type/7,
+        |      get_structure_type/1,
+        |      add_structure/4]).
+        |  
+        |  -record(state, {implmod, implstate}).
+        |  
+        |  %% ------------------------------------------------------------------
+        |  %% gen_server API Function Definitions
+        |  %% ------------------------------------------------------------------
+        |  
+        |  start_link(ImplMod) -&gt;
+<font color=red>     0..|      gen_server:start_link({local, ?SERVER}, ?MODULE, [ImplMod], []).</font>
+        |  
+        |  %% ------------------------------------------------------------------
+        |  %% Galaxy Server API Function Definitions
+        |  %% ------------------------------------------------------------------
+        |  add_event_handler(EventHandler) -&gt;
+<font color=red>     0..|      gen_event:add_handler(?GALAXY_RESOURCE_EVENT_MANAGER, EventHandler).</font>
+        |  
+        |  start_simulation() -&gt;
+<font color=red>     0..|      gen_server:cast(?SERVER, start_simulation).</font>
+        |  
+        |  create_galaxy(Id, Pos) when is_binary(Id) -&gt;
+<font color=red>     0..|      gen_server:call(?SERVER, {create_galaxy, Id, Pos}).</font>
+        |  
+        |  get_galaxies() -&gt;
+<font color=red>     0..|      gen_server:call(?SERVER, {get_galaxies}).</font>
+        |  
+        |  create_region(GalaxyId, Name, DisplayName) -&gt;
+<font color=red>     0..|      gen_server:call(?SERVER, {create_region, GalaxyId, Name, DisplayName}).</font>
+        |  
+        |  create_system(GalaxyId, Region, Name, Pos, DisplayName) -&gt;
+<font color=red>     0..|      gen_server:call(?SERVER, {create_system, GalaxyId, Region, Name, Pos,</font>
+        |          DisplayName}).
+        |  
+        |  create_planet(GalaxyId, System, Name, Orbit, DisplayName) -&gt;
+<font color=red>     0..|      gen_server:call(?SERVER, {create_planet, GalaxyId, System, Name, Orbit,</font>
+        |          DisplayName}).
+        |  
+        |  update_planet(Planet) -&gt;
+<font color=red>     0..|      gen_server:call(?SERVER, {update_planet, Planet}).</font>
+        |  
+        |  get_planet(GalaxyId, PlanetName) -&gt;
+<font color=red>     0..|      gen_server:call(?SERVER, {get_planet, GalaxyId, PlanetName}).</font>
+        |  
+        |  create_moon(GalaxyId, PlanetId, Moon) -&gt;
+<font color=red>     0..|      ok.</font>
+        |  
+        |  create_asteroid_belt(GalaxyId, LinkId, AsteroidBelt) -&gt;
+<font color=red>     0..|      ok.</font>
+        |  
+        |  get_systems(GalaxyId) -&gt;
+<font color=red>     0..|      gen_server:call(?SERVER, {get_systems, GalaxyId}).</font>
+        |  
+        |  get_system(GalaxyId, SystemName) -&gt;
+<font color=red>     0..|      gen_server:call(?SERVER, {get_system, GalaxyId, SystemName}).</font>
+        |  
+        |  create_resource_type(Name, Category, StorageSpace, BuildTime,
+        |          DisplayName) -&gt;
+<font color=red>     0..|      create_resource_type(Name, Category, StorageSpace, [], BuildTime,</font>
+        |          DisplayName).
+        |  
+        |  create_resource_type(Name, Category, StorageSpace, BuildMaterials,
+        |          BuildTime, DisplayName) -&gt;
+<font color=red>     0..|      gen_server:call(?SERVER, {create_resource_type, Name, Category,</font>
+        |          StorageSpace, BuildMaterials, BuildTime, DisplayName}).
+        |  
+        |  get_resource_type(Name) -&gt;
+<font color=red>     0..|      gen_server:call(?SERVER, {get_resource_type, Name}).</font>
+        |  
+        |  create_structure_type(Name, Category, ProductionRate, Produces,
+        |          InputStorageSpace, OutputStorageSpace, DisplayName) -&gt;
+<font color=red>     0..|      gen_server:call(?SERVER, {create_structure_type, Name, Category,</font>
+        |          ProductionRate, Produces, InputStorageSpace, OutputStorageSpace,
+        |          DisplayName}).
+        |  
+        |  get_structure_type(Name) -&gt;
+<font color=red>     0..|      gen_server:call(?SERVER, {get_structure_type, Name}).</font>
+        |  
+        |  add_structure(GalaxyId, StructureName, LinkId, LinkType) -&gt;
+<font color=red>     0..|      gen_server:call(?SERVER, {add_structure, GalaxyId, StructureName,</font>
+        |          LinkId, LinkType}).
+        |  
+        |  %% ------------------------------------------------------------------
+        |  %% gen_server Function Definitions
+        |  %% ------------------------------------------------------------------
+        |  
+        |  init([ImplMod]) -&gt;
+<font color=red>     0..|      State = ImplMod:init(),</font>
+<font color=red>     0..|      {ok, #state{implmod=ImplMod, implstate=State}}.</font>
+        |  
+        |  
+        |  handle_call({create_galaxy, Id, Pos}, _From,
+        |             #state{implmod=ImplMod, implstate=ImplState} = State) -&gt;
+<font color=red>     0..|      {ok, galaxy_created} = ImplMod:create_galaxy(</font>
+        |          #galaxy{id=Id, pos=Pos, regions=[]}, ImplState),
+<font color=red>     0..|      error_logger:info_report({starting_simulation, {galaxy_id, Id}}),</font>
+<font color=red>     0..|      {reply, ok, State};</font>
+        |  
+        |  handle_call({get_galaxies}, _From,
+        |             #state{implmod=ImplMod, implstate=ImplState} = State) -&gt;
+<font color=red>     0..|      {ok, GalaxyList} = ImplMod:get_galaxies(ImplState),</font>
+<font color=red>     0..|      {reply, {ok, GalaxyList}, State};</font>
+        |  
+        |  handle_call({create_region, GalaxyId, Name, DisplayName}, _From,
+        |             #state{implmod=ImplMod, implstate=ImplState} = State) -&gt;
+<font color=red>     0..|      {ok, region_created} = ImplMod:create_region(#region{name=Name,</font>
+        |              galaxy_id=GalaxyId, display_name=DisplayName}, ImplState),
+<font color=red>     0..|      {reply, ok, State};</font>
+        |  
+        |  handle_call({create_system, GalaxyId, Region, Name, Pos, DisplayName},
+        |          _From, #state{implmod=ImplMod, implstate=ImplState} = State) -&gt;
+<font color=red>     0..|      System = #system{</font>
+        |              name = Name, 
+        |              galaxy_id = GalaxyId,
+        |              region = Region,
+        |              pos = Pos,
+        |              display_name = DisplayName},
+<font color=red>     0..|      {ok, system_created} = ImplMod:create_system(System, ImplState),</font>
+        |      %galaxy_sim:simulate_system(System),
+<font color=red>     0..|      {reply, ok, State};</font>
+        |  
+        |  handle_call({create_planet, GalaxyId, System, Name, Orbit, DisplayName},
+        |          _From, #state{implmod=ImplMod, implstate=ImplState} = State) -&gt;
+<font color=red>     0..|      {ok, planet_created} = ImplMod:create_planet(#planet{name=Name,</font>
+        |          galaxy_id=GalaxyId, system=System, orbit=Orbit,
+        |          display_name=DisplayName}, ImplState),
+<font color=red>     0..|      {reply, {ok, planet_created}, State};</font>
+        |  
+        |  handle_call({update_planet, Planet}, _From, #state{implmod=ImplMod,
+        |          implstate=ImplState} = State) -&gt;
+<font color=red>     0..|      {ok, planet_updated} = ImplMod:update_planet(Planet, ImplState),</font>
+<font color=red>     0..|      {reply, {ok, planet_updated}, State};</font>
+        |  
+        |  handle_call({get_planet, GalaxyId, PlanetName},
+        |          _From, #state{implmod=ImplMod, implstate=ImplState} = State) -&gt;
+<font color=red>     0..|      {ok, Planet} = ImplMod:get_planet(GalaxyId, PlanetName, ImplState),</font>
+<font color=red>     0..|      {reply, {ok, Planet}, State};</font>
+        |  
+        |  handle_call({get_systems, GalaxyId}, _From,
+        |             #state{implmod=ImplMod, implstate=ImplState} = State) -&gt;
+<font color=red>     0..|      {ok, SystemList} = ImplMod:get_systems(GalaxyId, ImplState),</font>
+<font color=red>     0..|      {reply, {ok, SystemList}, State};</font>
+        |  
+        |  handle_call({get_system, GalaxyId, SystemName}, _From,
+        |             #state{implmod=ImplMod, implstate=ImplState} = State) -&gt;
+<font color=red>     0..|      {ok, System} = ImplMod:get_system(GalaxyId, SystemName, ImplState),</font>
+<font color=red>     0..|      {reply, {ok, System}, State};</font>
+        |  
+        |  handle_call({create_resource_type, Name, Category, StorageSpace, 
+        |          BuildMaterials, BuildTime, DisplayName}, _From,
+        |          #state{implmod=ImplMod, implstate=ImplState} = State) -&gt;
+<font color=red>     0..|      {ok, resource_type_created} = ImplMod:create_resource_type(</font>
+        |          #resource_type{name = Name, category = Category,
+        |          storage_space = StorageSpace, build_materials = BuildMaterials,
+        |          build_time = BuildTime, display_name=DisplayName}, ImplState),
+<font color=red>     0..|      {reply, ok, State};</font>
+        |  
+        |  handle_call({get_resource_type, Name}, _From, #state{implmod=ImplMod,
+        |          implstate=ImplState} = State) -&gt;
+<font color=red>     0..|      {ok, ResourceType} = ImplMod:get_resource_type(Name, ImplState),</font>
+<font color=red>     0..|      {reply, {ok, ResourceType}, State};</font>
+        |  
+        |  handle_call({create_structure_type, Name, Category, ProductionRate,
+        |          Produces, InputStorageSpace, OutputStorageSpace, DisplayName},
+        |          _From, #state{implmod=ImplMod, implstate=ImplState} = State) -&gt;
+<font color=red>     0..|      {ok, structure_type_created} = ImplMod:create_structure_type(</font>
+        |          #structure_type{name=Name, category=Category,
+        |              production_rate = ProductionRate, produces = Produces,
+        |              input_storage_space = InputStorageSpace,
+        |              output_storage_space = OutputStorageSpace,
+        |              display_name = DisplayName}, ImplState),
+<font color=red>     0..|      {reply, ok, State};</font>
+        |  
+        |  handle_call({get_structure_type, Name}, _From, #state{implmod=ImplMod,
+        |          implstate=ImplState} = State) -&gt;
+<font color=red>     0..|      {ok, StructureType} = ImplMod:get_structure_type(Name, ImplState),</font>
+<font color=red>     0..|      {reply, {ok, StructureType}, State};</font>
+        |  
+        |  handle_call({add_structure, GalaxyId, StructureName, LinkId, LinkType},
+        |          _From, #state{implmod=ImplMod, implstate=ImplState} = State) -&gt;
+<font color=red>     0..|      {ok, structure_added} = ImplMod:add_structure(GalaxyId,</font>
+        |          StructureName, LinkId, LinkType, ImplState),
+<font color=red>     0..|      {reply, ok, State};        </font>
+        |  
+        |  handle_call({get_structures, GalaxyId}, _From, #state{implmod=ImplMod,
+        |          implstate=ImplState} = State) -&gt;
+<font color=red>     0..|      {ok, AllStructures} = ImplMod:add_structure(GalaxyId, ImplState),</font>
+<font color=red>     0..|      {reply, {ok, AllStructures}, State};</font>
+        |  
+        |  handle_call(Request, _From, State) -&gt;
+<font color=red>     0..|      error_logger:info_report({unknown_request, Request}),</font>
+<font color=red>     0..|      {reply, ok, State}.</font>
+        |  
+        |  handle_cast(start_simulation, #state{implmod=ImplMod,
+        |          implstate=ImplState} = State) -&gt;
+<font color=red>     0..|      error_logger:info_report({starting_simulation}),</font>
+<font color=red>     0..|      start_galaxy_simulations(ImplMod, State),</font>
+<font color=red>     0..|      {noreply, State};</font>
+        |  
+        |  handle_cast(_Msg, State) -&gt;
+<font color=red>     0..|      {noreply, State}.</font>
+        |  
+        |  handle_info(_Info, State) -&gt;
+<font color=red>     0..|      {noreply, State}.</font>
+        |  
+        |  terminate(_Reason, _State) -&gt;
+<font color=red>     0..|      ok.</font>
+        |  
+        |  code_change(_OldVsn, State, _Extra) -&gt;
+<font color=red>     0..|      {ok, State}.</font>
+        |  
+        |  %% ------------------------------------------------------------------
+        |  %% Internal Function Definitions
+        |  %% ------------------------------------------------------------------
+        |  start_galaxy_simulations(ImplMod, ImplState) -&gt;
+        |          % This is not really good, but putting the wait_for_tables it into the
+        |      % ImplMod:init did not work.
+<font color=red>     0..|      timer:sleep(1000),</font>
+<font color=red>     0..|      {ok, GalaxyList} = ImplMod:get_galaxies(ImplState),</font>
+<font color=red>     0..|      [galaxy_sim_sup:start_simulation(Galaxy#galaxy.id) || </font>
+<font color=red>     0..|          Galaxy &lt;- GalaxyList].</font>
+</pre>
+</body>
+</html>

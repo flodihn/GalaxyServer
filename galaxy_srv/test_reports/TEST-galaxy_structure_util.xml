@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<testsuite tests="7" failures="0" errors="0" skipped="0" time="0.488" name="module 'galaxy_structure_util'">
+  <testcase time="0.000" name="galaxy_structure_util_tests:110 fixture_test_ (Structure over output space capacity)">
+    <system-out>
+    </system-out>
+  </testcase>
+  <testcase time="0.000" name="galaxy_structure_util_tests:112 fixture_test_ (Structure over output space capacity (heavy resource))">
+    <system-out>
+    </system-out>
+  </testcase>
+  <testcase time="0.000" name="galaxy_structure_util_tests:114 fixture_test_ (Structure over output space capacity (half resource))">
+    <system-out>
+    </system-out>
+  </testcase>
+  <testcase time="0.001" name="galaxy_structure_util_tests:117 fixture_test_ (Mine resource production)">
+    <system-out>
+    </system-out>
+  </testcase>
+  <testcase time="0.000" name="galaxy_structure_util_tests:119 fixture_test_ (Hourly resource rate conversion)">
+    <system-out>
+    </system-out>
+  </testcase>
+  <testcase time="0.000" name="galaxy_structure_util_tests:121 fixture_test_ (Truncate floating point)">
+    <system-out>
+    </system-out>
+  </testcase>
+  <testcase time="0.015" name="galaxy_structure_util_tests:123 fixture_test_ (Simulate structure)">
+    <system-out>
+    </system-out>
+  </testcase>
+</testsuite>

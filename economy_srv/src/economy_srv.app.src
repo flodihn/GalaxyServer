@@ -1,0 +1,12 @@
+{application, economy_srv,
+ [
+  {description, ""},
+  {vsn, "1"},
+  {registered, []},
+  {applications, [
+                  kernel,
+                  stdlib
+                 ]},
+  {mod, { economy_srv_app, []}},
+  {env, []}
+ ]}.

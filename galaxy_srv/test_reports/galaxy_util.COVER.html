@@ -1,0 +1,52 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<title>/Volumes/Work/Projects/StarWarsSquadrons/GalaxyServer/.eunit/galaxy_util.COVER.html</title>
+</head><body style='background-color: white; color: black'>
+<pre>
+File generated from /Volumes/Work/Projects/StarWarsSquadrons/GalaxyServer/.eunit/galaxy_util.erl by COVER 2017-12-11 at 14:08:50
+
+****************************************************************************
+
+        |  -module(galaxy_util).
+        |  
+        |  -include("galaxy_defs.hrl").
+        |  
+        |  -ifdef(TEST).
+        |  -compile(export_all).
+        |  -endif.
+        |  
+        |  %% Application callbacks
+        |  -export([
+        |      sector_name_to_sup/1,
+        |      hourly_resource_rate/2,
+        |      resource_storage_space/1
+        |      ]).
+        |  
+        |  sector_name_to_sup(SectorName) -&gt;
+<font color=red>     0..|      list_to_atom(atom_to_list(SectorName) ++ "_sup").</font>
+        |  
+        |  hourly_resource_rate(Amount, DeltaTime) -&gt;
+     6..|      truncate(1/3600 * Amount * DeltaTime, 6).
+        |  
+        |  resource_storage_space(#resource{name = Name, amount = Amount}) -&gt;
+     6..|      {ok, ResourceType} = galaxy_srv:get_resource_type(Name),
+     6..|      ResourceType#resource_type.storage_space * Amount;
+        |  
+        |  resource_storage_space(ResourceList) when is_list(ResourceList) -&gt;
+<font color=red>     0..|      resource_storage_space(ResourceList, 0).</font>
+        |  
+        |  resource_storage_space([], Acc) -&gt;
+<font color=red>     0..|      Acc;</font>
+        |  
+        |  resource_storage_space([Resource | Rest], Acc) -&gt;
+<font color=red>     0..|      StorageSpace = galaxy_srv:get_resource_type(Resource),</font>
+<font color=red>     0..|      resource_storage_space(Rest, Acc + StorageSpace).</font>
+        |  
+        |  truncate(F, N) -&gt;
+     8..|      Prec = math:pow(10, N),
+     8..|      trunc(F * Prec) / Prec.
+</pre>
+</body>
+</html>

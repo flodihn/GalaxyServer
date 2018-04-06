@@ -1,0 +1,103 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<title>/Volumes/Work/Projects/StarWarsSquadrons/GalaxyServer/.eunit/galaxy_sim.COVER.html</title>
+</head><body style='background-color: white; color: black'>
+<pre>
+File generated from /Volumes/Work/Projects/StarWarsSquadrons/GalaxyServer/.eunit/galaxy_sim.erl by COVER 2017-12-11 at 14:08:50
+
+****************************************************************************
+
+        |  -module(galaxy_sim).
+        |  -behaviour(gen_server).
+        |  
+        |  -define(SIMULATION_STEP_TIME, 2000).
+        |  -define(DBMOD, mnesia_galaxy).
+        |  
+        |  -include("galaxy_defs.hrl").
+        |  
+        |  -record(state, {galaxy_id, sim_proc_name}).
+        |  
+        |  %% ------------------------------------------------------------------
+        |  %% API Function Exports
+        |  %% ------------------------------------------------------------------
+        |  
+        |  -export([
+        |      start_link/1,
+        |      simulate_system/1]).
+        |  
+        |  %% ------------------------------------------------------------------
+        |  %% gen_server Function Exports
+        |  %% ------------------------------------------------------------------
+        |  
+        |  -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
+        |           terminate/2, code_change/3]).
+        |  
+        |  %% ------------------------------------------------------------------
+        |  %% gen_server API Function Definitions
+        |  %% ------------------------------------------------------------------
+        |  
+        |  start_link(GalaxyId) when is_binary(GalaxyId) -&gt;
+<font color=red>     0..|      SimulationProcName = get_galaxy_name(GalaxyId),</font>
+<font color=red>     0..|      case whereis(SimulationProcName) of</font>
+        |          undefined -&gt;
+<font color=red>     0..|              State = #state{galaxy_id = GalaxyId,</font>
+        |                  sim_proc_name = SimulationProcName},
+<font color=red>     0..|              gen_server:start_link({local, SimulationProcName},</font>
+        |                  ?MODULE, [State], []),
+<font color=red>     0..|              gen_server:cast(SimulationProcName, simulate_systems);</font>
+        |          ExistingPid -&gt;
+<font color=red>     0..|              {error, {already_running, ExistingPid}}</font>
+        |      end.
+        |  
+        |  %% ------------------------------------------------------------------
+        |  %% Galaxy Simulation API Function Definitions
+        |  %% ------------------------------------------------------------------
+        |  
+        |  simulate_system(#system{galaxy_id = GalaxyId} = System) -&gt;
+<font color=red>     0..|      SimulationProcName = get_galaxy_name(GalaxyId),</font>
+<font color=red>     0..|      gen_server:call(SimulationProcName, {simulate_system, System}).</font>
+        |  
+        |  %% ------------------------------------------------------------------
+        |  %% gen_server Function Definitions
+        |  %% ------------------------------------------------------------------
+        |  
+        |  init([State]) -&gt;
+<font color=red>     0..|      {ok, State}.</font>
+        |  
+        |  handle_call({simulate_system, System}, _From, State) -&gt;
+<font color=red>     0..|      Result = apply(galaxy_system_sim, start_link, [System]),</font>
+<font color=red>     0..|      {reply, Result, State};</font>
+        |  
+        |  handle_call(Request, _From, State) -&gt;
+<font color=red>     0..|      error_logger:info_report({unknown_request, Request}),</font>
+<font color=red>     0..|      {reply, ok, State}.</font>
+        |  
+        |  handle_cast(simulate_systems, #state{galaxy_id = GalaxyId} = State) -&gt;
+<font color=red>     0..|      {ok, SystemList} = galaxy_srv:get_systems(GalaxyId),</font>
+<font color=red>     0..|      [apply(galaxy_system_sim, start_link, [System]) || </font>
+<font color=red>     0..|          System &lt;- SystemList],</font>
+<font color=red>     0..|      {noreply, State};</font>
+        |  
+        |  handle_cast(_Msg, State) -&gt;
+<font color=red>     0..|      {noreply, State}.</font>
+        |  
+        |  handle_info(_Info, State) -&gt;
+<font color=red>     0..|      {noreply, State}.</font>
+        |  
+        |  terminate(_Reason, _State) -&gt;
+<font color=red>     0..|      ok.</font>
+        |  
+        |  code_change(_OldVsn, GalaxyId, _Extra) -&gt;
+<font color=red>     0..|      {ok, GalaxyId}.</font>
+        |  
+        |  %% ------------------------------------------------------------------
+        |  %% Internal Function Definitions
+        |  %% ------------------------------------------------------------------
+        |  
+        |  get_galaxy_name(GalaxyId) -&gt;
+<font color=red>     0..|      list_to_atom(binary_to_list(GalaxyId) ++ "_galaxy_sim").</font>
+</pre>
+</body>
+</html>

@@ -1,0 +1,74 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<title>/Volumes/Work/Projects/StarWarsSquadrons/GalaxyServer/.eunit/galaxy_tests.COVER.html</title>
+</head><body style='background-color: white; color: black'>
+<pre>
+File generated from /Volumes/Work/Projects/StarWarsSquadrons/GalaxyServer/.eunit/galaxy_tests.erl by COVER 2017-12-11 at 14:08:50
+
+****************************************************************************
+
+        |  -module(galaxy_tests).
+        |  
+        |  -include_lib("eunit/include/eunit.hrl").
+        |  
+        |  -include("galaxy_defs.hrl").
+        |  
+        |  test_setup() -&gt;
+        |      %meck:new(galaxy_srv, []),
+        |      %meck:expect(galaxy_srv, get_structure_type,
+        |      %    fun(StructureName) -&gt; 
+        |      %        case StructureName of
+        |      %            &lt;&lt;"test_mine"&gt;&gt; -&gt;
+        |      %                {ok, ?STRUCTURE_TYPE_MINE};
+        |      %            &lt;&lt;"test_factory"&gt;&gt; -&gt; 
+        |      %                {ok, ?STRUCTURE_TYPE_FACTORY};
+        |      %            &lt;&lt;"small_shipyard"&gt;&gt; -&gt;
+        |      %                {ok, ?STRUCTURE_TYPE_SMALL_SHIPYARD}
+        |      %        end
+        |      %    end),
+     1..|      ok.
+        |  
+        |  test_teardown(_Arg) -&gt;
+        |      %meck:unload(galaxy_srv).
+     1..|      ok.
+        |  
+        |  fixture_test_() -&gt;
+     1..|      {
+        |          setup,
+        |              fun test_setup/0, fun test_teardown/1,
+        |              [
+        |                  %{"Simulate structure",
+        |                  %    ?_test(test_simulate_structure())}
+        |              ]
+        |          }.
+        |  
+        |  %test_simulate_structure() -&gt;
+        |  %   Structure = #structure{
+        |  %        name = &lt;&lt;"small_shipyard"&gt;&gt;,
+        |  %        output_resources = [],
+        |  %        input_resources = [],
+        |  %        output_storage_space = 0,
+        |  %        input_storage_space = 0},
+        |  %    ExpectedStructure = #structure{
+        |  %            name = &lt;&lt;"small_shipard"&gt;&gt;,
+        |  %            output_resources = [
+        |  %                #resource{
+        |  %                    name = &lt;&lt;"small_space_ship"&gt;&gt;,
+        |  %                    amount = 1}
+        |  %            ],
+        |  %            input_resources = [
+        |  %                #resource{
+        |  %                    name = &lt;&lt;"metal"&gt;&gt;,
+        |  %                    amount = 10}
+        |  %            ],
+        |  %            input_storage_space = 0,
+        |  %            output_storage_space = 10},
+        |  %    DeltaTime = 1.0,
+        |  %    ?assertEqual(
+        |  %        {ok, ExpectedStructure},
+        |  %        galaxy_structure_util:simulate_structure(Structure, DeltaTime)).
+</pre>
+</body>
+</html>
