@@ -16,20 +16,20 @@ init() ->
         <<"core">>,
         <<"Core Worlds">>),
 
-    galaxy_srv:create_resource_type(
+    resource_srv:create_resource_type(
         <<"quadanium">>,
         <<"material">>,
         2,
         0,
         <<"Quadanium steel">>),
-    galaxy_srv:create_resource_type(
+    resource_srv:create_resource_type(
         <<"tie-fighter">>,
         <<"starfighter">>,
         10,
         [#resource{name=list_to_binary("quadanium"), amount=10}],
         2,
         <<"TIE/LN Fighter">>),
-    galaxy_srv:create_resource_type(
+    resource_srv:create_resource_type(
         <<"small_spaceship">>,
         <<"spaceship">>,
         10,
@@ -37,7 +37,7 @@ init() ->
         2,
         <<"Small spaceship">>),
  
-    galaxy_srv:create_structure_type(
+    resource_srv:create_structure_type(
         <<"quadanium_mine">>,
         <<"mine">>,
         1,
@@ -46,7 +46,7 @@ init() ->
         1000,
         <<"Quadanium Mine">>),
 
-    galaxy_srv:create_structure_type(
+    resource_srv:create_structure_type(
         <<"small_shipyard">>,
         <<"shipyard">>,
         3,
@@ -57,7 +57,7 @@ init() ->
         720,
         <<"Small Shipyard">>),
 
-    galaxy_srv:create_structure_type(
+    resource_srv:create_structure_type(
         <<"small_shipyard">>,
         <<"shipyard">>,
         3,

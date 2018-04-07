@@ -1,0 +1,3 @@
+[submodule "sws_srv/deps/elli"]
+	path = sws_srv/deps/elli
+	url = git@github.com:flodihn/elli.git

@@ -28,6 +28,8 @@ init([]) ->
     Restart = transient,
     Shutdown = 6000,
 
+	ElliOpts = [{callback, rest_callback}, {port, 2000}],
+	
     SwsSrv = {
         sws_srv,
         {sws_srv, start_link, []},
@@ -35,6 +37,14 @@ init([]) ->
         Shutdown,
         worker,
         []},
+	
+	RestAPI = {
+        rest_api,
+        {elli, start_link, [ElliOpts]},
+        permanent,
+        5000,
+        worker,
+        [elli]},
 
-    {ok, {SupFlags, [SwsSrv]}}.
+    {ok, {SupFlags, [SwsSrv, RestAPI]}}.
 
