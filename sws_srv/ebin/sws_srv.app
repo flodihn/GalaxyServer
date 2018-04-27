@@ -5,5 +5,6 @@
               {applications,[kernel,stdlib]},
               {mod,{sws_srv_app,[]}},
               {env,[]},
-              {modules,[galaxy_helper,simulation_callback,sws_srv,sws_srv_app,
-                        sws_srv_sup,rest_callback]}]}.
+              {modules,[galaxy_helper,json2,rest_callback,rest_util,
+                        simulation_callback,sws_srv,sws_srv_app,
+                        sws_srv_sup]}]}.

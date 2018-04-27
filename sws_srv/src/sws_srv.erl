@@ -6,14 +6,21 @@
 %% API Function Exports
 %% ------------------------------------------------------------------
 
--export([start_link/0]).
+-export([
+		 upgrade/1,
+		 start_link/0]).
 
 %% ------------------------------------------------------------------
 %% gen_server Function Exports
 %% ------------------------------------------------------------------
 
--export([init/1, handle_call/3, handle_cast/2, handle_info/2,
-         terminate/2, code_change/3]).
+-export([
+		 init/1,
+		 handle_call/3,
+		 handle_cast/2,
+		 handle_info/2,
+         terminate/2,
+		 code_change/3]).
 
 %% ------------------------------------------------------------------
 %% API Function Definitions
@@ -25,6 +32,10 @@ start_link() ->
 %% ------------------------------------------------------------------
 %% gen_server Function Definitions
 %% ------------------------------------------------------------------
+
+upgrade(Module) ->
+    code:purge(Module),
+    code:load_file(Module).
 
 init(Args) ->
     galaxy_srv:set_simulation_callback(sws_system_simulation_callback),

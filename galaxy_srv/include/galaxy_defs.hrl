@@ -5,6 +5,13 @@
 -record(galaxy, {
     id,
     pos,
+	seed,
+	num_arms,
+	num_stars,
+	stars_in_core,
+	spin,
+	arm_spread,
+	thickness,
     regions=[],
     metadata}).
 

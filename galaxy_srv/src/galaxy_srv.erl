@@ -22,7 +22,9 @@
     start_simulation/0,
     set_simulation_callback/1,
     create_galaxy/2,
+	destroy_galaxy/1,
     get_galaxies/0,
+	get_galaxy/1,
     create_region/3,
     create_system/5,
     get_systems/1,
@@ -54,6 +56,12 @@ set_simulation_callback(SimCallback) ->
 
 create_galaxy(Id, Pos) when is_binary(Id) ->
     gen_server:call(?SERVER, {create_galaxy, Id, Pos}).
+
+destroy_galaxy(Id) when is_binary(Id) ->
+    gen_server:call(?SERVER, {destroy_galaxy, Id}).
+
+get_galaxy(GalaxyId) when is_binary(GalaxyId) ->
+	gen_server:call(?SERVER, {get_galaxy, GalaxyId}).
 
 get_galaxies() ->
     gen_server:call(?SERVER, {get_galaxies}).
@@ -129,12 +137,23 @@ handle_call({create_galaxy, Id, Pos}, _From,
     {ok, galaxy_created} = ImplMod:create_galaxy(
         #galaxy{id=Id, pos=Pos, regions=[]}, ImplState),
     error_logger:info_report({starting_simulation, {galaxy_id, Id}}),
-    {reply, ok, State};
+    {reply, {ok, galaxy_created}, State};
+
+handle_call({destroy_galaxy, Id}, _From,
+           #state{implmod=ImplMod, implstate=ImplState} = State) ->
+    {ok, galaxy_destroyed} = ImplMod:destroy_galaxy(Id, ImplState),
+    error_logger:info_report({destroy_galaxy, {galaxy_id, Id}}),
+    {reply, {ok, galaxy_destroyed}, State};
 
 handle_call({get_galaxies}, _From,
            #state{implmod=ImplMod, implstate=ImplState} = State) ->
     {ok, GalaxyList} = ImplMod:get_galaxies(ImplState),
     {reply, {ok, GalaxyList}, State};
+
+handle_call({get_galaxy, GalaxyId}, _From,
+           #state{implmod=ImplMod, implstate=ImplState} = State) ->
+    Result = ImplMod:get_galaxy(GalaxyId, ImplState),
+    {reply, Result, State};
 
 handle_call({create_region, GalaxyId, Name, DisplayName}, _From,
            #state{implmod=ImplMod, implstate=ImplState} = State) ->

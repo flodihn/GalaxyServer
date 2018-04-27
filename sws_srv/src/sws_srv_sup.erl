@@ -25,7 +25,7 @@ init([]) ->
     MaxSecondsBetweenRestarts = 30, 
 
     SupFlags = {RestartStrategy, MaxRestarts, MaxSecondsBetweenRestarts},
-    Restart = transient,
+    Restart = permanent,
     Shutdown = 6000,
 
 	ElliOpts = [{callback, rest_callback}, {port, 2000}],
@@ -41,10 +41,9 @@ init([]) ->
 	RestAPI = {
         rest_api,
         {elli, start_link, [ElliOpts]},
-        permanent,
-        5000,
+        Restart,
+        Shutdown,
         worker,
-        [elli]},
-
+        []},
+	
     {ok, {SupFlags, [SwsSrv, RestAPI]}}.
-

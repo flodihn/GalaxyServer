@@ -11,8 +11,7 @@
 start() ->
     application:start(resource_srv),
 	application:start(galaxy_srv),
-    application:start(sws_srv),
-    observer:start().
+    application:start(sws_srv).
 
 %% ===================================================================
 %% Application callbacks

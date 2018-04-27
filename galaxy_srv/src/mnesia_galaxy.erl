@@ -12,7 +12,9 @@
 
 -export([
     create_galaxy/2,
+	destroy_galaxy/2,
     get_galaxies/1,
+	get_galaxy/2,
     create_region/2,
     system_exists/3,
     create_system/2,
@@ -58,6 +60,16 @@ create_galaxy_tables(GalaxyId) ->
     PlanetsAttributes = record_info(fields, planet),
     create_table(PlanetsTable, planet, PlanetsAttributes, [galaxy_id], set).
 
+destroy_galaxy_tables(GalaxyId) ->
+    RegionsTable = get_regions_table(GalaxyId),
+    mnesia:delete_table(RegionsTable),
+
+    SystemsTable = get_systems_table(GalaxyId),
+    mnesia:delete_table(SystemsTable),
+
+    PlanetsTable = get_planets_table(GalaxyId),
+    mnesia:delete_table(PlanetsTable).
+
 create_table(TableName, RecordName, Attributes, IndexList, Type) ->
     case lists:member(TableName, mnesia:system_info(tables)) of
         true ->
@@ -94,7 +106,6 @@ system_exists(GalaxyId, SystemName, _State) ->
     end.
 
 create_galaxy(Galaxy, _State) -> 
-    io:format("Creating galaxy: ~p.~n", [Galaxy#galaxy.id]),
     create_galaxy_tables(Galaxy#galaxy.id),
     T = fun() ->
         mnesia:write(?DB_GALAXY_TABLE, Galaxy, write)
@@ -102,6 +113,31 @@ create_galaxy(Galaxy, _State) ->
     case mnesia:transaction(T) of
         {atomic, ok} ->
             {ok, galaxy_created};
+        {aborted, Reason} ->
+            {error, Reason}
+    end.
+
+destroy_galaxy(GalaxyId, _State) ->
+	destroy_galaxy_tables(GalaxyId),
+    T = fun() ->
+        mnesia:delete(?DB_GALAXY_TABLE, GalaxyId, write)
+    end,
+    case mnesia:transaction(T) of
+        {atomic, ok} ->
+            {ok, galaxy_destroyed};
+        {aborted, Reason} ->
+            {error, Reason}
+    end.
+
+get_galaxy(GalaxyId, _State) ->
+	  T = fun() ->
+        mnesia:read(?DB_GALAXY_TABLE, GalaxyId)
+    end,
+    case mnesia:transaction(T) of
+        {atomic, [Galaxy]} ->
+            {ok, Galaxy};
+		{atomic, []} ->
+            {error, not_found};
         {aborted, Reason} ->
             {error, Reason}
     end.
