@@ -2,6 +2,7 @@
 -behaviour(gen_server).
 
 -include("galaxy_defs.hrl").
+-include("resource_defs.hrl").
 
 -define(SERVER, ?MODULE).
 
@@ -22,10 +23,12 @@
     start_simulation/0,
     set_simulation_callback/1,
     create_galaxy/2,
+    update_galaxy/1,
 	destroy_galaxy/1,
     get_galaxies/0,
 	get_galaxy/1,
     create_region/3,
+	get_regions/1,
     create_system/5,
     get_systems/1,
     get_system/2,
@@ -57,6 +60,9 @@ set_simulation_callback(SimCallback) ->
 create_galaxy(Id, Pos) when is_binary(Id) ->
     gen_server:call(?SERVER, {create_galaxy, Id, Pos}).
 
+update_galaxy(#galaxy{} = Galaxy) ->
+    gen_server:call(?SERVER, {update_galaxy, Galaxy}).
+
 destroy_galaxy(Id) when is_binary(Id) ->
     gen_server:call(?SERVER, {destroy_galaxy, Id}).
 
@@ -68,6 +74,9 @@ get_galaxies() ->
 
 create_region(GalaxyId, Name, DisplayName) ->
     gen_server:call(?SERVER, {create_region, GalaxyId, Name, DisplayName}).
+
+get_regions(GalaxyId) ->
+    gen_server:call(?SERVER, {get_regions, GalaxyId}).
 
 create_system(GalaxyId, Region, Name, Pos, DisplayName) ->
     gen_server:call(?SERVER, {create_system, GalaxyId, Region, Name, Pos,
@@ -139,6 +148,11 @@ handle_call({create_galaxy, Id, Pos}, _From,
     error_logger:info_report({starting_simulation, {galaxy_id, Id}}),
     {reply, {ok, galaxy_created}, State};
 
+handle_call({update_galaxy, Galaxy}, _From,
+           #state{implmod=ImplMod, implstate=ImplState} = State) ->
+    {ok, galaxy_updated} = ImplMod:update_galaxy(Galaxy, ImplState),
+    {reply, {ok, galaxy_updated}, State};
+
 handle_call({destroy_galaxy, Id}, _From,
            #state{implmod=ImplMod, implstate=ImplState} = State) ->
     {ok, galaxy_destroyed} = ImplMod:destroy_galaxy(Id, ImplState),
@@ -160,6 +174,12 @@ handle_call({create_region, GalaxyId, Name, DisplayName}, _From,
     {ok, region_created} = ImplMod:create_region(#region{name=Name,
             galaxy_id=GalaxyId, display_name=DisplayName}, ImplState),
     {reply, ok, State};
+
+handle_call({get_regions, GalaxyId}, _From,
+           #state{implmod=ImplMod, implstate=ImplState} = State) ->
+    {ok, Regions}= ImplMod:get_regions(GalaxyId, ImplState),
+    {reply, {ok, Regions}, State};
+
 
 handle_call({create_system, GalaxyId, Region, Name, Pos, DisplayName},
         _From, #state{implmod=ImplMod, implstate=ImplState} = State) ->

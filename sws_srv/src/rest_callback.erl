@@ -1,18 +1,17 @@
 %% @author Cflow
 %% @doc @todo Add description to rest_callback.
-
-
 -module(rest_callback).
 
--export([handle/2, handle_event/3]).
-
+-include("galaxy_defs.hrl").
 -include("../deps/elli/include/elli.hrl").
 -behaviour(elli_handler).
 
+-export([handle/2, handle_event/3]).
+
 -define(DEFAULT_REQUEST_HEADERS, [
-								  {<<"Content-Type">>, <<"application/json">>},
-								  {<<"Access-Control-Allow-Origin">>, <<"*">>},
-								  {<<"Access-Control-Allow-Methods">>, <<"GET, PUT, DELETE">>}]).
+    {<<"Content-Type">>, <<"application/json">>},
+	{<<"Access-Control-Allow-Origin">>, <<"*">>},
+	{<<"Access-Control-Allow-Methods">>, <<"GET, PUT, DELETE">>}]).
 
 handle(Req, _Args) ->
     %% Delegate to our handler function
@@ -28,13 +27,36 @@ handle('GET',[<<"galaxies">>], _Req) ->
 handle('GET',[<<"galaxies">>, GalaxyId], _Req) ->
     %% Reply with a normal response. 'ok' can be used instead of '200'
     %% to signal success.
-    {200, [], json2:encode({struct, [{<<"galaxy">>, <<"ok">>}]})};
+    case galaxy_srv:get_galaxy(GalaxyId) of 
+        {ok, #galaxy{} = Galaxy} ->
+            Response = rest_util:galaxy_to_json(Galaxy),
+            {200, [], Response};
+        {error, not_found} ->
+            rest_util:response404();
+        {error, Reason} ->
+            error_logger:error_report(Reason),
+            rest_util:response500()
+    end;
 
-handle('POST',[<<"galaxies">>, GalaxyId], _Req) ->
+handle('PUT',[<<"galaxies">>, GalaxyId], Req) ->
+    %% Reply with a normal response. 'ok' can be used instead of '200'
+    %% to signal success.
+    Body = elli_request:body(Req),
+    error_logger:info_report({body, Body}),
+    {ok, JsonBody} = json2:decode_string(binary_to_list(Body)),
+    {ok, Galaxy} = rest_util:json_to_record(galaxy, JsonBody),
+    case galaxy_srv:update_galaxy(Galaxy) of
+        {error, not_found} ->
+            rest_util:response404();
+        {ok, galaxy_updated} ->
+            rest_util:response200(<<"galaxy_updated">>)
+    end;
+ 
+ handle('POST',[<<"galaxies">>, GalaxyId], _Req) ->
     %% Reply with a normal response. 'ok' can be used instead of '200'
     %% to signal success.
 	{200, [], json2:encode({struct, [{<<"ok">>, <<"galaxy">>}]})};
-    
+   
 handle('DELETE',[<<"galaxies">>, GalaxyId], _Req) ->
     %% Reply with a normal response. 'ok' can be used instead of '200'
     %% to signal success.
@@ -57,7 +79,7 @@ handle('GET',[<<"mainmenu">>], _Req) ->
     {200, ?DEFAULT_REQUEST_HEADERS, json2:encode(Response)};
 
 handle(_, _, _Req) ->
-    {404, [], <<"Not Found">>}.
+    rest_util:response404().
 
 %% @doc: Handle request events, like request completed, exception
 %% thrown, client timeout, etc. Must return 'ok'.

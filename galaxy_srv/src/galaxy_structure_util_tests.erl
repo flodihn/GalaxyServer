@@ -3,6 +3,7 @@
 -include_lib("eunit/include/eunit.hrl").
 
 -include("galaxy_defs.hrl").
+-include("resource_defs.hrl").
 
 -define(STRUCTURE_TYPE_MINE, #structure_type{
                         name = <<"test_mine">>,

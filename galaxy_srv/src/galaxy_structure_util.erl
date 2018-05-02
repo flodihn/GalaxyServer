@@ -1,6 +1,7 @@
 -module(galaxy_structure_util).
 
 -include("galaxy_defs.hrl").
+-include("resource_defs.hrl").
 
 -ifdef(TEST).
 -compile(export_all).

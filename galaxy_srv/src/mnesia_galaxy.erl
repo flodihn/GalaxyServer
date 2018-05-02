@@ -5,6 +5,7 @@
 -define(DB_STRUCTURE_TYPE_TABLE, structure_types).
 
 -include("galaxy_defs.hrl").
+-include("resource_defs.hrl").
 
 -export([
     init/0
@@ -12,10 +13,12 @@
 
 -export([
     create_galaxy/2,
+    update_galaxy/2,
 	destroy_galaxy/2,
     get_galaxies/1,
 	get_galaxy/2,
     create_region/2,
+    get_regions/2,
     system_exists/3,
     create_system/2,
     get_systems/2,
@@ -117,6 +120,19 @@ create_galaxy(Galaxy, _State) ->
             {error, Reason}
     end.
 
+update_galaxy(Galaxy, _State) -> 
+    T = fun() ->
+        mnesia:write(?DB_GALAXY_TABLE, Galaxy, write)
+    end,
+    case mnesia:transaction(T) of
+        {atomic, ok} ->
+            {ok, galaxy_updated};
+        {aborted, Reason} ->
+            {error, Reason}
+    end.
+
+
+
 destroy_galaxy(GalaxyId, _State) ->
 	destroy_galaxy_tables(GalaxyId),
     T = fun() ->
@@ -160,7 +176,7 @@ create_region(Region = #region{}, _State) ->
     T = fun() ->
         [Galaxy] = mnesia:read(?DB_GALAXY_TABLE, GalaxyId, write),
         mnesia:write(?DB_GALAXY_TABLE, Galaxy#galaxy{
-            regions=lists:append(
+            regions=lists:merge(
                 Galaxy#galaxy.regions, [Region#region.name])},
             write),
         mnesia:write(RegionTable, Region, write)
@@ -174,6 +190,10 @@ create_region(Region = #region{}, _State) ->
 
 create_region(_Region, _State) ->
     {error, bad_region_record}.
+
+get_regions(GalaxyId, _State) ->
+    RegionsTable = get_regions_table(GalaxyId),
+    read_all_records(RegionsTable).
 
 create_system(System = #system{}, _State) ->
     SystemsTable = get_systems_table(System#system.galaxy_id),
@@ -196,16 +216,7 @@ create_system(_System, _State) ->
 
 get_systems(GalaxyId, _State) ->
     SystemsTable = get_systems_table(GalaxyId),
-    Iterator = fun(Record, Acc) -> lists:append(Acc, [Record]) end,
-    T = fun() ->
-        mnesia:foldl(Iterator, [], SystemsTable)
-    end,
-    case mnesia:transaction(T) of
-        {atomic, AllSystems} ->
-            {ok, AllSystems};
-        {aborted, Reason} ->
-            {error, Reason}
-    end.
+    read_all_records(SystemsTable).
 
 get_system(GalaxyId, SystemName, _State) ->
     SystemsTable = get_systems_table(GalaxyId),
@@ -365,3 +376,17 @@ get_systems_table(GalaxyId) ->
 
 get_planets_table(GalaxyId) ->
     list_to_atom(binary_to_list(GalaxyId) ++ "_planets").
+
+read_all_records(Table) ->
+    Iterator = fun(Record, Acc) -> lists:append(Acc, [Record]) end,
+    T = fun() ->
+        mnesia:foldl(Iterator, [], Table)
+    end,
+    case mnesia:transaction(T) of
+        {atomic, AllRecords} ->
+            {ok, AllRecords};
+        {aborted, Reason} ->
+            {error, Reason}
+    end.
+
+

@@ -1,6 +1,7 @@
 -module(galaxy_helper).
 
 -include("galaxy_defs.hrl").
+-include("resource_defs.hrl").
 
 -export([
     init/0
