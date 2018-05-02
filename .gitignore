@@ -8,4 +8,5 @@ rel/example_project
 .concrete/DEV_MODE
 .rebar
 *.swp
+Mnesia*
 /ebin/
