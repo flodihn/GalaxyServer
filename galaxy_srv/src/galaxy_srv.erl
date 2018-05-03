@@ -171,15 +171,27 @@ handle_call({get_galaxy, GalaxyId}, _From,
 
 handle_call({create_region, GalaxyId, Name, DisplayName}, _From,
            #state{implmod=ImplMod, implstate=ImplState} = State) ->
-    {ok, region_created} = ImplMod:create_region(#region{name=Name,
-            galaxy_id=GalaxyId, display_name=DisplayName}, ImplState),
-    {reply, ok, State};
+	case ImplMod:get_region(GalaxyId, Name, State) of
+		{error, region_not_found} ->
+			NewRegion = #region{name=Name, galaxy_id=GalaxyId,
+				display_name=DisplayName},
+    		{ok, region_created} = ImplMod:create_region(
+				NewRegion, ImplState),
+			ImplMod:add_region_to_galaxy_record(GalaxyId, Name, State),
+    		{reply, {ok, region_created}, State};
+		{ok, ExistingRegion} ->
+			UpdatedRegion = #region{name=Name, galaxy_id=GalaxyId,
+				display_name=DisplayName,
+				systems=ExistingRegion#region.systems},
+    		{ok, region_created} = ImplMod:create_region(
+				UpdatedRegion, ImplState),
+    		{reply, {ok, region_updated}, State}
+	end;
 
 handle_call({get_regions, GalaxyId}, _From,
            #state{implmod=ImplMod, implstate=ImplState} = State) ->
-    {ok, Regions}= ImplMod:get_regions(GalaxyId, ImplState),
-    {reply, {ok, Regions}, State};
-
+    Result = ImplMod:get_regions(GalaxyId, ImplState),
+    {reply, Result, State};
 
 handle_call({create_system, GalaxyId, Region, Name, Pos, DisplayName},
         _From, #state{implmod=ImplMod, implstate=ImplState} = State) ->

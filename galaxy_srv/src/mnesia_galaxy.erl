@@ -19,6 +19,8 @@
 	get_galaxy/2,
     create_region/2,
     get_regions/2,
+    get_region/3,
+    add_region_to_galaxy_record/3,
     system_exists/3,
     create_system/2,
     get_systems/2,
@@ -174,11 +176,6 @@ create_region(Region = #region{}, _State) ->
     GalaxyId = Region#region.galaxy_id,
     RegionTable = get_regions_table(GalaxyId),
     T = fun() ->
-        [Galaxy] = mnesia:read(?DB_GALAXY_TABLE, GalaxyId, write),
-        mnesia:write(?DB_GALAXY_TABLE, Galaxy#galaxy{
-            regions=lists:merge(
-                Galaxy#galaxy.regions, [Region#region.name])},
-            write),
         mnesia:write(RegionTable, Region, write)
     end,
     case mnesia:transaction(T) of
@@ -191,9 +188,44 @@ create_region(Region = #region{}, _State) ->
 create_region(_Region, _State) ->
     {error, bad_region_record}.
 
+add_region_to_galaxy_record(GalaxyId, RegionName, State) ->
+    T = fun() ->
+        [Galaxy] = mnesia:read(?DB_GALAXY_TABLE, GalaxyId, read),
+            case lists:member(RegionName, Galaxy#galaxy.regions) of
+                true ->
+                    pass;
+                false ->
+                    MergedRegions = lists:merge(Galaxy#galaxy.regions,
+                        [RegionName]),
+                    mnesia:write(?DB_GALAXY_TABLE,
+                        Galaxy#galaxy{regions=MergedRegions},
+                        write)
+            end
+     end,
+     case mnesia:transaction(T) of
+        {atomic, ok} ->
+            {ok, region_added};
+        {aborted, Reason} ->
+            {error, Reason}
+    end.
+
 get_regions(GalaxyId, _State) ->
     RegionsTable = get_regions_table(GalaxyId),
     read_all_records(RegionsTable).
+
+get_region(GalaxyId, RegionName, _State) ->
+    RegionsTable = get_regions_table(GalaxyId),
+    T = fun() ->
+        mnesia:read(RegionsTable, RegionName)
+    end,
+    case mnesia:transaction(T) of
+        {atomic, []} ->
+            {error, region_not_found};
+        {atomic, [Region]} ->
+            {ok, Region};
+        {aborted, Reason} ->
+            {error, Reason}
+    end.
 
 create_system(System = #system{}, _State) ->
     SystemsTable = get_systems_table(System#system.galaxy_id),
