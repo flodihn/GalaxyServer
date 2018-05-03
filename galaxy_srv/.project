@@ -3,6 +3,7 @@
 	<name>GalaxySrv</name>
 	<comment></comment>
 	<projects>
+		<project>ResourceSrv</project>
 	</projects>
 	<buildSpec>
 		<buildCommand>

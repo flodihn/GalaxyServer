@@ -3,7 +3,7 @@
 	<name>SwsSrv</name>
 	<comment></comment>
 	<projects>
-		<project>Elli</project>
+		<project>EconomySrv</project>
 		<project>GalaxySrv</project>
 		<project>ResourceSrv</project>
 	</projects>

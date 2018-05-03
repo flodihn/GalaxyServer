@@ -6,8 +6,8 @@
               {mod,{galaxy_srv_app,[galaxy_sup,galaxy_sim_sup,galaxy_srv,
                                     mnesia_galaxy,galaxy_helper]}},
               {env,[]},
-              {modules,[galaxy_helper,galaxy_sim,galaxy_sim_sup,galaxy_srv,
-                        galaxy_srv_app,galaxy_srv_sup,galaxy_structure_util,
+              {modules,[galaxy_sim,galaxy_sim_sup,galaxy_srv,galaxy_srv_app,
+                        galaxy_srv_sup,galaxy_structure_util,
                         galaxy_structure_util_tests,galaxy_system_sim,
                         galaxy_tests,galaxy_util,mnesia_galaxy,
                         riak_star_system,star_system_srv]}]}.

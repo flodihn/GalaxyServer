@@ -2,6 +2,6 @@ backend_version=17.0
 eclipse.preferences.version=1
 external_includes=
 external_modules=
-include_dirs=include;
+include_dirs=include;.../resource_srv/include;
 output_dir=ebin
 source_dirs=src;
