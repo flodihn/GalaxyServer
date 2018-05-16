@@ -29,9 +29,11 @@
 	get_galaxy/1,
     create_region/3,
 	get_regions/1,
+	create_system/1,
     create_system/5,
     get_systems/1,
     get_system/2,
+	remove_system/2,
     create_planet/5,
     update_planet/1,
     get_planet/2,
@@ -81,6 +83,12 @@ get_regions(GalaxyId) ->
 create_system(GalaxyId, Region, Name, Pos, DisplayName) ->
     gen_server:call(?SERVER, {create_system, GalaxyId, Region, Name, Pos,
         DisplayName}).
+
+create_system(System) ->
+    gen_server:call(?SERVER, {create_system, System}).
+
+remove_system(GalaxyId, Name) ->
+    gen_server:call(?SERVER, {remove_system, GalaxyId, Name}).
 
 create_planet(GalaxyId, System, Name, Orbit, DisplayName) ->
     gen_server:call(?SERVER, {create_planet, GalaxyId, System, Name, Orbit,
@@ -193,6 +201,12 @@ handle_call({get_regions, GalaxyId}, _From,
     Result = ImplMod:get_regions(GalaxyId, ImplState),
     {reply, Result, State};
 
+handle_call({create_system, #system{} = System},
+        _From, #state{implmod=ImplMod, implstate=ImplState} = State) ->
+    {ok, system_created} = ImplMod:create_system(System, ImplState),
+    %galaxy_sim:simulate_system(System),
+    {reply, {ok, system_created}, State};
+
 handle_call({create_system, GalaxyId, Region, Name, Pos, DisplayName},
         _From, #state{implmod=ImplMod, implstate=ImplState} = State) ->
     System = #system{
@@ -201,9 +215,21 @@ handle_call({create_system, GalaxyId, Region, Name, Pos, DisplayName},
             region = Region,
             pos = Pos,
             display_name = DisplayName},
-    {ok, system_created} = ImplMod:create_system(System, ImplState),
+	case ImplMod:system_exists(GalaxyId, Name) of 
+		true ->
+			{reply, {error, system_already_exists}, State};
+		false ->
+    		{ok, system_created} = ImplMod:create_system(System, ImplState),
+    		%galaxy_sim:simulate_system(System),
+			{reply, {ok, system_creaed}, State}
+	end;
+    		
+handle_call({remove_system, GalaxyId, Name}, _From, 
+			#state{implmod=ImplMod, implstate=ImplState} = State) ->
+    {ok, system_removed} = ImplMod:remove_system(GalaxyId, Name, ImplState),
+	% stop simulating here.
     %galaxy_sim:simulate_system(System),
-    {reply, ok, State};
+    {reply, {ok, system_removed}, State};
 
 handle_call({create_planet, GalaxyId, System, Name, Orbit, DisplayName},
         _From, #state{implmod=ImplMod, implstate=ImplState} = State) ->

@@ -11,37 +11,35 @@
 	response200/1,
 	response404/0,
 	response500/0,
-	galaxy_list_to_json/1,
+	galaxies_to_json/1,
 	galaxy_to_json/1,
+	regions_to_json/1,
+	systems_to_json/1,
 	json_to_record/2]).
 
 response200({struct, Json}) ->
 	{200, [], json2:encode({struct, Json})};
 
 response200(Message) ->
-	{200, [], json2:encode({struct, [{<<"ok">>, Message}]})}.
+	{200, [], json2:encode({struct, [{<<"status">>, <<"ok">>}, {<<"message">>, Message}]})}.
 
 response404() ->
-	{404, [], json2:encode({struct, [{<<"error">>, <<"Not Found">>}]})}.
+	{404, [], json2:encode({struct, [{<<"status">>, <<"error">>}, {<<"message">>, <<"Not Found">>}]})}.
 
 response500() ->
 	{500, [], json2:encode({struct, [
-		{<<"error">>, <<"Internal Server Error">>}]})}.
+		{<<"status">>, <<"error">>}, {<<"message">>, <<"Internal Server Error">>}]})}.
 
-galaxy_list_to_json(GalaxyList) ->
-	galaxy_list_to_json(GalaxyList, []).
+galaxies_to_json(GalaxyList) ->
+	galaxies_to_json(GalaxyList, []).
 
-galaxy_list_to_json([], Acc) ->
+galaxies_to_json([], Acc) ->
 	{struct, [{galaxies, Acc}]};
 
-galaxy_list_to_json([Galaxy | GalaxyList], Acc) ->
+galaxies_to_json([Galaxy | GalaxyList], Acc) ->
 	GalaxyJson = galaxy_id_to_json(Galaxy),
-	galaxy_list_to_json(GalaxyList, [ GalaxyJson | Acc]).
+	galaxies_to_json(GalaxyList, [ GalaxyJson | Acc]).
 	
-%% ====================================================================
-%% Internal functions
-%% ====================================================================
-
 galaxy_id_to_json(#galaxy{id=GalaxyId}) ->
 	GalaxyId.
 
@@ -50,8 +48,36 @@ galaxy_to_json(Galaxy) ->
 	JsonPropList = [proplist_values_to_json(Value) || Value <- PropList],
 	json2:encode({struct, [{galaxy, {struct, JsonPropList}}]}).
 
+regions_to_json(Regions) ->
+	regions_to_json(Regions, []).
+
+regions_to_json([], Acc) ->
+	json2:encode({struct, [{regions, {array, Acc}}]});
+
+regions_to_json([Region | Regions], Acc) ->
+	PropList = record_to_proplist(Region),
+	JsonPropList = [proplist_values_to_json(Value) || Value <- PropList],
+	regions_to_json(Regions, [{struct, JsonPropList} | Acc]).
+
+systems_to_json(Regions) ->
+	systems_to_json(Regions, []).
+
+systems_to_json([], Acc) ->
+	json2:encode({struct, [{systems, {array, Acc}}]});
+
+systems_to_json([System | Systems], Acc) ->
+	PropList = record_to_proplist(System),
+	JsonPropList = [proplist_values_to_json(Value) || Value <- PropList],
+	systems_to_json(Systems, [{struct, JsonPropList} | Acc]).
+
 record_to_proplist(#galaxy{} = Rec) ->
-  lists:zip(record_info(fields, galaxy), tl(tuple_to_list(Rec)));
+	lists:zip(record_info(fields, galaxy), tl(tuple_to_list(Rec)));
+
+record_to_proplist(#region{} = Rec) ->
+	[{name, Rec#region.name}, {display_name, Rec#region.display_name}];
+
+record_to_proplist(#system{} = Rec) ->
+	lists:zip(record_info(fields, system), tl(tuple_to_list(Rec)));
 
 record_to_proplist(Rec) ->
 	error_logger:error_report({?MODULE, record_to_proplist, 
@@ -61,7 +87,15 @@ proplist_values_to_json({Key, {X, Y, Z}}) ->
 	{Key, {struct, [{x, X}, {y, Y}, {z, Z}]}};
 
 proplist_values_to_json({Key, List}) when is_list(List) ->
-	{Key, {array, List}};
+	case List of
+		[] -> 
+			{Key, {array, List}};
+		_NonEmptyList ->
+			case io_lib:latin1_char_list(List) of
+				true -> {Key, list_to_binary(List)};
+				false -> {Key, {array, List}}
+			end
+	end;
 
 proplist_values_to_json({Key, Value}) ->
 	{Key, Value}.
@@ -83,5 +117,23 @@ json_to_record(galaxy, Json) ->
 		seed=Seed, num_arms=NumArms, num_stars=NumStars,
 		stars_in_core=StarsInCore, core_size=CoreSize, spin=Spin,
 		arm_spread=ArmSpread, thickness=Thickness},
+	{ok, Record};
+
+json_to_record(system, Json) ->
+	{struct, [{"system", {struct, [
+		{"name", Name},
+		{"galaxy_id", GalaxyId},
+		{"region", Region},
+		{"pos", {struct, [{"x", X}, {"y", Y}, {"z", Z}]}},
+		{"display_name", DisplayName},
+		{"star_type", StarType},
+		{"star_size", StarSize},
+		{"routes", {array, Routes}},
+		{"metadata", MetaData}
+	]}}]} = Json,
+	Record =  #system{name=list_to_binary(Name), galaxy_id=list_to_binary(GalaxyId),
+		region=list_to_binary(Region), pos={X, Y, Z},
+		display_name=list_to_binary(DisplayName), star_type=StarType, star_size=StarSize,
+		routes=Routes, metadata=list_to_binary(MetaData)},
 	{ok, Record}.
 

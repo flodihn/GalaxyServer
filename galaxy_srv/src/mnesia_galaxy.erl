@@ -25,6 +25,7 @@
     create_system/2,
     get_systems/2,
     get_system/3,
+	remove_system/3,
     create_planet/2,
     get_planet/3,
     update_planet/2,
@@ -34,7 +35,9 @@
     get_structure_type/2,
     get_resource/5,
     add_resource/5,
-    add_structure/5
+    add_structure/5,
+	consistency_fix/1,
+	create_galaxy_tables/1
     ]).
 
 init() ->
@@ -103,11 +106,49 @@ change_to_disc_schema() ->
     mnesia:change_config(extra_db_nodes, [node()]),
     mnesia:change_table_copy_type(schema, node(), disc_copies).
 
-system_exists(GalaxyId, SystemName, _State) ->
-    SystemsTable = get_systems_table(GalaxyId),
-    case mnesia:dirty_read(SystemsTable, SystemName) of
-        [_Record] -> true;
-        [] -> false
+consistency_fix(GalaxyId) ->
+    RegionsTable = get_regions_table(GalaxyId),
+	{ok, Regions} = read_all_records(RegionsTable),
+	Results = [region_consistency_fix(GalaxyId, Region) || Region <- Regions],
+	{ok, Results}.
+
+region_consistency_fix(GalaxyId, Region) ->
+	SystemNames = Region#region.systems,
+	purge_non_existing_systems_from_region(GalaxyId, Region, SystemNames).
+
+purge_non_existing_systems_from_region(GalaxyId, PossibleUpdatedRegion, []) ->
+	RegionsTable = get_regions_table(GalaxyId),
+	T = fun() ->
+		mnesia:write(RegionsTable, PossibleUpdatedRegion, write)
+	end,
+	case mnesia:transaction(T) of
+		{atomic, ok} -> {consistency_fixed_on_region, PossibleUpdatedRegion#region.name};
+		Error -> {consistency_failed_on_region, PossibleUpdatedRegion#region.name, Error}
+	end;
+	
+purge_non_existing_systems_from_region(GalaxyId, Region, [SystemName | SystemsNames]) ->
+	case system_exists(GalaxyId, SystemName) of
+		true -> 
+			pass;
+		false ->
+			SystemList = Region#region.systems,
+			UpdatedSystemList = lists:delete(SystemName, SystemList),
+			UpdatedRegion = Region#region{systems = UpdatedSystemList},
+			purge_non_existing_systems_from_region(GalaxyId, UpdatedRegion, SystemsNames)
+	end.
+
+
+read_galaxy(GalaxyId) ->
+	T = fun() ->
+        mnesia:read(?DB_GALAXY_TABLE, GalaxyId)
+    end,
+    case mnesia:transaction(T) of
+        {atomic, [Galaxy]} ->
+            {ok, Galaxy};
+		{atomic, []} ->
+            {error, not_found};
+        {aborted, Reason} ->
+            {error, Reason}
     end.
 
 create_galaxy(Galaxy, _State) -> 
@@ -133,8 +174,6 @@ update_galaxy(Galaxy, _State) ->
             {error, Reason}
     end.
 
-
-
 destroy_galaxy(GalaxyId, _State) ->
 	destroy_galaxy_tables(GalaxyId),
     T = fun() ->
@@ -148,17 +187,7 @@ destroy_galaxy(GalaxyId, _State) ->
     end.
 
 get_galaxy(GalaxyId, _State) ->
-	  T = fun() ->
-        mnesia:read(?DB_GALAXY_TABLE, GalaxyId)
-    end,
-    case mnesia:transaction(T) of
-        {atomic, [Galaxy]} ->
-            {ok, Galaxy};
-		{atomic, []} ->
-            {error, not_found};
-        {aborted, Reason} ->
-            {error, Reason}
-    end.
+	read_galaxy(GalaxyId).
 
 get_galaxies(_State) ->
     Iterator = fun(Record, Acc) -> lists:append(Acc, [Record]) end,
@@ -191,15 +220,12 @@ create_region(_Region, _State) ->
 add_region_to_galaxy_record(GalaxyId, RegionName, State) ->
     T = fun() ->
         [Galaxy] = mnesia:read(?DB_GALAXY_TABLE, GalaxyId, read),
-            case lists:member(RegionName, Galaxy#galaxy.regions) of
-                true ->
-                    pass;
-                false ->
-                    MergedRegions = lists:merge(Galaxy#galaxy.regions,
-                        [RegionName]),
-                    mnesia:write(?DB_GALAXY_TABLE,
-                        Galaxy#galaxy{regions=MergedRegions},
-                        write)
+        case lists:member(RegionName, Galaxy#galaxy.regions) of
+        	true ->
+            	pass;
+            false ->
+            	MergedRegions = lists:merge(Galaxy#galaxy.regions, [RegionName]),
+                mnesia:write(?DB_GALAXY_TABLE, Galaxy#galaxy{regions=MergedRegions}, write)
             end
      end,
      case mnesia:transaction(T) of
@@ -233,6 +259,8 @@ create_system(System = #system{}, _State) ->
     T = fun() ->
         [Region] = mnesia:read(RegionsTable, System#system.region),
         mnesia:write(SystemsTable, System, write),
+		
+		
         mnesia:write(RegionsTable, Region#region{systems=lists:append(
             Region#region.systems, [System#system.name])}, write)
     end,
@@ -245,6 +273,24 @@ create_system(System = #system{}, _State) ->
 
 create_system(_System, _State) ->
     {error, bad_system_record}.
+
+remove_system(GalaxyId, SystemName, _State) ->
+	SystemsTable = get_systems_table(GalaxyId),
+	RegionsTable = get_regions_table(GalaxyId),
+	T = fun() ->
+		[System] = mnesia:read(SystemsTable, SystemName, read),	
+		[Region] = mnesia:read(RegionsTable, System#system.region),
+        mnesia:delete(SystemsTable, SystemName, write),
+		RegionSystems = Region#region.systems,
+		UpdatedRegionSystems = lists:delete(System#system.name, RegionSystems),
+        mnesia:write(RegionsTable, Region#region{systems=UpdatedRegionSystems}, write)
+    end,
+    case mnesia:transaction(T) of
+        {atomic, ok} ->
+            {ok, system_removed};
+        {aborted, Reason} ->
+            {error, Reason}
+    end.
 
 get_systems(GalaxyId, _State) ->
     SystemsTable = get_systems_table(GalaxyId),
@@ -260,6 +306,16 @@ get_system(GalaxyId, SystemName, _State) ->
             {ok, System};
         {aborted, _Reason} ->
             {error, system_not_found}
+    end.
+
+system_exists(GalaxyId, SystemName) ->
+    system_exists(GalaxyId, SystemName, undefined).
+
+system_exists(GalaxyId, SystemName, _State) ->
+    SystemsTable = get_systems_table(GalaxyId),
+    case mnesia:dirty_read(SystemsTable, SystemName) of
+        [_Record] -> true;
+        [] -> false
     end.
 
 create_planet(Planet = #planet{}, _State) ->
