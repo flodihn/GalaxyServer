@@ -114,6 +114,24 @@ record_to_proplist(Rec) ->
 	error_logger:error_report({?MODULE, record_to_proplist, 
 		unknown_record, Rec}).
 
+proplist_values_to_json(#resource{name=Name, amount=Amount}) ->
+	{resource, {struct, [{name, Name}, {amount, Amount}]}};
+
+proplist_values_to_json(#structure{uid=Uid, name=Name, build_queue=BuildQueue,
+								   output_resources=OutputResources,
+								   input_resources=InputResources,
+								   output_storage_space=OutputStorageSpace,
+								   input_storage_space=InputStorageSpace}) ->
+	{struct, [{structure, {struct, [
+						  {uid, Uid},
+						  {name, Name},
+						  {build_queue, {array, []}},
+						  {output_resources, {array, []}},
+						  {input_resources, {array, []}},
+						  {output_storage_space, OutputStorageSpace},
+						  {input_storage_space, InputStorageSpace}
+						  ]}}]};
+
 proplist_values_to_json({Key, {X, Y, Z}}) ->
 	{Key, {struct, [{x, X}, {y, Y}, {z, Z}]}};
 
@@ -123,13 +141,25 @@ proplist_values_to_json({Key, List}) when is_list(List) ->
 			{Key, {array, List}};
 		_NonEmptyList ->
 			case io_lib:latin1_char_list(List) of
-				true -> {Key, list_to_binary(List)};
-				false -> {Key, {array, List}}
+				true -> 
+					{Key, list_to_binary(List)};
+				false ->
+					SubJsonPropList = [proplist_values_to_json(Value) || Value <- List],
+					{Key, {array, SubJsonPropList}}
+					%{Key, {array, [
+					%			   {struct, [{resource, {struct, [
+					%											  {uid, <<"foobar">>}
+					%											 ]}}]}
+					%			  ]
+					%	  }}
 			end
 	end;
 
 proplist_values_to_json({Key, Value}) ->
-	{Key, Value}.
+	{Key, Value};
+
+proplist_values_to_json(BadPropListValue) ->
+	{error, bad_proplist_value}.
 
 json_to_record(galaxy, Json) ->
 	{struct, [{"galaxy", {struct, [
