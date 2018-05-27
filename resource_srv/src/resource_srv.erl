@@ -22,8 +22,11 @@
     add_event_handler/1,
     create_resource_type/5,
     create_resource_type/6,
+	remove_resource_type/1,
+	get_resource_types/0,
     get_resource_type/1,
     create_structure_type/7,
+	get_structure_types/0,
     get_structure_type/1]).
 
 -record(state, {implmod, implstate}).
@@ -51,8 +54,14 @@ create_resource_type(Name, Category, StorageSpace, BuildMaterials,
     gen_server:call(?SERVER, {create_resource_type, Name, Category,
         StorageSpace, BuildMaterials, BuildTime, DisplayName}).
 
+get_resource_types() ->
+    gen_server:call(?SERVER, get_resource_types).
+
 get_resource_type(Name) ->
     gen_server:call(?SERVER, {get_resource_type, Name}).
+
+remove_resource_type(Name) ->
+    gen_server:call(?SERVER, {remove_resource_type, Name}).
 
 create_structure_type(Name, Category, ProductionRate, Produces,
         InputStorageSpace, OutputStorageSpace, DisplayName) ->
@@ -62,6 +71,9 @@ create_structure_type(Name, Category, ProductionRate, Produces,
 
 get_structure_type(Name) ->
     gen_server:call(?SERVER, {get_structure_type, Name}).
+
+get_structure_types() ->
+    gen_server:call(?SERVER, get_structure_types).
 
 %% ------------------------------------------------------------------
 %% gen_server Function Definitions
@@ -80,6 +92,11 @@ handle_call({create_resource_type, Name, Category, StorageSpace,
         build_time = BuildTime, display_name=DisplayName}, ImplState),
     {reply, ok, State};
 
+handle_call(get_resource_types, _From, #state{implmod=ImplMod,
+        implstate=ImplState} = State) ->
+    {ok, ResourceTypes} = ImplMod:get_resource_types(ImplState),
+    {reply, {ok, ResourceTypes}, State};
+
 handle_call({get_resource_type, Name}, _From, #state{implmod=ImplMod,
         implstate=ImplState} = State) ->
     case ImplMod:get_resource_type(Name, ImplState) of
@@ -88,6 +105,11 @@ handle_call({get_resource_type, Name}, _From, #state{implmod=ImplMod,
         {error, not_found} ->
             {reply, {error, not_found}, State}
     end;
+
+handle_call({remove_resource_type, Name}, _From, #state{implmod=ImplMod,
+        implstate=ImplState} = State) ->
+    {ok, resource_removed} = ImplMod:remove_resource_type(Name, ImplState),
+    {reply, {ok, resource_removed}, State};
 
 handle_call({create_structure_type, Name, Category, ProductionRate,
         Produces, InputStorageSpace, OutputStorageSpace, DisplayName},
@@ -100,6 +122,11 @@ handle_call({create_structure_type, Name, Category, ProductionRate,
             display_name = DisplayName}, ImplState),
     {reply, ok, State};
 
+handle_call(get_structure_types, _From, #state{implmod=ImplMod,
+        implstate=ImplState} = State) ->
+    {ok, StructureTypes} = ImplMod:get_structure_types(ImplState),
+    {reply, {ok, StructureTypes}, State};
+
 handle_call({get_structure_type, Name}, _From, #state{implmod=ImplMod,
         implstate=ImplState} = State) ->
     {ok, StructureType} = ImplMod:get_structure_type(Name, ImplState),
@@ -107,7 +134,7 @@ handle_call({get_structure_type, Name}, _From, #state{implmod=ImplMod,
 
 handle_call(Request, _From, State) ->
     error_logger:info_report({unknown_request, Request}),
-    {reply, ok, State}.
+    {reply, {error, unknown_request}, State}.
 
 handle_cast(_Msg, State) ->
     {noreply, State}.

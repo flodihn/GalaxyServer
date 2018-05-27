@@ -12,7 +12,10 @@
 -export([
     create_resource_type/2,
     create_structure_type/2,
+	get_resource_types/1,
     get_resource_type/2,
+	remove_resource_type/2,
+	get_structure_types/1,
     get_structure_type/2
     ]).
 
@@ -68,6 +71,9 @@ create_resource_type(ResourceType, _State) ->
             {error, Reason}
     end.
 
+get_resource_types(_State) ->
+   read_all_records(?DB_RESOURCE_TYPE_TABLE).
+
 get_resource_type(ResourceName, _State) ->
     T = fun() ->
         mnesia:read(?DB_RESOURCE_TYPE_TABLE, ResourceName)
@@ -77,6 +83,17 @@ get_resource_type(ResourceName, _State) ->
             {ok, ResourceType};
         {atomic, []} ->
             {error, not_found};
+        {aborted, Reason} ->
+            {error, Reason}
+    end.
+
+remove_resource_type(ResourceName, _State) ->
+	T = fun() ->
+        mnesia:delete(?DB_RESOURCE_TYPE_TABLE, ResourceName, write)
+    end,
+    case mnesia:transaction(T) of
+        {atomic, ok} ->
+            {ok, resource_removed};
         {aborted, Reason} ->
             {error, Reason}
     end.
@@ -92,6 +109,9 @@ create_structure_type(StructureType, _State) ->
             {error, Reason}
     end.
 
+get_structure_types(_State) ->
+	read_all_records(?DB_STRUCTURE_TYPE_TABLE).
+
 get_structure_type(StructureName, _State) ->
     T = fun() ->
         mnesia:read(?DB_STRUCTURE_TYPE_TABLE, StructureName)
@@ -101,4 +121,17 @@ get_structure_type(StructureName, _State) ->
             {ok, StructureType};
         {aborted, _Reason} ->
             {error, planet_not_found}
+    end.
+
+
+read_all_records(Table) ->
+    Iterator = fun(Record, Acc) -> lists:append(Acc, [Record]) end,
+    T = fun() ->
+        mnesia:foldl(Iterator, [], Table)
+    end,
+    case mnesia:transaction(T) of
+        {atomic, AllRecords} ->
+            {ok, AllRecords};
+        {aborted, Reason} ->
+            {error, Reason}
     end.

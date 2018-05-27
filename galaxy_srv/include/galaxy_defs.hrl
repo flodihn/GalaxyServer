@@ -79,6 +79,10 @@
     angle=0,
     speed=1}).
 
+-record(hyperspace_route, {
+	origin,
+	destination}).
+
 %-define(PLANET_TYPE_FOREST, 0).
 %-define(PLANET_TYPE_GIANT_FOREST, 1).
 %-define(PLANET_TYPE_DESERT, 2).

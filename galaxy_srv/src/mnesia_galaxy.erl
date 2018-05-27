@@ -26,6 +26,8 @@
     get_systems/2,
     get_system/3,
 	remove_system/3,
+	connect_system/4,
+	disconnect_system/4,
     create_planet/2,
     get_planet/3,
     update_planet/2,
@@ -318,6 +320,44 @@ system_exists(GalaxyId, SystemName, _State) ->
         [] -> false
     end.
 
+connect_system(GalaxyId, OriginSystem, DestinationSystem, _State) ->
+	SystemsTable = get_systems_table(GalaxyId),
+	T = fun() ->
+        [System] = mnesia:read(SystemsTable, OriginSystem),
+		case lists:member(DestinationSystem, System#system.routes) of
+			true ->
+				ok;
+			false ->
+				mnesia:write(SystemsTable, System#system{routes=lists:append(
+            		System#system.routes, [DestinationSystem])}, write)
+		end
+	end,
+	case mnesia:transaction(T) of
+		{atomic, ok} ->
+			{ok, system_connected};
+		{aborted, Reason} ->
+			{error, Reason}
+	end.
+
+disconnect_system(GalaxyId, OriginSystem, DestinationSystem, _State) ->
+	SystemsTable = get_systems_table(GalaxyId),
+	T = fun() ->
+        [System] = mnesia:read(SystemsTable, OriginSystem),
+		case lists:member(DestinationSystem, System#system.routes) of
+			true ->
+				mnesia:write(SystemsTable, System#system{routes=lists:delete(
+            		DestinationSystem, System#system.routes)}, write);
+			false ->
+				ok
+		end
+	end,
+	case mnesia:transaction(T) of
+		{atomic, ok} ->
+			{ok, system_disconnected};
+		{aborted, Reason} ->
+			{error, Reason}
+	end.
+
 create_planet(Planet = #planet{}, _State) ->
     SystemsTable = get_systems_table(Planet#planet.galaxy_id),
     PlanetsTable = get_planets_table(Planet#planet.galaxy_id),
@@ -454,7 +494,24 @@ add_structure(GalaxyId, Structure, LinkId, planet, _State) ->
             {ok, structure_added};
         {aborted, Reason} ->
             {error, Reason}
-    end.
+    end;
+
+add_structure(GalaxyId, Structure, LinkId, system, _State) ->
+    SystemsTable = get_systems_table(GalaxyId),
+    T = fun() ->
+        [System] = mnesia:read(SystemsTable, LinkId),
+        mnesia:write(SystemsTable, System#system{structures=lists:append(
+            System#system.structures, [Structure])}, write)
+    end,
+    case mnesia:transaction(T) of
+        {atomic, ok} ->
+            {ok, structure_added};
+        {aborted, Reason} ->
+            {error, Reason}
+    end;
+
+add_structure(_GalaxyId, _Structure, _LinkId, _BadLinkType, _State) ->
+    {error, bad_link_type}.
 
 get_regions_table(GalaxyId) ->
     list_to_atom(binary_to_list(GalaxyId) ++ "_regions").

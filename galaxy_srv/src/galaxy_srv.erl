@@ -33,6 +33,8 @@
     create_system/5,
     get_systems/1,
     get_system/2,
+	connect_systems/2,
+	disconnect_systems/2,
 	remove_system/2,
     create_planet/5,
     update_planet/1,
@@ -89,6 +91,12 @@ create_system(System) ->
 
 remove_system(GalaxyId, Name) ->
     gen_server:call(?SERVER, {remove_system, GalaxyId, Name}).
+
+connect_systems(GalaxyId, HyperspaceRoute) ->
+    gen_server:call(?SERVER, {connect_systems, GalaxyId, HyperspaceRoute}).
+
+disconnect_systems(GalaxyId, HyperspaceRoute) ->
+    gen_server:call(?SERVER, {disconnect_systems, GalaxyId, HyperspaceRoute}).
 
 create_planet(GalaxyId, System, Name, Orbit, DisplayName) ->
     gen_server:call(?SERVER, {create_planet, GalaxyId, System, Name, Orbit,
@@ -231,6 +239,64 @@ handle_call({remove_system, GalaxyId, Name}, _From,
     %galaxy_sim:simulate_system(System),
     {reply, {ok, system_removed}, State};
 
+handle_call({connect_systems, GalaxyId, #hyperspace_route{origin=SystemName, destination=SystemName}}, _From, 
+			#state{implmod=ImplMod, implstate=ImplState} = State) ->
+	{reply, {error, origin_and_destination_same}, State};
+
+handle_call({connect_systems, GalaxyId, HyperspaceRoute}, _From, 
+			#state{implmod=ImplMod, implstate=ImplState} = State) ->
+	OriginSystem = HyperspaceRoute#hyperspace_route.origin,
+	DestinationSystem = HyperspaceRoute#hyperspace_route.destination,
+	case {ImplMod:system_exists(GalaxyId, OriginSystem, ImplState),
+			ImplMod:system_exists(GalaxyId, DestinationSystem, ImplState)} of
+		{true, true} ->
+			case ImplMod:connect_system(GalaxyId, OriginSystem, DestinationSystem, ImplState) of
+				{ok, system_connected} ->
+					case ImplMod:connect_system(GalaxyId, DestinationSystem, OriginSystem, ImplState) of
+						{ok, system_connected} ->
+							{reply, {ok, systems_connected}, State};
+						{error, Reason} ->
+							ImplMod:disconnect_system(GalaxyId, OriginSystem, DestinationSystem, ImplState),
+							{reply, {error, Reason}, State}
+					end;
+				{error, Reason2} ->
+					{reply, {error, Reason2}, State}
+			end;	
+		{false, _} ->
+			{reply, {error, origin_systems_does_not_exist}, State};
+		{_, false} ->
+			{reply, {error, destination_systems_does_not_exist}, State}
+	end;
+
+handle_call({disconnect_systems, GalaxyId, #hyperspace_route{origin=SystemName, destination=SystemName}}, _From, 
+			#state{implmod=ImplMod, implstate=ImplState} = State) ->
+	{reply, {error, origin_and_destination_same}, State};
+
+handle_call({disconnect_systems, GalaxyId, HyperspaceRoute}, _From, 
+			#state{implmod=ImplMod, implstate=ImplState} = State) ->
+	OriginSystem = HyperspaceRoute#hyperspace_route.origin,
+	DestinationSystem = HyperspaceRoute#hyperspace_route.destination,
+	case {ImplMod:system_exists(GalaxyId, OriginSystem, ImplState),
+			ImplMod:system_exists(GalaxyId, DestinationSystem, ImplState)} of
+		{true, true} ->
+			case ImplMod:disconnect_system(GalaxyId, OriginSystem, DestinationSystem, ImplState) of
+				{ok, system_disconnected} ->
+					case ImplMod:disconnect_system(GalaxyId, DestinationSystem, OriginSystem, ImplState) of
+						{ok, system_disconnected} ->
+							{reply, {ok, systems_disconnected}, State};
+						{error, Reason} ->
+							ImplMod:connect_system(GalaxyId, OriginSystem, DestinationSystem, ImplState),
+							{reply, {error, Reason}, State}
+					end;
+				{error, Reason2} ->
+					{reply, {error, Reason2}, State}
+			end;	
+		{false, _} ->
+			{reply, {error, origin_systems_does_not_exist}, State};
+		{_, false} ->
+			{reply, {error, destination_systems_does_not_exist}, State}
+	end;
+
 handle_call({create_planet, GalaxyId, System, Name, Orbit, DisplayName},
         _From, #state{implmod=ImplMod, implstate=ImplState} = State) ->
     {ok, planet_created} = ImplMod:create_planet(#planet{name=Name,
@@ -288,15 +354,18 @@ handle_call({get_structure_type, Name}, _From, #state{implmod=ImplMod,
     {ok, StructureType} = ImplMod:get_structure_type(Name, ImplState),
     {reply, {ok, StructureType}, State};
 
-handle_call({add_structure, GalaxyId, Structure, LinkId, planet},
+handle_call({add_structure, GalaxyId, StructureType, LinkId, LinkType},
         _From, #state{implmod=ImplMod, implstate=ImplState} = State) ->
-    {ok, structure_added} = ImplMod:add_structure(GalaxyId,
-        Structure, LinkId, planet, ImplState),
-    {reply, {ok, structure_added}, State};        
-
-handle_call({add_structure, GalaxyId, Structure, LinkId, UnknownLinkType},
-        _From, #state{implmod=ImplMod, implstate=ImplState} = State) ->
-    {reply, {error, unknown_link_type}, State};        
+	StructureInstance = galaxy_util:new_structure(StructureType),
+	
+	case ImplMod:add_structure(GalaxyId, StructureInstance, LinkId, LinkType, ImplState) of
+		 {ok, structure_added} ->
+			 {reply, {ok, structure_added}, State};        
+		{error, bad_link_type} ->
+			{reply, {error, unknown_link_type}, State}; 
+		{error, Reason} ->
+			{reply, {error, Reason}, State}
+	end;
 
 handle_call({get_structures, GalaxyId}, _From, #state{implmod=ImplMod,
         implstate=ImplState} = State) ->

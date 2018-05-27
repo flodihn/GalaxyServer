@@ -3,6 +3,7 @@
 -module(rest_util).
 
 -include("galaxy_defs.hrl").
+-include("resource_defs.hrl").
 
 %% ====================================================================
 %% API functions
@@ -15,6 +16,8 @@
 	galaxy_to_json/1,
 	regions_to_json/1,
 	systems_to_json/1,
+	resource_types_to_json/1,
+	structure_types_to_json/1,
 	json_to_record/2]).
 
 response200({struct, Json}) ->
@@ -59,8 +62,8 @@ regions_to_json([Region | Regions], Acc) ->
 	JsonPropList = [proplist_values_to_json(Value) || Value <- PropList],
 	regions_to_json(Regions, [{struct, JsonPropList} | Acc]).
 
-systems_to_json(Regions) ->
-	systems_to_json(Regions, []).
+systems_to_json(Systems) ->
+	systems_to_json(Systems, []).
 
 systems_to_json([], Acc) ->
 	json2:encode({struct, [{systems, {array, Acc}}]});
@@ -70,6 +73,28 @@ systems_to_json([System | Systems], Acc) ->
 	JsonPropList = [proplist_values_to_json(Value) || Value <- PropList],
 	systems_to_json(Systems, [{struct, JsonPropList} | Acc]).
 
+resource_types_to_json(ResourceTypes) ->
+	resource_types_to_json(ResourceTypes, []).
+
+resource_types_to_json([], Acc) ->
+	json2:encode({struct, [{resource_types, {array, Acc}}]});
+
+resource_types_to_json([ResourceType | ResourceTypes], Acc) ->
+	PropList = record_to_proplist(ResourceType),
+	JsonPropList = [proplist_values_to_json(Value) || Value <- PropList],
+	resource_types_to_json(ResourceTypes, [{struct, JsonPropList} | Acc]).
+
+structure_types_to_json(StructureTypes) ->
+	structure_types_to_json(StructureTypes, []).
+
+structure_types_to_json([], Acc) ->
+	json2:encode({struct, [{structure_types, {array, Acc}}]});
+
+structure_types_to_json([StructureType | StructureTypes], Acc) ->
+	PropList = record_to_proplist(StructureType),
+	JsonPropList = [proplist_values_to_json(Value) || Value <- PropList],
+	structure_types_to_json(StructureTypes, [{struct, JsonPropList} | Acc]).
+
 record_to_proplist(#galaxy{} = Rec) ->
 	lists:zip(record_info(fields, galaxy), tl(tuple_to_list(Rec)));
 
@@ -78,6 +103,12 @@ record_to_proplist(#region{} = Rec) ->
 
 record_to_proplist(#system{} = Rec) ->
 	lists:zip(record_info(fields, system), tl(tuple_to_list(Rec)));
+
+record_to_proplist(#resource_type{} = Rec) ->
+	lists:zip(record_info(fields, resource_type), tl(tuple_to_list(Rec)));
+
+record_to_proplist(#structure_type{} = Rec) ->
+	lists:zip(record_info(fields, structure_type), tl(tuple_to_list(Rec)));
 
 record_to_proplist(Rec) ->
 	error_logger:error_report({?MODULE, record_to_proplist, 
@@ -135,5 +166,14 @@ json_to_record(system, Json) ->
 		region=list_to_binary(Region), pos={X, Y, Z},
 		display_name=list_to_binary(DisplayName), star_type=StarType, star_size=StarSize,
 		routes=Routes, metadata=list_to_binary(MetaData)},
+	{ok, Record};
+
+json_to_record(hyperspace_route, Json) ->
+	{struct, [
+		{"origin", OriginSystem},
+		{"destination", DestinationSystem}
+	]} = Json,
+	Record =  #hyperspace_route{origin=list_to_binary(OriginSystem),
+								destination=list_to_binary(DestinationSystem)},
 	{ok, Record}.
 

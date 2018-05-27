@@ -13,6 +13,7 @@
 %% ===================================================================
 
 start() ->
+	application:start(crypto),
     application:start(sasl),
     application:start(galaxy_srv),
     observer:start().
