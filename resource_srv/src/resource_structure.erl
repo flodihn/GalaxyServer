@@ -7,6 +7,7 @@
 -endif.
 
 -export([
+    hourly_resource_rate/2,
     simulate_structures/2,
     simulate_structure/2,
     pretty_print/1,

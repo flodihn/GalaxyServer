@@ -159,13 +159,21 @@ json_to_record(system, Json) ->
 		{"display_name", DisplayName},
 		{"star_type", StarType},
 		{"star_size", StarSize},
+        {"structures", {array, Structures}},
 		{"routes", {array, Routes}},
 		{"metadata", MetaData}
 	]}}]} = Json,
-	Record =  #system{name=list_to_binary(Name), galaxy_id=list_to_binary(GalaxyId),
-		region=list_to_binary(Region), pos={X, Y, Z},
-		display_name=list_to_binary(DisplayName), star_type=StarType, star_size=StarSize,
-		routes=Routes, metadata=list_to_binary(MetaData)},
+	Record =  #system{
+        name=list_to_binary(Name),
+        galaxy_id=list_to_binary(GalaxyId),
+		region=list_to_binary(Region),
+        pos={X, Y, Z},
+		display_name=list_to_binary(DisplayName),
+        star_type=StarType,
+        star_size=StarSize,
+        structures=Structures,
+		routes=Routes,
+        metadata=list_to_binary(MetaData)},
 	{ok, Record};
 
 json_to_record(hyperspace_route, Json) ->

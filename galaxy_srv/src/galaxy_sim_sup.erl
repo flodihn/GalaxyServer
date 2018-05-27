@@ -8,7 +8,7 @@
 %% Supervisor callbacks
 -export([init/1]).
 
--export([start_simulation/2]).
+-export([start_simulation/1]).
 
 %% ===================================================================
 %% API functions
@@ -35,5 +35,5 @@ init([]) ->
 
     {ok, {SupFlags, [GalaxySim]}}.
 
- start_simulation(GalaxyId, SimCallback) ->
-    supervisor:start_child(?MODULE, [GalaxyId, SimCallback]).
+ start_simulation(GalaxyId) ->
+    supervisor:start_child(?MODULE, [GalaxyId]).

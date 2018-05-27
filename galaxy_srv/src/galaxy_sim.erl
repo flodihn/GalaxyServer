@@ -14,6 +14,7 @@
 
 -export([
     start_link/1,
+    start_link/2,
     simulate_system/1]).
 
 %% ------------------------------------------------------------------
@@ -28,6 +29,22 @@
 %% ------------------------------------------------------------------
 
 start_link(GalaxyId) when is_binary(GalaxyId) ->
+    SimulationProcName = get_galaxy_name(GalaxyId),
+    case whereis(SimulationProcName) of
+        undefined ->
+            State = #state{galaxy_id = GalaxyId,
+                sim_proc_name = SimulationProcName},
+            gen_server:start_link({local, SimulationProcName},
+                ?MODULE, [State], []),
+            gen_server:cast(SimulationProcName, simulate_systems);
+        ExistingPid ->
+            {error, {already_running, ExistingPid}}
+    end;
+
+start_link(Other) ->
+	error_logger:info_report({foobar, Other}).
+
+start_link(GalaxyId, SimCallback) ->
     SimulationProcName = get_galaxy_name(GalaxyId),
     case whereis(SimulationProcName) of
         undefined ->

@@ -2,10 +2,10 @@
 <html>
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
-<title>/Volumes/Work/Projects/StarWarsSquadrons/GalaxyServer/.eunit/galaxy_sim_sup.COVER.html</title>
+<title>/Volumes/Work/Projects/GalaxyServer/galaxy_srv/.eunit/galaxy_sim_sup.COVER.html</title>
 </head><body style='background-color: white; color: black'>
 <pre>
-File generated from /Volumes/Work/Projects/StarWarsSquadrons/GalaxyServer/.eunit/galaxy_sim_sup.erl by COVER 2017-12-11 at 14:08:50
+File generated from /Volumes/Work/Projects/GalaxyServer/galaxy_srv/.eunit/galaxy_sim_sup.erl by COVER 2018-05-27 at 20:08:50
 
 ****************************************************************************
 
@@ -19,7 +19,7 @@ File generated from /Volumes/Work/Projects/StarWarsSquadrons/GalaxyServer/.eunit
         |  %% Supervisor callbacks
         |  -export([init/1]).
         |  
-        |  -export([start_simulation/1]).
+        |  -export([start_simulation/2]).
         |  
         |  %% ===================================================================
         |  %% API functions
@@ -46,8 +46,8 @@ File generated from /Volumes/Work/Projects/StarWarsSquadrons/GalaxyServer/.eunit
         |  
 <font color=red>     0..|      {ok, {SupFlags, [GalaxySim]}}.</font>
         |  
-        |   start_simulation(GalaxyId) -&gt;
-<font color=red>     0..|      supervisor:start_child(?MODULE, [GalaxyId]).</font>
+        |   start_simulation(GalaxyId, SimCallback) -&gt;
+<font color=red>     0..|      supervisor:start_child(?MODULE, [GalaxyId, SimCallback]).</font>
 </pre>
 </body>
 </html>

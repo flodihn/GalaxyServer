@@ -27,7 +27,8 @@
     get_resource_type/1,
     create_structure_type/7,
 	get_structure_types/0,
-    get_structure_type/1]).
+    get_structure_type/1,
+	remove_structure_type/1]).
 
 -record(state, {implmod, implstate}).
 
@@ -74,6 +75,9 @@ get_structure_type(Name) ->
 
 get_structure_types() ->
     gen_server:call(?SERVER, get_structure_types).
+
+remove_structure_type(Name) ->
+    gen_server:call(?SERVER, {remove_structure_type, Name}).
 
 %% ------------------------------------------------------------------
 %% gen_server Function Definitions
@@ -131,6 +135,11 @@ handle_call({get_structure_type, Name}, _From, #state{implmod=ImplMod,
         implstate=ImplState} = State) ->
     {ok, StructureType} = ImplMod:get_structure_type(Name, ImplState),
     {reply, {ok, StructureType}, State};
+
+handle_call({remove_structure_type, Name}, _From, #state{implmod=ImplMod,
+        implstate=ImplState} = State) ->
+    {ok, structure_type_removed} = ImplMod:remove_structure_type(Name, ImplState),
+    {reply, {ok, structure_type_removed}, State};
 
 handle_call(Request, _From, State) ->
     error_logger:info_report({unknown_request, Request}),

@@ -33,6 +33,7 @@
     create_system/5,
     get_systems/1,
     get_system/2,
+    update_system/1,
 	connect_systems/2,
 	disconnect_systems/2,
 	remove_system/2,
@@ -88,6 +89,9 @@ create_system(GalaxyId, Region, Name, Pos, DisplayName) ->
 
 create_system(System) ->
     gen_server:call(?SERVER, {create_system, System}).
+
+update_system(System) ->
+    gen_server:call(?SERVER, {update_system, System}).
 
 remove_system(GalaxyId, Name) ->
     gen_server:call(?SERVER, {remove_system, GalaxyId, Name}).
@@ -231,6 +235,11 @@ handle_call({create_system, GalaxyId, Region, Name, Pos, DisplayName},
     		%galaxy_sim:simulate_system(System),
 			{reply, {ok, system_creaed}, State}
 	end;
+
+handle_call({update_system, System}, _From, #state{implmod=ImplMod,
+        implstate=ImplState} = State) ->
+    {ok, system_updated} = ImplMod:update_system(System, ImplState),
+    {reply, {ok, system_updated}, State};
     		
 handle_call({remove_system, GalaxyId, Name}, _From, 
 			#state{implmod=ImplMod, implstate=ImplState} = State) ->

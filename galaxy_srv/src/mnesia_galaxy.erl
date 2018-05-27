@@ -25,6 +25,7 @@
     create_system/2,
     get_systems/2,
     get_system/3,
+    update_system/2,
 	remove_system/3,
 	connect_system/4,
 	disconnect_system/4,
@@ -308,6 +309,18 @@ get_system(GalaxyId, SystemName, _State) ->
             {ok, System};
         {aborted, _Reason} ->
             {error, system_not_found}
+    end.
+
+update_system(#system{galaxy_id=GalaxyId} = System, _State) ->
+    SystemsTable = get_systems_table(GalaxyId),
+    T = fun() ->
+        mnesia:write(SystemsTable, System, write)
+    end,
+    case mnesia:transaction(T) of
+        {atomic, ok} ->
+            {ok, system_updated};
+        {aborted, Reason} ->
+            {error, Reason}
     end.
 
 system_exists(GalaxyId, SystemName) ->

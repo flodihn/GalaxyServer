@@ -43,7 +43,7 @@ simulate_structures([Structure | Rest], UpdatedStructures, DeltaTime) ->
         UpdatedStructures, [UpdatedStructure]), DeltaTime).
 
 simulate_structure(Structure, DeltaTime) ->
-     {ok, StructureType} = galaxy_srv:get_structure_type(
+     {ok, StructureType} = resource_srv:get_structure_type(
         Structure#structure.name),
     ResourceList = StructureType#structure_type.produces,
     {ok, UpdatedStructure} = create_or_convert_resources(ResourceList,
@@ -82,7 +82,8 @@ create_or_convert_resources([], Structure, _StructureType, _DeltaTime) ->
 
 create_or_convert_resources([Resource | Rest], Structure, StructureType,
         DeltaTime) ->
-    {ok, ResourceType} = galaxy_srv:get_resource_type(
+    error_logger:info_report({got_resource, Resource}),
+    {ok, ResourceType} = resource_srv:get_resource_type(
         Resource#resource.name),
     case ResourceType#resource_type.build_materials of
         [] ->
@@ -100,8 +101,7 @@ create_or_convert_resources([Resource | Rest], Structure, StructureType,
 create_resource(Resource, ResourceType, Structure, StructureType,
         DeltaTime) ->
     Amount = Resource#resource.amount,
-    HourlyResourceAmount = galaxy_util:hourly_resource_rate(Amount,
-        DeltaTime),
+    HourlyResourceAmount = resource_structure:hourly_resource_rate(Amount, DeltaTime),
     HourlyResource = Resource#resource{amount = HourlyResourceAmount},    
 
     HasOutputStorageSpace = has_output_storage_space(HourlyResource,
@@ -163,7 +163,7 @@ has_build_material(BuildMaterial, Structure) ->
     end.
 
 has_output_storage_space(Resource, Structure, StructureType) ->
-    ResourceSpace = galaxy_util:resource_storage_space(Resource),
+    ResourceSpace = resource_structure:resource_storage_space(Resource),
     UsedStorageSpace = Structure#structure.output_storage_space,
     MaxStorage = StructureType#structure_type.output_storage_space,
     UsedStorageSpace + ResourceSpace =< MaxStorage.
@@ -188,7 +188,7 @@ add_build_queue(Resource, ResourceType, Structure, StructureType) ->
     end.    
 
 add_output_resource(Resource, Structure) ->
-    ResourceStorageSpace = galaxy_util:resource_storage_space(Resource),
+    ResourceStorageSpace = resource_structure:resource_storage_space(Resource),
     CurrentOutputStorageSpace = Structure#structure.output_storage_space,
     NewOutputStorageSpace = CurrentOutputStorageSpace +
         ResourceStorageSpace,

@@ -16,7 +16,7 @@
 %% API Function Exports
 %% ------------------------------------------------------------------
 
--export([start_link/2]).
+-export([start_link/1, start_link/2]).
 
 %% ------------------------------------------------------------------
 %% gen_server Function Exports
@@ -26,13 +26,16 @@
          terminate/2, code_change/3]).
 
 %% ------------------------------------------------------------------
-%% Intenral Function Exports
+%% Internal Function Exports
 %% ------------------------------------------------------------------
--export([tick/1]).
+-export([tick/1, simulate_system/2]).
 
 %% ------------------------------------------------------------------
 %% gen_server API Function Definitions
 %% ------------------------------------------------------------------
+
+start_link(System) ->
+    start_link(System, undefined).
 
 start_link(#system{galaxy_id = GalaxyId, name = SystemName}, SimCallback) ->
     SimulationName = get_system_name(GalaxyId, SystemName),
@@ -64,7 +67,7 @@ handle_call(tick, _From, #state{
     Now = get_run_time(),
     {ok, System} = galaxy_srv:get_system(GalaxyId, SystemName),
     DeltaTime = get_delta_time(Now, LastRunTime),
-    SimCallback:simulate_system(System, DeltaTime),
+    ?MODULE:simulate_system(System, DeltaTime),
     {reply, ok, State#state{last_run_time=Now}};
 
 handle_call(Request, _From, GalaxyId) ->
@@ -100,6 +103,11 @@ get_run_time() ->
 simulate_system(System, DeltaTime) ->
     GalaxyId = System#system.galaxy_id,
     Planets = System#system.planets,
+    Structures = System#system.structures,
+    {ok, UpdatedStructures} = resource_structure:simulate_structures(
+        Structures, DeltaTime),
+    UpdatedSystem = System#system{structures=UpdatedStructures},
+    {ok, system_updated} = galaxy_srv:update_system(UpdatedSystem),
     simulate_planets(Planets, GalaxyId, DeltaTime).
 
 simulate_planets([], _GalaxyId, _DeltaTime) ->
@@ -112,7 +120,7 @@ simulate_planets([PlanetName | Rest], GalaxyId, DeltaTime) ->
 simulate_planet(GalaxyId, PlanetName, DeltaTime) ->
     {ok, Planet} = galaxy_srv:get_planet(GalaxyId, PlanetName),
     Structures = Planet#planet.structures,
-    {ok, UpdatedStructures} = galaxy_structure_util:simulate_structures(
+    {ok, UpdatedStructures} = resource_structure:simulate_structures(
         Structures, DeltaTime),
     UpdatedPlanet = Planet#planet{structures=UpdatedStructures},
     {ok, planet_updated} = galaxy_srv:update_planet(UpdatedPlanet).

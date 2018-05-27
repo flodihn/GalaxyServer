@@ -2,10 +2,10 @@
 <html>
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
-<title>/Volumes/Work/Projects/StarWarsSquadrons/GalaxyServer/.eunit/mnesia_galaxy.COVER.html</title>
+<title>/Volumes/Work/Projects/GalaxyServer/galaxy_srv/.eunit/mnesia_galaxy.COVER.html</title>
 </head><body style='background-color: white; color: black'>
 <pre>
-File generated from /Volumes/Work/Projects/StarWarsSquadrons/GalaxyServer/.eunit/mnesia_galaxy.erl by COVER 2017-12-11 at 14:08:50
+File generated from /Volumes/Work/Projects/GalaxyServer/galaxy_srv/.eunit/mnesia_galaxy.erl by COVER 2018-05-27 at 20:08:50
 
 ****************************************************************************
 
@@ -16,6 +16,7 @@ File generated from /Volumes/Work/Projects/StarWarsSquadrons/GalaxyServer/.eunit
         |  -define(DB_STRUCTURE_TYPE_TABLE, structure_types).
         |  
         |  -include("galaxy_defs.hrl").
+        |  -include("resource_defs.hrl").
         |  
         |  -export([
         |      init/0
@@ -23,12 +24,21 @@ File generated from /Volumes/Work/Projects/StarWarsSquadrons/GalaxyServer/.eunit
         |  
         |  -export([
         |      create_galaxy/2,
+        |      update_galaxy/2,
+        |  	destroy_galaxy/2,
         |      get_galaxies/1,
+        |  	get_galaxy/2,
         |      create_region/2,
+        |      get_regions/2,
+        |      get_region/3,
+        |      add_region_to_galaxy_record/3,
         |      system_exists/3,
         |      create_system/2,
         |      get_systems/2,
         |      get_system/3,
+        |  	remove_system/3,
+        |  	connect_system/4,
+        |  	disconnect_system/4,
         |      create_planet/2,
         |      get_planet/3,
         |      update_planet/2,
@@ -38,7 +48,9 @@ File generated from /Volumes/Work/Projects/StarWarsSquadrons/GalaxyServer/.eunit
         |      get_structure_type/2,
         |      get_resource/5,
         |      add_resource/5,
-        |      add_structure/5
+        |      add_structure/5,
+        |  	consistency_fix/1,
+        |  	create_galaxy_tables/1
         |      ]).
         |  
         |  init() -&gt;
@@ -69,6 +81,16 @@ File generated from /Volumes/Work/Projects/StarWarsSquadrons/GalaxyServer/.eunit
 <font color=red>     0..|      PlanetsAttributes = record_info(fields, planet),</font>
 <font color=red>     0..|      create_table(PlanetsTable, planet, PlanetsAttributes, [galaxy_id], set).</font>
         |  
+        |  destroy_galaxy_tables(GalaxyId) -&gt;
+<font color=red>     0..|      RegionsTable = get_regions_table(GalaxyId),</font>
+<font color=red>     0..|      mnesia:delete_table(RegionsTable),</font>
+        |  
+<font color=red>     0..|      SystemsTable = get_systems_table(GalaxyId),</font>
+<font color=red>     0..|      mnesia:delete_table(SystemsTable),</font>
+        |  
+<font color=red>     0..|      PlanetsTable = get_planets_table(GalaxyId),</font>
+<font color=red>     0..|      mnesia:delete_table(PlanetsTable).</font>
+        |  
         |  create_table(TableName, RecordName, Attributes, IndexList, Type) -&gt;
 <font color=red>     0..|      case lists:member(TableName, mnesia:system_info(tables)) of</font>
         |          true -&gt;
@@ -97,15 +119,52 @@ File generated from /Volumes/Work/Projects/StarWarsSquadrons/GalaxyServer/.eunit
 <font color=red>     0..|      mnesia:change_config(extra_db_nodes, [node()]),</font>
 <font color=red>     0..|      mnesia:change_table_copy_type(schema, node(), disc_copies).</font>
         |  
-        |  system_exists(GalaxyId, SystemName, _State) -&gt;
-<font color=red>     0..|      SystemsTable = get_systems_table(GalaxyId),</font>
-<font color=red>     0..|      case mnesia:dirty_read(SystemsTable, SystemName) of</font>
-<font color=red>     0..|          [_Record] -&gt; true;</font>
-<font color=red>     0..|          [] -&gt; false</font>
+        |  consistency_fix(GalaxyId) -&gt;
+<font color=red>     0..|      RegionsTable = get_regions_table(GalaxyId),</font>
+<font color=red>     0..|  	{ok, Regions} = read_all_records(RegionsTable),</font>
+<font color=red>     0..|  	Results = [region_consistency_fix(GalaxyId, Region) || Region &lt;- Regions],</font>
+<font color=red>     0..|  	{ok, Results}.</font>
+        |  
+        |  region_consistency_fix(GalaxyId, Region) -&gt;
+<font color=red>     0..|  	SystemNames = Region#region.systems,</font>
+<font color=red>     0..|  	purge_non_existing_systems_from_region(GalaxyId, Region, SystemNames).</font>
+        |  
+        |  purge_non_existing_systems_from_region(GalaxyId, PossibleUpdatedRegion, []) -&gt;
+<font color=red>     0..|  	RegionsTable = get_regions_table(GalaxyId),</font>
+<font color=red>     0..|  	T = fun() -&gt;</font>
+<font color=red>     0..|  		mnesia:write(RegionsTable, PossibleUpdatedRegion, write)</font>
+        |  	end,
+<font color=red>     0..|  	case mnesia:transaction(T) of</font>
+<font color=red>     0..|  		{atomic, ok} -&gt; {consistency_fixed_on_region, PossibleUpdatedRegion#region.name};</font>
+<font color=red>     0..|  		Error -&gt; {consistency_failed_on_region, PossibleUpdatedRegion#region.name, Error}</font>
+        |  	end;
+        |  	
+        |  purge_non_existing_systems_from_region(GalaxyId, Region, [SystemName | SystemsNames]) -&gt;
+<font color=red>     0..|  	case system_exists(GalaxyId, SystemName) of</font>
+        |  		true -&gt; 
+<font color=red>     0..|  			pass;</font>
+        |  		false -&gt;
+<font color=red>     0..|  			SystemList = Region#region.systems,</font>
+<font color=red>     0..|  			UpdatedSystemList = lists:delete(SystemName, SystemList),</font>
+<font color=red>     0..|  			UpdatedRegion = Region#region{systems = UpdatedSystemList},</font>
+<font color=red>     0..|  			purge_non_existing_systems_from_region(GalaxyId, UpdatedRegion, SystemsNames)</font>
+        |  	end.
+        |  
+        |  
+        |  read_galaxy(GalaxyId) -&gt;
+<font color=red>     0..|  	T = fun() -&gt;</font>
+<font color=red>     0..|          mnesia:read(?DB_GALAXY_TABLE, GalaxyId)</font>
+        |      end,
+<font color=red>     0..|      case mnesia:transaction(T) of</font>
+        |          {atomic, [Galaxy]} -&gt;
+<font color=red>     0..|              {ok, Galaxy};</font>
+        |  		{atomic, []} -&gt;
+<font color=red>     0..|              {error, not_found};</font>
+        |          {aborted, Reason} -&gt;
+<font color=red>     0..|              {error, Reason}</font>
         |      end.
         |  
         |  create_galaxy(Galaxy, _State) -&gt; 
-<font color=red>     0..|      io:format("Creating galaxy: ~p.~n", [Galaxy#galaxy.id]),</font>
 <font color=red>     0..|      create_galaxy_tables(Galaxy#galaxy.id),</font>
 <font color=red>     0..|      T = fun() -&gt;</font>
 <font color=red>     0..|          mnesia:write(?DB_GALAXY_TABLE, Galaxy, write)</font>
@@ -116,6 +175,32 @@ File generated from /Volumes/Work/Projects/StarWarsSquadrons/GalaxyServer/.eunit
         |          {aborted, Reason} -&gt;
 <font color=red>     0..|              {error, Reason}</font>
         |      end.
+        |  
+        |  update_galaxy(Galaxy, _State) -&gt; 
+<font color=red>     0..|      T = fun() -&gt;</font>
+<font color=red>     0..|          mnesia:write(?DB_GALAXY_TABLE, Galaxy, write)</font>
+        |      end,
+<font color=red>     0..|      case mnesia:transaction(T) of</font>
+        |          {atomic, ok} -&gt;
+<font color=red>     0..|              {ok, galaxy_updated};</font>
+        |          {aborted, Reason} -&gt;
+<font color=red>     0..|              {error, Reason}</font>
+        |      end.
+        |  
+        |  destroy_galaxy(GalaxyId, _State) -&gt;
+<font color=red>     0..|  	destroy_galaxy_tables(GalaxyId),</font>
+<font color=red>     0..|      T = fun() -&gt;</font>
+<font color=red>     0..|          mnesia:delete(?DB_GALAXY_TABLE, GalaxyId, write)</font>
+        |      end,
+<font color=red>     0..|      case mnesia:transaction(T) of</font>
+        |          {atomic, ok} -&gt;
+<font color=red>     0..|              {ok, galaxy_destroyed};</font>
+        |          {aborted, Reason} -&gt;
+<font color=red>     0..|              {error, Reason}</font>
+        |      end.
+        |  
+        |  get_galaxy(GalaxyId, _State) -&gt;
+<font color=red>     0..|  	read_galaxy(GalaxyId).</font>
         |  
         |  get_galaxies(_State) -&gt;
 <font color=red>     0..|      Iterator = fun(Record, Acc) -&gt; lists:append(Acc, [Record]) end,</font>
@@ -133,11 +218,6 @@ File generated from /Volumes/Work/Projects/StarWarsSquadrons/GalaxyServer/.eunit
 <font color=red>     0..|      GalaxyId = Region#region.galaxy_id,</font>
 <font color=red>     0..|      RegionTable = get_regions_table(GalaxyId),</font>
 <font color=red>     0..|      T = fun() -&gt;</font>
-<font color=red>     0..|          [Galaxy] = mnesia:read(?DB_GALAXY_TABLE, GalaxyId, write),</font>
-<font color=red>     0..|          mnesia:write(?DB_GALAXY_TABLE, Galaxy#galaxy{</font>
-        |              regions=lists:append(
-        |                  Galaxy#galaxy.regions, [Region#region.name])},
-        |              write),
 <font color=red>     0..|          mnesia:write(RegionTable, Region, write)</font>
         |      end,
 <font color=red>     0..|      case mnesia:transaction(T) of</font>
@@ -150,12 +230,50 @@ File generated from /Volumes/Work/Projects/StarWarsSquadrons/GalaxyServer/.eunit
         |  create_region(_Region, _State) -&gt;
 <font color=red>     0..|      {error, bad_region_record}.</font>
         |  
+        |  add_region_to_galaxy_record(GalaxyId, RegionName, State) -&gt;
+<font color=red>     0..|      T = fun() -&gt;</font>
+<font color=red>     0..|          [Galaxy] = mnesia:read(?DB_GALAXY_TABLE, GalaxyId, read),</font>
+<font color=red>     0..|          case lists:member(RegionName, Galaxy#galaxy.regions) of</font>
+        |          	true -&gt;
+<font color=red>     0..|              	pass;</font>
+        |              false -&gt;
+<font color=red>     0..|              	MergedRegions = lists:merge(Galaxy#galaxy.regions, [RegionName]),</font>
+<font color=red>     0..|                  mnesia:write(?DB_GALAXY_TABLE, Galaxy#galaxy{regions=MergedRegions}, write)</font>
+        |              end
+        |       end,
+<font color=red>     0..|       case mnesia:transaction(T) of</font>
+        |          {atomic, ok} -&gt;
+<font color=red>     0..|              {ok, region_added};</font>
+        |          {aborted, Reason} -&gt;
+<font color=red>     0..|              {error, Reason}</font>
+        |      end.
+        |  
+        |  get_regions(GalaxyId, _State) -&gt;
+<font color=red>     0..|      RegionsTable = get_regions_table(GalaxyId),</font>
+<font color=red>     0..|      read_all_records(RegionsTable).</font>
+        |  
+        |  get_region(GalaxyId, RegionName, _State) -&gt;
+<font color=red>     0..|      RegionsTable = get_regions_table(GalaxyId),</font>
+<font color=red>     0..|      T = fun() -&gt;</font>
+<font color=red>     0..|          mnesia:read(RegionsTable, RegionName)</font>
+        |      end,
+<font color=red>     0..|      case mnesia:transaction(T) of</font>
+        |          {atomic, []} -&gt;
+<font color=red>     0..|              {error, region_not_found};</font>
+        |          {atomic, [Region]} -&gt;
+<font color=red>     0..|              {ok, Region};</font>
+        |          {aborted, Reason} -&gt;
+<font color=red>     0..|              {error, Reason}</font>
+        |      end.
+        |  
         |  create_system(System = #system{}, _State) -&gt;
 <font color=red>     0..|      SystemsTable = get_systems_table(System#system.galaxy_id),</font>
 <font color=red>     0..|      RegionsTable = get_regions_table(System#system.galaxy_id),</font>
 <font color=red>     0..|      T = fun() -&gt;</font>
 <font color=red>     0..|          [Region] = mnesia:read(RegionsTable, System#system.region),</font>
 <font color=red>     0..|          mnesia:write(SystemsTable, System, write),</font>
+        |  		
+        |  		
 <font color=red>     0..|          mnesia:write(RegionsTable, Region#region{systems=lists:append(</font>
         |              Region#region.systems, [System#system.name])}, write)
         |      end,
@@ -169,18 +287,27 @@ File generated from /Volumes/Work/Projects/StarWarsSquadrons/GalaxyServer/.eunit
         |  create_system(_System, _State) -&gt;
 <font color=red>     0..|      {error, bad_system_record}.</font>
         |  
-        |  get_systems(GalaxyId, _State) -&gt;
-<font color=red>     0..|      SystemsTable = get_systems_table(GalaxyId),</font>
-<font color=red>     0..|      Iterator = fun(Record, Acc) -&gt; lists:append(Acc, [Record]) end,</font>
-<font color=red>     0..|      T = fun() -&gt;</font>
-<font color=red>     0..|          mnesia:foldl(Iterator, [], SystemsTable)</font>
+        |  remove_system(GalaxyId, SystemName, _State) -&gt;
+<font color=red>     0..|  	SystemsTable = get_systems_table(GalaxyId),</font>
+<font color=red>     0..|  	RegionsTable = get_regions_table(GalaxyId),</font>
+<font color=red>     0..|  	T = fun() -&gt;</font>
+<font color=red>     0..|  		[System] = mnesia:read(SystemsTable, SystemName, read),	</font>
+<font color=red>     0..|  		[Region] = mnesia:read(RegionsTable, System#system.region),</font>
+<font color=red>     0..|          mnesia:delete(SystemsTable, SystemName, write),</font>
+<font color=red>     0..|  		RegionSystems = Region#region.systems,</font>
+<font color=red>     0..|  		UpdatedRegionSystems = lists:delete(System#system.name, RegionSystems),</font>
+<font color=red>     0..|          mnesia:write(RegionsTable, Region#region{systems=UpdatedRegionSystems}, write)</font>
         |      end,
 <font color=red>     0..|      case mnesia:transaction(T) of</font>
-        |          {atomic, AllSystems} -&gt;
-<font color=red>     0..|              {ok, AllSystems};</font>
+        |          {atomic, ok} -&gt;
+<font color=red>     0..|              {ok, system_removed};</font>
         |          {aborted, Reason} -&gt;
 <font color=red>     0..|              {error, Reason}</font>
         |      end.
+        |  
+        |  get_systems(GalaxyId, _State) -&gt;
+<font color=red>     0..|      SystemsTable = get_systems_table(GalaxyId),</font>
+<font color=red>     0..|      read_all_records(SystemsTable).</font>
         |  
         |  get_system(GalaxyId, SystemName, _State) -&gt;
 <font color=red>     0..|      SystemsTable = get_systems_table(GalaxyId),</font>
@@ -193,6 +320,54 @@ File generated from /Volumes/Work/Projects/StarWarsSquadrons/GalaxyServer/.eunit
         |          {aborted, _Reason} -&gt;
 <font color=red>     0..|              {error, system_not_found}</font>
         |      end.
+        |  
+        |  system_exists(GalaxyId, SystemName) -&gt;
+<font color=red>     0..|      system_exists(GalaxyId, SystemName, undefined).</font>
+        |  
+        |  system_exists(GalaxyId, SystemName, _State) -&gt;
+<font color=red>     0..|      SystemsTable = get_systems_table(GalaxyId),</font>
+<font color=red>     0..|      case mnesia:dirty_read(SystemsTable, SystemName) of</font>
+<font color=red>     0..|          [_Record] -&gt; true;</font>
+<font color=red>     0..|          [] -&gt; false</font>
+        |      end.
+        |  
+        |  connect_system(GalaxyId, OriginSystem, DestinationSystem, _State) -&gt;
+<font color=red>     0..|  	SystemsTable = get_systems_table(GalaxyId),</font>
+<font color=red>     0..|  	T = fun() -&gt;</font>
+<font color=red>     0..|          [System] = mnesia:read(SystemsTable, OriginSystem),</font>
+<font color=red>     0..|  		case lists:member(DestinationSystem, System#system.routes) of</font>
+        |  			true -&gt;
+<font color=red>     0..|  				ok;</font>
+        |  			false -&gt;
+<font color=red>     0..|  				mnesia:write(SystemsTable, System#system{routes=lists:append(</font>
+        |              		System#system.routes, [DestinationSystem])}, write)
+        |  		end
+        |  	end,
+<font color=red>     0..|  	case mnesia:transaction(T) of</font>
+        |  		{atomic, ok} -&gt;
+<font color=red>     0..|  			{ok, system_connected};</font>
+        |  		{aborted, Reason} -&gt;
+<font color=red>     0..|  			{error, Reason}</font>
+        |  	end.
+        |  
+        |  disconnect_system(GalaxyId, OriginSystem, DestinationSystem, _State) -&gt;
+<font color=red>     0..|  	SystemsTable = get_systems_table(GalaxyId),</font>
+<font color=red>     0..|  	T = fun() -&gt;</font>
+<font color=red>     0..|          [System] = mnesia:read(SystemsTable, OriginSystem),</font>
+<font color=red>     0..|  		case lists:member(DestinationSystem, System#system.routes) of</font>
+        |  			true -&gt;
+<font color=red>     0..|  				mnesia:write(SystemsTable, System#system{routes=lists:delete(</font>
+        |              		DestinationSystem, System#system.routes)}, write);
+        |  			false -&gt;
+<font color=red>     0..|  				ok</font>
+        |  		end
+        |  	end,
+<font color=red>     0..|  	case mnesia:transaction(T) of</font>
+        |  		{atomic, ok} -&gt;
+<font color=red>     0..|  			{ok, system_disconnected};</font>
+        |  		{aborted, Reason} -&gt;
+<font color=red>     0..|  			{error, Reason}</font>
+        |  	end.
         |  
         |  create_planet(Planet = #planet{}, _State) -&gt;
 <font color=red>     0..|      SystemsTable = get_systems_table(Planet#planet.galaxy_id),</font>
@@ -318,12 +493,12 @@ File generated from /Volumes/Work/Projects/StarWarsSquadrons/GalaxyServer/.eunit
         |  add_resource(_GalaxyId, _LinkId, _BadLinkType , _Resource, _State) -&gt;
 <font color=red>     0..|      {error, bad_link_type}.</font>
         |  
-        |  add_structure(GalaxyId, StructureName, LinkId, planet, _State) -&gt;
+        |  add_structure(GalaxyId, Structure, LinkId, planet, _State) -&gt;
 <font color=red>     0..|      PlanetsTable = get_planets_table(GalaxyId),</font>
 <font color=red>     0..|      T = fun() -&gt;</font>
 <font color=red>     0..|          [Planet] = mnesia:read(PlanetsTable, LinkId),</font>
 <font color=red>     0..|          mnesia:write(PlanetsTable, Planet#planet{structures=lists:append(</font>
-        |              Planet#planet.structures, [StructureName])}, write)
+        |              Planet#planet.structures, [Structure])}, write)
         |      end,
 <font color=red>     0..|      case mnesia:transaction(T) of</font>
         |          {atomic, ok} -&gt;
@@ -332,7 +507,21 @@ File generated from /Volumes/Work/Projects/StarWarsSquadrons/GalaxyServer/.eunit
 <font color=red>     0..|              {error, Reason}</font>
         |      end;
         |  
-        |  add_structure(_GalaxyId, _StructureTye, _LinkId, _BadLinkType , _State) -&gt;
+        |  add_structure(GalaxyId, Structure, LinkId, system, _State) -&gt;
+<font color=red>     0..|      SystemsTable = get_systems_table(GalaxyId),</font>
+<font color=red>     0..|      T = fun() -&gt;</font>
+<font color=red>     0..|          [System] = mnesia:read(SystemsTable, LinkId),</font>
+<font color=red>     0..|          mnesia:write(SystemsTable, System#system{structures=lists:append(</font>
+        |              System#system.structures, [Structure])}, write)
+        |      end,
+<font color=red>     0..|      case mnesia:transaction(T) of</font>
+        |          {atomic, ok} -&gt;
+<font color=red>     0..|              {ok, structure_added};</font>
+        |          {aborted, Reason} -&gt;
+<font color=red>     0..|              {error, Reason}</font>
+        |      end;
+        |  
+        |  add_structure(_GalaxyId, _Structure, _LinkId, _BadLinkType, _State) -&gt;
 <font color=red>     0..|      {error, bad_link_type}.</font>
         |  
         |  get_regions_table(GalaxyId) -&gt;
@@ -343,6 +532,20 @@ File generated from /Volumes/Work/Projects/StarWarsSquadrons/GalaxyServer/.eunit
         |  
         |  get_planets_table(GalaxyId) -&gt;
 <font color=red>     0..|      list_to_atom(binary_to_list(GalaxyId) ++ "_planets").</font>
+        |  
+        |  read_all_records(Table) -&gt;
+<font color=red>     0..|      Iterator = fun(Record, Acc) -&gt; lists:append(Acc, [Record]) end,</font>
+<font color=red>     0..|      T = fun() -&gt;</font>
+<font color=red>     0..|          mnesia:foldl(Iterator, [], Table)</font>
+        |      end,
+<font color=red>     0..|      case mnesia:transaction(T) of</font>
+        |          {atomic, AllRecords} -&gt;
+<font color=red>     0..|              {ok, AllRecords};</font>
+        |          {aborted, Reason} -&gt;
+<font color=red>     0..|              {error, Reason}</font>
+        |      end.
+        |  
+        |  
 </pre>
 </body>
 </html>

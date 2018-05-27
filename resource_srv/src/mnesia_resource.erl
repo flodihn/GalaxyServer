@@ -16,7 +16,8 @@
     get_resource_type/2,
 	remove_resource_type/2,
 	get_structure_types/1,
-    get_structure_type/2
+    get_structure_type/2,
+	remove_structure_type/2
     ]).
 
 init() ->
@@ -123,6 +124,16 @@ get_structure_type(StructureName, _State) ->
             {error, planet_not_found}
     end.
 
+remove_structure_type(StructureType, _State) ->
+	T = fun() ->
+        mnesia:delete(?DB_STRUCTURE_TYPE_TABLE, StructureType, write)
+    end,
+    case mnesia:transaction(T) of
+        {atomic, ok} ->
+            {ok, structure_type_removed};
+        {aborted, Reason} ->
+            {error, Reason}
+    end.
 
 read_all_records(Table) ->
     Iterator = fun(Record, Acc) -> lists:append(Acc, [Record]) end,
