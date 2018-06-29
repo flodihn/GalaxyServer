@@ -38,7 +38,7 @@ upgrade(Module) ->
     code:load_file(Module).
 
 init(Args) ->
-    galaxy_srv:set_simulation_callback(sws_system_simulation_callback),
+    %galaxy_srv:set_simulation_callback(sws_system_simulation_callback),
     {ok, Args}.
 
 handle_call(_Request, _From, State) ->

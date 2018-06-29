@@ -16,22 +16,28 @@
 	galaxy_to_json/1,
 	regions_to_json/1,
 	systems_to_json/1,
+	system_to_json/1,
 	resource_types_to_json/1,
 	structure_types_to_json/1,
+	structure_to_json/1,
+	json_to_structure_type_name/1,
 	json_to_record/2]).
 
 response200({struct, Json}) ->
 	{200, [], json2:encode({struct, Json})};
 
 response200(Message) ->
-	{200, [], json2:encode({struct, [{<<"status">>, <<"ok">>}, {<<"message">>, Message}]})}.
+	{200, [], json2:encode({struct, [{<<"status">>, <<"ok">>},
+		{<<"message">>, Message}]})}.
 
 response404() ->
-	{404, [], json2:encode({struct, [{<<"status">>, <<"error">>}, {<<"message">>, <<"Not Found">>}]})}.
+	{404, [], json2:encode({struct, [{<<"status">>, <<"error">>},
+		{<<"message">>, <<"Not Found">>}]})}.
 
 response500() ->
 	{500, [], json2:encode({struct, [
-		{<<"status">>, <<"error">>}, {<<"message">>, <<"Internal Server Error">>}]})}.
+		{<<"status">>, <<"error">>}, {<<"message">>,
+		<<"Internal Server Error">>}]})}.
 
 galaxies_to_json(GalaxyList) ->
 	galaxies_to_json(GalaxyList, []).
@@ -73,6 +79,11 @@ systems_to_json([System | Systems], Acc) ->
 	JsonPropList = [proplist_values_to_json(Value) || Value <- PropList],
 	systems_to_json(Systems, [{struct, JsonPropList} | Acc]).
 
+system_to_json(#system{} = System) ->
+	PropList = record_to_proplist(System),
+	JsonPropList = [proplist_values_to_json(Value) || Value <- PropList],
+	json2:encode({struct, [{system, {struct, JsonPropList}}]}).
+
 resource_types_to_json(ResourceTypes) ->
 	resource_types_to_json(ResourceTypes, []).
 
@@ -95,6 +106,11 @@ structure_types_to_json([StructureType | StructureTypes], Acc) ->
 	JsonPropList = [proplist_values_to_json(Value) || Value <- PropList],
 	structure_types_to_json(StructureTypes, [{struct, JsonPropList} | Acc]).
 
+structure_to_json(Structure) ->
+	PropList = record_to_proplist(Structure),
+	JsonPropList = [proplist_values_to_json(Value) || Value <- PropList],
+	{struct, [{structure, {struct, JsonPropList}}]}.
+
 record_to_proplist(#galaxy{} = Rec) ->
 	lists:zip(record_info(fields, galaxy), tl(tuple_to_list(Rec)));
 
@@ -110,30 +126,60 @@ record_to_proplist(#resource_type{} = Rec) ->
 record_to_proplist(#structure_type{} = Rec) ->
 	lists:zip(record_info(fields, structure_type), tl(tuple_to_list(Rec)));
 
+record_to_proplist(#structure{} = Rec) ->
+	lists:zip(record_info(fields, structure), tl(tuple_to_list(Rec)));
+
 record_to_proplist(Rec) ->
 	error_logger:error_report({?MODULE, record_to_proplist, 
 		unknown_record, Rec}).
 
 proplist_values_to_json(#resource{name=Name, amount=Amount}) ->
-	{resource, {struct, [{name, Name}, {amount, Amount}]}};
+	{struct, [{name, Name}, {amount, Amount}]};
 
-proplist_values_to_json(#structure{uid=Uid, name=Name, build_queue=BuildQueue,
-								   output_resources=OutputResources,
-								   input_resources=InputResources,
-								   output_storage_space=OutputStorageSpace,
-								   input_storage_space=InputStorageSpace}) ->
-	{struct, [{structure, {struct, [
-						  {uid, Uid},
-						  {name, Name},
-						  {build_queue, {array, []}},
-						  {output_resources, {array, []}},
-						  {input_resources, {array, []}},
-						  {output_storage_space, OutputStorageSpace},
-						  {input_storage_space, InputStorageSpace}
-						  ]}}]};
+proplist_values_to_json(#resource_type{name=Name, category=Category,
+		storage_space=StorageSpace, display_name=DisplayName,
+		build_materials=BuildMaterials, build_time=BuildTime,
+		metadata=MetaData}) ->
+	{resource_type, {struct, [
+		{name, Name},
+		{category, Category},
+		{storage_space, StorageSpace},
+		{build_materials, BuildMaterials},
+		{build_time, BuildTime},
+		{meta_data, MetaData}
+	]}};
+
+proplist_values_to_json(#structure{
+		uid=Uid,
+		name=Name,
+		build_queue=BuildQueue,
+		output_resources=OutputResources,
+		input_resources=InputResources,
+		output_storage_space=OutputStorageSpace,
+		input_storage_space=InputStorageSpace}) ->
+    error_logger:info_report({?MODULE, structure_values_to_json}),
+	OutputResourcesJson = [proplist_values_to_json(Value) || 
+		Value <- OutputResources],
+	InputResourcesJson = [proplist_values_to_json(Value) || 
+		Value <- InputResources],
+	{struct, [
+				{uid, Uid},
+				{name, Name},
+				{build_queue, {array, []}},
+				{output_resources, {array, OutputResourcesJson}},
+				{input_resources, {array, InputResourcesJson}},
+				{output_storage_space, OutputStorageSpace},
+				{input_storage_space, InputStorageSpace}
+				]};
 
 proplist_values_to_json({Key, {X, Y, Z}}) ->
 	{Key, {struct, [{x, X}, {y, Y}, {z, Z}]}};
+
+proplist_values_to_json({routes, List}) ->
+	{routes, {array, List}};
+
+proplist_values_to_json({regions, List}) ->
+	{regions, {array, List}};
 
 proplist_values_to_json({Key, List}) when is_list(List) ->
 	case List of
@@ -144,14 +190,9 @@ proplist_values_to_json({Key, List}) when is_list(List) ->
 				true -> 
 					{Key, list_to_binary(List)};
 				false ->
-					SubJsonPropList = [proplist_values_to_json(Value) || Value <- List],
+					SubJsonPropList = [proplist_values_to_json(Value) || 
+						Value <- List],
 					{Key, {array, SubJsonPropList}}
-					%{Key, {array, [
-					%			   {struct, [{resource, {struct, [
-					%											  {uid, <<"foobar">>}
-					%											 ]}}]}
-					%			  ]
-					%	  }}
 			end
 	end;
 
@@ -159,7 +200,7 @@ proplist_values_to_json({Key, Value}) ->
 	{Key, Value};
 
 proplist_values_to_json(BadPropListValue) ->
-	{error, bad_proplist_value}.
+	{error, bad_proplist_value, BadPropListValue}.
 
 json_to_record(galaxy, Json) ->
 	{struct, [{"galaxy", {struct, [
@@ -211,7 +252,13 @@ json_to_record(hyperspace_route, Json) ->
 		{"origin", OriginSystem},
 		{"destination", DestinationSystem}
 	]} = Json,
-	Record =  #hyperspace_route{origin=list_to_binary(OriginSystem),
-								destination=list_to_binary(DestinationSystem)},
+	Record =  #hyperspace_route{
+		origin=list_to_binary(OriginSystem),
+		destination=list_to_binary(DestinationSystem)},
 	{ok, Record}.
 
+json_to_structure_type_name(Json) ->
+	{struct, [
+		{"structure_type", StructureTypeName}
+	]} = Json,
+	{ok, list_to_binary(StructureTypeName)}.

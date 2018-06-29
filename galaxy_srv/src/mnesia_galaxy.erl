@@ -32,13 +32,10 @@
     create_planet/2,
     get_planet/3,
     update_planet/2,
-    create_resource_type/2,
-    create_structure_type/2,
-    get_resource_type/2,
-    get_structure_type/2,
     get_resource/5,
     add_resource/5,
     add_structure/5,
+    remove_structure/5,
 	consistency_fix/1,
 	create_galaxy_tables/1
     ]).
@@ -411,52 +408,6 @@ get_planet(GalaxyId, PlanetName, _State) ->
             {error, planet_not_found}
     end.
 
-create_resource_type(ResourceType, _State) ->
-    T = fun() ->
-        mnesia:write(?DB_RESOURCE_TYPE_TABLE, ResourceType, write)
-    end,
-    case mnesia:transaction(T) of
-        {atomic, ok} ->
-            {ok, resource_type_created};
-        {aborted, Reason} ->
-            {error, Reason}
-    end.
-
-get_resource_type(ResourceName, _State) ->
-    T = fun() ->
-        mnesia:read(?DB_RESOURCE_TYPE_TABLE, ResourceName)
-    end,
-    case mnesia:transaction(T) of
-        {atomic, [ResourceType]} ->
-            {ok, ResourceType};
-        {atomic, []} ->
-            {error, not_found};
-        {aborted, Reason} ->
-            {error, Reason}
-    end.
-
-create_structure_type(StructureType, _State) ->
-    T = fun() ->
-        mnesia:write(?DB_STRUCTURE_TYPE_TABLE, StructureType, write)
-    end,
-    case mnesia:transaction(T) of
-        {atomic, ok} ->
-            {ok, structure_type_created};
-        {aborted, Reason} ->
-            {error, Reason}
-    end.
-
-get_structure_type(StructureName, _State) ->
-    T = fun() ->
-        mnesia:read(?DB_STRUCTURE_TYPE_TABLE, StructureName)
-    end,
-    case mnesia:transaction(T) of
-        {atomic, [StructureType]} ->
-            {ok, StructureType};
-        {aborted, _Reason} ->
-            {error, planet_not_found}
-    end.
-
 get_resource(GalaxyId, LinkId, planet, Resource, _State) ->
     PlanetsTable = get_planets_table(GalaxyId),
     T = fun() ->
@@ -524,6 +475,28 @@ add_structure(GalaxyId, Structure, LinkId, system, _State) ->
     end;
 
 add_structure(_GalaxyId, _Structure, _LinkId, _BadLinkType, _State) ->
+    {error, bad_link_type}.
+
+remove_structure(GalaxyId, StructureUid, LinkId, system, _State) ->
+    DropFun = fun(X) ->
+        X#structure.uid == StructureUid
+    end,
+    SystemsTable = get_systems_table(GalaxyId),
+    T = fun() ->
+        [System] = mnesia:read(SystemsTable, LinkId),
+        UpdatedStructureList = lists:dropwhile(DropFun,
+            System#system.structures),
+        UpdatedSystem = System#system{structures=UpdatedStructureList},
+        mnesia:write(SystemsTable, UpdatedSystem, write)
+    end,
+    case mnesia:transaction(T) of
+        {atomic, ok} ->
+            {ok, structure_removed};
+        {aborted, Reason} ->
+            {error, Reason}
+    end;
+
+remove_structure(_GalaxyId, _StructureUid, _LinkId, _BadLinkType, _State) ->
     {error, bad_link_type}.
 
 get_regions_table(GalaxyId) ->

@@ -35,18 +35,7 @@ handle('GET',[<<"galaxies">>, GalaxyId], _Req) ->
     end;
 
 handle('DELETE',[<<"galaxies">>, GalaxyId], _Req) ->
-    %% Reply with a normal response. 'ok' can be used instead of '200'
-    %% to signal success.
-	%case galaxy_srv:destroy_galaxy(GalaxyId) of
-%		{ok, galaxy_destroyed} ->
-%			{200, [], json2:encode({struct, [{<<"ok">>, <<"galaxy_destroyed">>}]})};
-%		{error, galaxy_not_found} ->
-%			{404, [], json2:encode({struct, [{<<"ok">>, <<"galaxy_destroyed">>}]})};
-%		{error, Reason} ->
-%			error_logger:error_report(Reason),
-%			{500, [], json2:encode({struct, [{<<"error">>, <<"internal_server_error">>}]})}
-	%end;
-	{200, [], json2:encode({struct, [{<<"ok">>, <<"galaxy_destroyed">>}]})};
+    rest_util:response404();
 
 handle('GET',[<<"galaxies">>, GalaxyId, <<"regions">>], _Req) ->
     case galaxy_srv:get_regions(GalaxyId) of 
@@ -72,6 +61,18 @@ handle('GET',[<<"galaxies">>, GalaxyId, <<"systems">>], _Req) ->
             rest_util:response500()
     end;
 
+handle('GET',[<<"galaxies">>, GalaxyId, <<"systems">>, SystemName], _Req) ->
+    case galaxy_srv:get_system(GalaxyId, SystemName) of 
+        {ok, System} ->
+            Response = rest_util:system_to_json(System),
+			{200, [], Response};
+        {error, not_found} ->
+            rest_util:response404();
+        {error, Reason} ->
+            error_logger:error_report(Reason),
+            rest_util:response500()
+    end;
+
 handle('PUT',[<<"galaxies">>, GalaxyId], Req) ->
     Body = elli_request:body(Req),
     {ok, JsonBody} = json2:decode_string(binary_to_list(Body)),
@@ -88,7 +89,6 @@ handle('PUT',[<<"galaxies">>, GalaxyId], Req) ->
 
  handle('POST',[<<"galaxies">>, GalaxyId, <<"systems">>], Req) ->
     Body = elli_request:body(Req),
-	error_logger:info_report({body, Body}),
     {ok, JsonBody} = json2:decode_string(binary_to_list(Body)),
     {ok, System} = rest_util:json_to_record(system, JsonBody),
 	
@@ -97,10 +97,12 @@ handle('PUT',[<<"galaxies">>, GalaxyId], Req) ->
             rest_util:response200(<<"system_created">>)
     end;
 
- handle('POST',[<<"galaxies">>, GalaxyId, <<"systems">>, SystemName, <<"hyperspaceroutes">>], Req) ->
+ handle('POST',[<<"galaxies">>, GalaxyId, <<"systems">>, SystemName,
+        <<"hyperspaceroutes">>], Req) ->
     Body = elli_request:body(Req),
     {ok, JsonBody} = json2:decode_string(binary_to_list(Body)),
-    {ok, HyperspaceRoute} = rest_util:json_to_record(hyperspace_route, JsonBody),
+    {ok, HyperspaceRoute} = rest_util:json_to_record(
+		hyperspace_route, JsonBody),
 	
     case galaxy_srv:connect_systems(GalaxyId, HyperspaceRoute) of
         {ok, systems_connected} ->
@@ -109,8 +111,35 @@ handle('PUT',[<<"galaxies">>, GalaxyId], Req) ->
 			rest_util:response500(list_to_binary(atom_to_list(Reason)))
     end;
 
- handle('DELETE',[<<"galaxies">>, GalaxyId, <<"systems">>, OriginSystem, <<"hyperspaceroutes">>, DestinationSystem], Req) ->
-	HyperspaceRoute = #hyperspace_route{origin=OriginSystem, destination=DestinationSystem},
+handle('POST',[<<"galaxies">>, GalaxyId, <<"systems">>, SystemName,
+        <<"structures">>], Req) ->
+    Body = elli_request:body(Req),
+    {ok, JsonBody} = json2:decode_string(binary_to_list(Body)),
+    {ok, StructureType} = rest_util:json_to_structure_type_name(JsonBody),
+	
+    case galaxy_srv:add_structure(GalaxyId, StructureType, SystemName,
+            system) of
+        {ok, structure_added, Structure} ->
+            StructureJson = rest_util:structure_to_json(Structure),
+            rest_util:response200(StructureJson);
+		{error, Reason} ->
+			rest_util:response500(list_to_binary(atom_to_list(Reason)))
+    end;
+
+handle('DELETE',[<<"galaxies">>, GalaxyId, <<"systems">>, SystemName,
+        <<"structures">>, Uid], Req) ->
+    case galaxy_srv:remove_structure(GalaxyId, Uid, SystemName, system) of
+        {ok, structure_removed} ->
+            rest_util:response200(<<"structure_removed">>);
+		{error, Reason} ->
+			rest_util:response500(list_to_binary(atom_to_list(Reason)))
+    end;
+
+ handle('DELETE',[<<"galaxies">>, GalaxyId, <<"systems">>, OriginSystem,
+        <<"hyperspaceroutes">>, DestinationSystem], Req) ->
+	HyperspaceRoute = #hyperspace_route{
+        origin=OriginSystem,
+        destination=DestinationSystem},
     case galaxy_srv:disconnect_systems(GalaxyId, HyperspaceRoute) of
         {ok, systems_disconnected} ->
             rest_util:response200(<<"systems_disconnected">>);
@@ -126,7 +155,7 @@ handle('DELETE',[<<"galaxies">>, GalaxyId, <<"systems">>, SystemName], _Req) ->
 			rest_util:response404();
 		{error, Reason} ->
 			error_logger:error_report(Reason),
-			{500, [], json2:encode({struct, [{<<"error">>, <<"internal_server_error">>}]})}
+			rest_util:respons500()
 	end;
 
 % TODO: Make resources specific for each galaxy.

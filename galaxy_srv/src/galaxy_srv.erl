@@ -21,7 +21,6 @@
 
 -export([
     start_simulation/0,
-    set_simulation_callback/1,
     create_galaxy/2,
     update_galaxy/1,
 	destroy_galaxy/1,
@@ -42,7 +41,8 @@
     get_planet/2,
     create_moon/3,
     create_asteroid_belt/3,
-    add_structure/4]).
+    add_structure/4,
+    remove_structure/4]).
 
 -record(state, {simulation_callback, implmod, implstate}).
 
@@ -58,9 +58,6 @@ start_link(ImplMod) ->
 %% ------------------------------------------------------------------
 start_simulation() ->
     gen_server:cast(?SERVER, start_simulation).
-
-set_simulation_callback(SimCallback) ->
-    gen_server:call(?SERVER, {set_simulation_callback, SimCallback}).
 
 create_galaxy(Id, Pos) when is_binary(Id) ->
     gen_server:call(?SERVER, {create_galaxy, Id, Pos}).
@@ -137,17 +134,12 @@ create_resource_type(Name, Category, StorageSpace, BuildMaterials,
 get_resource_type(Name) ->
     gen_server:call(?SERVER, {get_resource_type, Name}).
 
-create_structure_type(Name, Category, ProductionRate, Produces,
-        InputStorageSpace, OutputStorageSpace, DisplayName) ->
-    gen_server:call(?SERVER, {create_structure_type, Name, Category,
-        ProductionRate, Produces, InputStorageSpace, OutputStorageSpace,
-        DisplayName}).
-
-get_structure_type(Name) ->
-    gen_server:call(?SERVER, {get_structure_type, Name}).
-
 add_structure(GalaxyId, Structure, LinkId, LinkType) ->
     gen_server:call(?SERVER, {add_structure, GalaxyId, Structure,
+        LinkId, LinkType}).
+
+remove_structure(GalaxyId, StructureUid, LinkId, LinkType) ->
+    gen_server:call(?SERVER, {remove_structure, GalaxyId, StructureUid,
         LinkId, LinkType}).
 
 %% ------------------------------------------------------------------
@@ -157,9 +149,6 @@ add_structure(GalaxyId, Structure, LinkId, LinkType) ->
 init([ImplMod]) ->
     State = ImplMod:init(),
     {ok, #state{implmod=ImplMod, implstate=State}}.
-
-handle_call({set_simulation_callback, SimCallback}, _From, State) ->
-    {reply, ok, State#state{simulation_callback = SimCallback}};
 
 handle_call({create_galaxy, Id, Pos}, _From,
            #state{implmod=ImplMod, implstate=ImplState} = State) ->
@@ -216,7 +205,7 @@ handle_call({get_regions, GalaxyId}, _From,
 handle_call({create_system, #system{} = System},
         _From, #state{implmod=ImplMod, implstate=ImplState} = State) ->
     {ok, system_created} = ImplMod:create_system(System, ImplState),
-    %galaxy_sim:simulate_system(System),
+    galaxy_sim:simulate_system(System),
     {reply, {ok, system_created}, State};
 
 handle_call({create_system, GalaxyId, Region, Name, Pos, DisplayName},
@@ -347,55 +336,48 @@ handle_call({get_resource_type, Name}, _From, #state{implmod=ImplMod,
     {ok, ResourceType} = ImplMod:get_resource_type(Name, ImplState),
     {reply, {ok, ResourceType}, State};
 
-handle_call({create_structure_type, Name, Category, ProductionRate,
-        Produces, InputStorageSpace, OutputStorageSpace, DisplayName},
-        _From, #state{implmod=ImplMod, implstate=ImplState} = State) ->
-    {ok, structure_type_created} = ImplMod:create_structure_type(
-        #structure_type{name=Name, category=Category,
-            production_rate = ProductionRate, produces = Produces,
-            input_storage_space = InputStorageSpace,
-            output_storage_space = OutputStorageSpace,
-            display_name = DisplayName}, ImplState),
-    {reply, ok, State};
-
-handle_call({get_structure_type, Name}, _From, #state{implmod=ImplMod,
-        implstate=ImplState} = State) ->
-    {ok, StructureType} = ImplMod:get_structure_type(Name, ImplState),
-    {reply, {ok, StructureType}, State};
-
 handle_call({add_structure, GalaxyId, StructureType, LinkId, LinkType},
         _From, #state{implmod=ImplMod, implstate=ImplState} = State) ->
 	StructureInstance = galaxy_util:new_structure(StructureType),
 	
-	case ImplMod:add_structure(GalaxyId, StructureInstance, LinkId, LinkType, ImplState) of
-		 {ok, structure_added} ->
-			 {reply, {ok, structure_added}, State};        
+	case ImplMod:add_structure(GalaxyId, StructureInstance, LinkId,
+            LinkType, ImplState) of
+		 {ok, structure_added} -> 
+            {reply, {ok, structure_added, StructureInstance}, State};
 		{error, bad_link_type} ->
 			{reply, {error, unknown_link_type}, State}; 
 		{error, Reason} ->
 			{reply, {error, Reason}, State}
 	end;
 
-handle_call({get_structures, GalaxyId}, _From, #state{implmod=ImplMod,
-        implstate=ImplState} = State) ->
-    {ok, AllStructures} = ImplMod:add_structure(GalaxyId, ImplState),
-    {reply, {ok, AllStructures}, State};
+handle_call({remove_structure, GalaxyId, StructureUid, LinkId, LinkType},
+        _From, #state{implmod=ImplMod, implstate=ImplState} = State) ->
+	case ImplMod:remove_structure(GalaxyId, StructureUid, LinkId,
+            LinkType, ImplState) of
+		 {ok, structure_removed} -> 
+            {reply, {ok, structure_removed}, State};
+		{error, bad_link_type} ->
+			{reply, {error, unknown_link_type}, State}; 
+		{error, Reason} ->
+			{reply, {error, Reason}, State}
+	end;
 
 handle_call(Request, _From, State) ->
     error_logger:info_report({unknown_request, Request}),
     {reply, ok, State}.
 
 handle_cast(start_simulation,
-        #state{simulation_callback = undefined} = State) ->
-    error_logger:error_report({?MODULE, start_simulation,
-        {error, simmod_undefined}, simulation_not_started}), 
-    {noreply, State};
-
-handle_cast(start_simulation,
-        #state{simulation_callback = SimMod, implmod = ImplMod,
-        implstate = ImplState} = State) ->
-    error_logger:info_report({starting_simulation}),
-    start_galaxy_simulations(State),
+        #state{implmod = ImplMod, implstate = ImplState} = State) ->
+    % This is not really good, but putting the wait_for_tables it into the
+    % ImplMod:init did not work.
+    timer:sleep(1000),
+	case ImplMod:get_galaxies(ImplState) of
+		{ok, []} ->
+			pass;
+    	{ok, GalaxyList} ->
+			[galaxy_sim_sup:start_simulation(Galaxy#galaxy.id) || 
+				Galaxy <- GalaxyList]
+	end,
     {noreply, State};
 
 handle_cast(_Msg, State) ->
@@ -409,15 +391,3 @@ terminate(_Reason, _State) ->
 
 code_change(_OldVsn, State, _Extra) ->
     {ok, State}.
-
-%% ------------------------------------------------------------------
-%% Internal Function Definitions
-%% ------------------------------------------------------------------
-start_galaxy_simulations(#state{simulation_callback = SimCallback,
-        implmod = ImplMod, implstate = ImplState}) ->
-    % This is not really good, but putting the wait_for_tables it into the
-    % ImplMod:init did not work.
-    timer:sleep(1000),
-    {ok, GalaxyList} = ImplMod:get_galaxies(ImplState),
-    [galaxy_sim_sup:start_simulation(Galaxy#galaxy.id, SimCallback) || 
-        Galaxy <- GalaxyList].
