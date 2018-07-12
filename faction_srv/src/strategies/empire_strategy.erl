@@ -35,5 +35,6 @@ find_systems_to_claim(ListOfSystems) ->
 	[lists:nth(1, ListOfSystems)].
 
 dominate_system(System, Faction, DeltaTime) ->
-	error_logger:info_report({?MODULE, dominate_system, Faction,
-			System, DeltaTime}).
+	%error_logger:info_report({?MODULE, dominate_system, Faction,
+	%		System, DeltaTime}).
+	ok.

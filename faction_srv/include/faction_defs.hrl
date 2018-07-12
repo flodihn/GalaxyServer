@@ -10,13 +10,15 @@
     }).
 
 -record(faction_group, {
-    name,
+    id,
     galaxy_id,
+    display_name,
     faction,
     founder,
-    admins,
-    members,
-    modules,
+    admins=[],
+    npcs=[],
+    players=[],
+    modules=[],
     created,
     metadata}).
 
@@ -25,5 +27,3 @@
     galaxy_id,
     faction,
     metadata}).
-
-% Non mnesia table records

@@ -1,8 +1,8 @@
--module(faction_srv).
+-module(battle_srv).
 -behaviour(gen_server).
 
 -include("../galaxy_srv/include/galaxy_defs.hrl").
--include("faction_defs.hrl").
+-include("battle_defs.hrl").
 
 -define(SERVER, ?MODULE).
 
@@ -20,15 +20,9 @@
          terminate/2, code_change/3]).
 
 -export([
-	create_faction/4,
-    get_factions/1,
-	get_faction/2,
-	add_claim/3,
-    add_npc_group/4,
-    add_player_group/7,
-    add_strategy/3,
-    remove_strategy/3,
-    simulate_strategies/0
+    create_force/3,
+	destroy_force/3,
+	add_resources_to_force/3
     ]).
 
 -record(state, {implmod, implstate}).

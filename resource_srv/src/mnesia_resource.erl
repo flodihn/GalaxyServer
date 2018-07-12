@@ -4,34 +4,50 @@
 -define(DB_STRUCTURE_TYPE_TABLE, structure_types).
 
 -include("resource_defs.hrl").
+-include("../galaxy_srv/include/galaxy_defs.hrl").
 
 -export([
     init/0
     ]).
 
 -export([
+	create_resource_tables/0,
+	create_resource_table/1,
     create_resource_type/2,
     create_structure_type/2,
-	get_resource_types/1,
-    get_resource_type/2,
-	remove_resource_type/2,
-	get_structure_types/1,
-    get_structure_type/2,
+	get_resource_types/2,
+    get_resource_type/3,
+	remove_resource_type/3,
+	get_structure_types/2,
+    get_structure_type/3,
 	remove_structure_type/2
     ]).
 
 init() ->
     mnesia:start(),
-    
+    {ok, []}.
+
+create_resource_tables() ->
+	try 
+    	{ok, GalaxyList} = galaxy_srv:get_galaxies(),
+		[create_resource_table(X#galaxy.id) || X <- GalaxyList]
+	catch _:_ ->
+		error_logger:error_report({?MODULE, create_resource_tables,
+			failed_to_read_galaxies})
+	end.
+		
+create_resource_table(GalaxyId) ->
+    ResourceTable = get_resource_type_table(GalaxyId),
+    StructureTable = get_structure_type_table(GalaxyId),
+
     ResourceTypeAttributes = record_info(fields, resource_type),
-    create_table(?DB_RESOURCE_TYPE_TABLE, resource_type,
-        ResourceTypeAttributes, [category], set),
+    create_table(ResourceTable, resource_type, ResourceTypeAttributes,
+		[category], set),
 
     StructureTypeAttributes = record_info(fields, structure_type),
-    create_table(?DB_STRUCTURE_TYPE_TABLE, structure_type,
-        StructureTypeAttributes, [category], set),
- 
-    {ok, []}.
+    create_table(StructureTable, structure_type, StructureTypeAttributes, 
+		[category], set),
+	ok.
 
 create_table(TableName, RecordName, Attributes, IndexList, Type) ->
     case lists:member(TableName, mnesia:system_info(tables)) of
@@ -62,8 +78,9 @@ change_to_disc_schema() ->
     mnesia:change_table_copy_type(schema, node(), disc_copies).
 
 create_resource_type(ResourceType, _State) ->
+    Table = get_resource_type_table(ResourceType#resource_type.galaxy_id),
     T = fun() ->
-        mnesia:write(?DB_RESOURCE_TYPE_TABLE, ResourceType, write)
+        mnesia:write(Table, ResourceType, write)
     end,
     case mnesia:transaction(T) of
         {atomic, ok} ->
@@ -72,12 +89,14 @@ create_resource_type(ResourceType, _State) ->
             {error, Reason}
     end.
 
-get_resource_types(_State) ->
-   read_all_records(?DB_RESOURCE_TYPE_TABLE).
+get_resource_types(GalaxyId, _State) ->
+   Table = get_resource_type_table(GalaxyId),
+   read_all_records(Table).
 
-get_resource_type(ResourceName, _State) ->
+get_resource_type(ResourceName, GalaxyId, _State) ->
+    Table = get_resource_type_table(GalaxyId),
     T = fun() ->
-        mnesia:read(?DB_RESOURCE_TYPE_TABLE, ResourceName)
+        mnesia:read(Table, ResourceName)
     end,
     case mnesia:transaction(T) of
         {atomic, [ResourceType]} ->
@@ -88,9 +107,10 @@ get_resource_type(ResourceName, _State) ->
             {error, Reason}
     end.
 
-remove_resource_type(ResourceName, _State) ->
+remove_resource_type(ResourceName, GalaxyId, _State) ->
+    Table = get_resource_type_table(GalaxyId),
 	T = fun() ->
-        mnesia:delete(?DB_RESOURCE_TYPE_TABLE, ResourceName, write)
+        mnesia:delete(Table, ResourceName, write)
     end,
     case mnesia:transaction(T) of
         {atomic, ok} ->
@@ -100,33 +120,43 @@ remove_resource_type(ResourceName, _State) ->
     end.
 
 create_structure_type(StructureType, _State) ->
+    Table = get_structure_type_table(
+        StructureType#structure_type.galaxy_id),
     T = fun() ->
-        mnesia:write(?DB_STRUCTURE_TYPE_TABLE, StructureType, write)
+        mnesia:write(Table, StructureType, write)
     end,
     case mnesia:transaction(T) of
         {atomic, ok} ->
             {ok, structure_type_created};
+        {atomic, []} ->
+            {error, not_found};
         {aborted, Reason} ->
             {error, Reason}
     end.
 
-get_structure_types(_State) ->
-	read_all_records(?DB_STRUCTURE_TYPE_TABLE).
+get_structure_types(GalaxyId, _State) ->
+    Table = get_structure_type_table(GalaxyId),
+	read_all_records(Table).
 
-get_structure_type(StructureName, _State) ->
+get_structure_type(StructureName, GalaxyId, _State) ->
+    Table = get_structure_type_table(GalaxyId),
     T = fun() ->
-        mnesia:read(?DB_STRUCTURE_TYPE_TABLE, StructureName)
+        mnesia:read(Table, StructureName)
     end,
     case mnesia:transaction(T) of
         {atomic, [StructureType]} ->
             {ok, StructureType};
+        {atomic, []} ->
+            {error, not_found};
         {aborted, _Reason} ->
             {error, planet_not_found}
     end.
 
 remove_structure_type(StructureType, _State) ->
+    Table = get_structure_type_table(
+        StructureType#structure_type.galaxy_id),
 	T = fun() ->
-        mnesia:delete(?DB_STRUCTURE_TYPE_TABLE, StructureType, write)
+        mnesia:delete(Table, StructureType, write)
     end,
     case mnesia:transaction(T) of
         {atomic, ok} ->
@@ -134,6 +164,12 @@ remove_structure_type(StructureType, _State) ->
         {aborted, Reason} ->
             {error, Reason}
     end.
+
+get_resource_type_table(GalaxyId) ->
+    list_to_atom(binary_to_list(GalaxyId) ++ "_resource_type").
+
+get_structure_type_table(GalaxyId) ->
+    list_to_atom(binary_to_list(GalaxyId) ++ "_structure_type").
 
 read_all_records(Table) ->
     Iterator = fun(Record, Acc) -> lists:append(Acc, [Record]) end,

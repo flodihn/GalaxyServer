@@ -13,6 +13,7 @@ start() ->
 	application:start(galaxy_srv),
 	application:start(faction_srv),
     application:start(sws_srv),
+	resource_srv:create_resource_tables(),
     galaxy_srv:start_simulation(),
     faction_srv:simulate_strategies().
 

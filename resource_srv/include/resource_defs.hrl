@@ -4,6 +4,7 @@
 
 -record(structure_type, {
     name,
+    galaxy_id,
     category,
     production_rate = 1,
     produces = [],
@@ -16,6 +17,7 @@
 
 -record(resource_type, {
     name,
+    galaxy_id,
     category,
     storage_space = 1,
     display_name,
