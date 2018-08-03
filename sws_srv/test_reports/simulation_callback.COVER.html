@@ -1,0 +1,42 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<title>/Volumes/Work/Projects/GalaxyServer/sws_srv/.eunit/simulation_callback.COVER.html</title>
+</head><body style='background-color: white; color: black'>
+<pre>
+File generated from /Volumes/Work/Projects/GalaxyServer/sws_srv/.eunit/simulation_callback.erl by COVER 2018-07-25 at 20:28:28
+
+****************************************************************************
+
+        |  -module(simulation_callback).
+        |  
+        |  -export([
+        |      simulate_system/2
+        |      ]).
+        |  
+        |  -include("galaxy_defs.hrl").
+        |  -include("resource_defs.hrl").
+        |  
+        |  simulate_system(System, DeltaTime) -&gt;
+<font color=red>     0..|      GalaxyId = System#system.galaxy_id,</font>
+<font color=red>     0..|      Planets = System#system.planets,</font>
+<font color=red>     0..|      simulate_planets(Planets, GalaxyId, DeltaTime).</font>
+        |  
+        |  simulate_planets([], _GalaxyId, _DeltaTime) -&gt;
+<font color=red>     0..|      done;</font>
+        |  
+        |  simulate_planets([PlanetName | Rest], GalaxyId, DeltaTime) -&gt;
+<font color=red>     0..|      simulate_planet(GalaxyId, PlanetName, DeltaTime),</font>
+<font color=red>     0..|      simulate_planets(Rest, GalaxyId, DeltaTime).</font>
+        |  
+        |  simulate_planet(GalaxyId, PlanetName, DeltaTime) -&gt;
+<font color=red>     0..|      {ok, Planet} = galaxy_srv:get_planet(GalaxyId, PlanetName),</font>
+<font color=red>     0..|      Structures = Planet#planet.structures,</font>
+<font color=red>     0..|      {ok, UpdatedStructures} = galaxy_structure_util:simulate_structures(</font>
+        |          Structures, DeltaTime),
+<font color=red>     0..|      UpdatedPlanet = Planet#planet{structures = UpdatedStructures},</font>
+<font color=red>     0..|      {ok, planet_updated} = galaxy_srv:update_planet(UpdatedPlanet).</font>
+</pre>
+</body>
+</html>

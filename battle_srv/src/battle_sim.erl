@@ -1,9 +1,10 @@
--module(faction_strategy_sim).
+-module(battle_sim).
 -behaviour(gen_server).
 
 -define(SIMULATION_STEP_TIME, 10000).
 
--include("faction_defs.hrl").
+-include("../faction_srv/include/faction_defs.hrl").
+-include("battle_defs.hrl").
 
 -record(state, {
     galaxy_id,

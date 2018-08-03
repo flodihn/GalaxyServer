@@ -1,0 +1,398 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<title>/Volumes/Work/Projects/GalaxyServer/battle_srv/.eunit/mnesia_battle.COVER.html</title>
+</head><body style='background-color: white; color: black'>
+<pre>
+File generated from /Volumes/Work/Projects/GalaxyServer/battle_srv/.eunit/mnesia_battle.erl by COVER 2018-08-01 at 09:05:49
+
+****************************************************************************
+
+        |  -module(mnesia_battle).
+        |  
+        |  -include("battle_defs.hrl").
+        |  
+        |  -include_lib("stdlib/include/qlc.hrl").
+        |  
+        |  -ifdef(TEST).
+        |  -compile(export_all).
+        |  -endif.
+        |  
+        |  -export([
+        |      init/0
+        |      ]).
+        |  
+        |  -export([
+        |      create_force/2,
+        |      force_exists/3,
+        |      destroy_force/3,
+        |  
+        |      add_force_model/2,
+        |  	remove_force_model/3,
+        |      get_force_model/3,
+        |  	force_model_exists/3,
+        |  	get_force_models/2,
+        |  
+        |      add_force_class/2,
+        |  	remove_force_class/3,
+        |      get_force_class/3,
+        |  	force_class_exists/3,
+        |  
+        |  	add_weapon_type/2,
+        |  	remove_weapon_type/3,
+        |      weapon_type_exists/3,
+        |      get_weapon_type/3,
+        |  	get_weapon_types/2,
+        |  	get_weapon_types/3
+        |      ]).
+        |  
+        |  init() -&gt;
+<font color=red>     0..|      mnesia:start(),</font>
+<font color=red>     0..|      {ok, []}.</font>
+        |  
+        |  create_table(TableName, RecordName, Attributes, IndexList, Type) -&gt;
+<font color=red>     0..|      case lists:member(TableName, mnesia:system_info(tables)) of</font>
+        |          true -&gt;
+<font color=red>     0..|              {ok, already_exists};</font>
+        |          false -&gt;
+<font color=red>     0..|              change_to_disc_schema(),</font>
+<font color=red>     0..|              mnesia:create_table(TableName, </font>
+        |                  [
+        |                      {record_name, RecordName},
+        |                      {disc_copies, [node()]},
+        |                      {type, Type},
+        |                      {attributes, Attributes}
+        |                  ]),
+<font color=red>     0..|              ok = create_indexes(TableName, IndexList),</font>
+<font color=red>     0..|              {ok, created}</font>
+        |      end.
+        |  
+        |  find_or_create_force_table(TableName) -&gt;
+<font color=red>     0..|  	case lists:member(TableName, mnesia:system_info(tables)) of</font>
+        |  		true -&gt;
+<font color=red>     0..|  			pass;</font>
+        |  		false -&gt;
+<font color=red>     0..|      		TypeAttributes = record_info(fields, force),</font>
+<font color=red>     0..|      		create_table(TableName, force,</font>
+        |                           TypeAttributes, [display_name], set)
+        |  	end.
+        |  
+        |  
+        |  find_or_create_force_model_table(TableName) -&gt;
+<font color=red>     0..|  	case lists:member(TableName, mnesia:system_info(tables)) of</font>
+        |  		true -&gt;
+<font color=red>     0..|  			pass;</font>
+        |  		false -&gt;
+<font color=red>     0..|      		TypeAttributes = record_info(fields, force_model),</font>
+<font color=red>     0..|      		create_table(TableName, force_model,</font>
+        |          		TypeAttributes, [], set)
+        |  	end.
+        |  
+        |  find_or_create_force_class_table(TableName) -&gt;
+<font color=red>     0..|  	case lists:member(TableName, mnesia:system_info(tables)) of</font>
+        |  		true -&gt;
+<font color=red>     0..|  			pass;</font>
+        |  		false -&gt;
+<font color=red>     0..|      		TypeAttributes = record_info(fields, force_class),</font>
+<font color=red>     0..|      		create_table(TableName, force_class,</font>
+        |          		TypeAttributes, [], set)
+        |  	end.
+        |  
+        |  find_or_create_weapon_types_table(TableName) -&gt;
+<font color=red>     0..|  	case lists:member(TableName, mnesia:system_info(tables)) of</font>
+        |  		true -&gt;
+<font color=red>     0..|  			pass;</font>
+        |  		false -&gt;
+<font color=red>     0..|      		ResourceTypeAttributes = record_info(fields, weapon_type),</font>
+<font color=red>     0..|      		create_table(TableName, weapon_type,</font>
+        |          		ResourceTypeAttributes, [galaxy_id], set)
+        |  	end.
+        |  
+        |  create_indexes(_TableName, []) -&gt;
+<font color=red>     0..|      ok;</font>
+        |  
+        |  create_indexes(TableName, [Field | Rest]) -&gt;
+<font color=red>     0..|      mnesia:add_table_index(TableName, Field),</font>
+<font color=red>     0..|      create_indexes(TableName, Rest).</font>
+        |  
+        |  change_to_disc_schema() -&gt;
+<font color=red>     0..|      mnesia:change_config(extra_db_nodes, [node()]),</font>
+<font color=red>     0..|      mnesia:change_table_copy_type(schema, node(), disc_copies).</font>
+        |  
+        |  create_force(#force{galaxy_id=GalaxyId} = Force, _State) -&gt;
+<font color=red>     0..|  	ForceTable = get_force_table(GalaxyId),</font>
+<font color=red>     0..|  	find_or_create_force_table(ForceTable),</font>
+<font color=red>     0..|      T = fun() -&gt;</font>
+<font color=red>     0..|          mnesia:write(ForceTable, Force, write)</font>
+        |      end,
+<font color=red>     0..|      case mnesia:transaction(T) of</font>
+        |          {atomic, ok} -&gt;
+<font color=red>     0..|              {ok, force_created};</font>
+        |          {aborted, Reason} -&gt;
+<font color=red>     0..|              {error, Reason}</font>
+        |      end.
+        |  
+        |  force_exists(Id, GalaxyId, _State) -&gt;
+<font color=red>     0..|  	ForceTable = get_force_table(GalaxyId),</font>
+<font color=red>     0..|      case table_exists(ForceTable) of</font>
+        |          false -&gt;
+<font color=red>     0..|              false;</font>
+        |          true -&gt;
+<font color=red>     0..|              T = fun() -&gt;</font>
+<font color=red>     0..|                  mnesia:read(ForceTable, Id)</font>
+        |              end,
+<font color=red>     0..|              case mnesia:transaction(T) of</font>
+<font color=red>     0..|                  {atomic, []} -&gt; false;</font>
+<font color=red>     0..|  		        {atomic, [_FoundForce]} -&gt; true</font>
+        |              end
+        |      end.
+        |  
+        |  destroy_force(Id, GalaxyId, _State) -&gt;
+<font color=red>     0..|  	ForceTable = get_force_table(GalaxyId),</font>
+<font color=red>     0..|  	T = fun() -&gt;</font>
+<font color=red>     0..|          mnesia:delete(ForceTable, Id, write)</font>
+        |      end,
+<font color=red>     0..|      case mnesia:transaction(T) of</font>
+        |          {atomic, ok} -&gt;
+<font color=red>     0..|              {ok, force_destroyed};</font>
+        |          {aborted, Reason} -&gt;
+<font color=red>     0..|              {error, Reason}</font>
+        |      end.
+        |  
+        |  add_force_model(#force_model{galaxy_id=GalaxyId} = ForceModel, _State) -&gt;
+<font color=red>     0..|  	ForceModelTable = get_force_model_table(GalaxyId),</font>
+<font color=red>     0..|  	find_or_create_force_model_table(ForceModelTable),</font>
+<font color=red>     0..|      T = fun() -&gt;</font>
+<font color=red>     0..|          mnesia:write(ForceModelTable, ForceModel, write)</font>
+        |      end,
+<font color=red>     0..|      case mnesia:transaction(T) of</font>
+        |          {atomic, ok} -&gt;
+<font color=red>     0..|              {ok, force_model_added};</font>
+        |          {aborted, Reason} -&gt;
+<font color=red>     0..|              {error, Reason}</font>
+        |      end.
+        |  
+        |  get_force_model(Name, GalaxyId, _State) -&gt;
+<font color=red>     0..|  	ForceModelTable = get_force_model_table(GalaxyId),</font>
+<font color=red>     0..|      case table_exists(ForceModelTable) of</font>
+        |          false -&gt;
+<font color=red>     0..|              false;</font>
+        |          true -&gt;
+<font color=red>     0..|              T = fun() -&gt;</font>
+<font color=red>     0..|                  mnesia:read(ForceModelTable, Name)</font>
+        |              end,
+<font color=red>     0..|              case mnesia:transaction(T) of</font>
+        |                  {atomic, []} -&gt;
+<font color=red>     0..|                      {error, not_found};</font>
+        |  		        {atomic, [ForceModel]} -&gt;
+<font color=red>     0..|                      {ok, ForceModel} </font>
+        |              end
+        |      end.
+        |  
+        |  force_model_exists(Name, GalaxyId, _State) -&gt;
+<font color=red>     0..|  	ForceModelTable = get_force_model_table(GalaxyId),</font>
+<font color=red>     0..|      case table_exists(ForceModelTable) of</font>
+        |          false -&gt;
+<font color=red>     0..|              false;</font>
+        |          true -&gt;
+<font color=red>     0..|              T = fun() -&gt;</font>
+<font color=red>     0..|                  mnesia:read(ForceModelTable, Name)</font>
+        |              end,
+<font color=red>     0..|              case mnesia:transaction(T) of</font>
+<font color=red>     0..|                  {atomic, []} -&gt; false;</font>
+<font color=red>     0..|  		        {atomic, [_FoundModel]} -&gt; true</font>
+        |              end
+        |      end.
+        |  
+        |  get_force_models(GalaxyId, _State) -&gt;
+<font color=red>     0..|  	ForceModelTable = get_force_model_table(GalaxyId),</font>
+<font color=red>     0..|      case table_exists(ForceModelTable) of</font>
+<font color=red>     0..|          false -&gt; [];</font>
+<font color=red>     0..|          true -&gt; read_all_records(ForceModelTable)</font>
+        |      end.
+        |  
+        |  remove_force_model(ForceModel, GalaxyId, _State) -&gt;
+<font color=red>     0..|  	ForceModelTable = get_force_model_table(GalaxyId),</font>
+<font color=red>     0..|  	T = fun() -&gt;</font>
+<font color=red>     0..|          mnesia:delete(ForceModelTable, ForceModel, write)</font>
+        |      end,
+<font color=red>     0..|      case mnesia:transaction(T) of</font>
+        |          {atomic, ok} -&gt;
+<font color=red>     0..|              {ok, force_model_removed};</font>
+        |          {aborted, Reason} -&gt;
+<font color=red>     0..|              {error, Reason}</font>
+        |      end.
+        |  
+        |  add_force_class(#force_class{galaxy_id=GalaxyId} = ForceClass, _State) -&gt;
+<font color=red>     0..|  	ForceClassTable = get_force_class_table(GalaxyId),</font>
+<font color=red>     0..|  	find_or_create_force_class_table(ForceClassTable),</font>
+<font color=red>     0..|      T = fun() -&gt;</font>
+<font color=red>     0..|          mnesia:write(ForceClassTable, ForceClass, write)</font>
+        |      end,
+<font color=red>     0..|      case mnesia:transaction(T) of</font>
+        |          {atomic, ok} -&gt;
+<font color=red>     0..|              {ok, force_class_added};</font>
+        |          {aborted, Reason} -&gt;
+<font color=red>     0..|              {error, Reason}</font>
+        |      end.
+        |  
+        |  get_force_class(Name, GalaxyId, _State) -&gt;
+<font color=red>     0..|  	ForceClassTable = get_force_class_table(GalaxyId),</font>
+<font color=red>     0..|      case table_exists(ForceClassTable) of</font>
+        |          false -&gt;
+<font color=red>     0..|              false;</font>
+        |          true -&gt;
+<font color=red>     0..|              T = fun() -&gt;</font>
+<font color=red>     0..|                  mnesia:read(ForceClassTable, Name)</font>
+        |              end,
+<font color=red>     0..|              case mnesia:transaction(T) of</font>
+        |                  {atomic, []} -&gt;
+<font color=red>     0..|                      {error, not_found};</font>
+        |  		        {atomic, [ForceClass]} -&gt;
+<font color=red>     0..|                      {ok, ForceClass} </font>
+        |              end
+        |      end.
+        |  
+        |  force_class_exists(Name, GalaxyId, _State) -&gt;
+<font color=red>     0..|  	ForceClassTable = get_force_class_table(GalaxyId),</font>
+<font color=red>     0..|      case table_exists(ForceClassTable) of</font>
+        |          false -&gt;
+<font color=red>     0..|              false;</font>
+        |          true -&gt;
+<font color=red>     0..|              T = fun() -&gt;</font>
+<font color=red>     0..|                  mnesia:read(ForceClassTable, Name)</font>
+        |              end,
+<font color=red>     0..|              case mnesia:transaction(T) of</font>
+<font color=red>     0..|                  {atomic, []} -&gt; false;</font>
+<font color=red>     0..|  		        {atomic, [_FoundClass]} -&gt; true</font>
+        |              end
+        |      end.
+        |  
+        |  get_force_classes(GalaxyId, _State) -&gt;
+<font color=red>     0..|  	ForceClassTable = get_force_class_table(GalaxyId),</font>
+<font color=red>     0..|      case table_exists(ForceClassTable) of</font>
+<font color=red>     0..|          false -&gt; [];</font>
+<font color=red>     0..|          true -&gt; read_all_records(ForceClassTable)</font>
+        |      end.
+        |  
+        |  remove_force_class(ForceClass, GalaxyId, _State) -&gt;
+<font color=red>     0..|  	ForceClassTable = get_force_class_table(GalaxyId),</font>
+<font color=red>     0..|  	T = fun() -&gt;</font>
+<font color=red>     0..|          mnesia:delete(ForceClassTable, ForceClass, write)</font>
+        |      end,
+<font color=red>     0..|      case mnesia:transaction(T) of</font>
+        |          {atomic, ok} -&gt;
+<font color=red>     0..|              {ok, force_class_removed};</font>
+        |          {aborted, Reason} -&gt;
+<font color=red>     0..|              {error, Reason}</font>
+        |      end.
+        |  
+        |  add_weapon_type(#weapon_type{galaxy_id = GalaxyId} = Weapon, _State) -&gt;
+<font color=red>     0..|  	WeaponTypesTable = get_weapon_types_table(GalaxyId),</font>
+<font color=red>     0..|  	find_or_create_weapon_types_table(WeaponTypesTable),</font>
+<font color=red>     0..|      T = fun() -&gt;</font>
+<font color=red>     0..|          mnesia:write(WeaponTypesTable, Weapon, write)</font>
+        |      end,
+<font color=red>     0..|      case mnesia:transaction(T) of</font>
+        |          {atomic, ok} -&gt;
+<font color=red>     0..|              {ok, weapon_type_added};</font>
+        |          {aborted, Reason} -&gt;
+<font color=red>     0..|              {error, Reason}</font>
+        |      end.
+        |  
+        |  remove_weapon_type(Name, GalaxyId, _State) -&gt;
+<font color=red>     0..|  	WeaponTypeTable = get_weapon_types_table(GalaxyId),</font>
+<font color=red>     0..|  	T = fun() -&gt;</font>
+<font color=red>     0..|          mnesia:delete(WeaponTypeTable, Name, write)</font>
+        |      end,
+<font color=red>     0..|      case mnesia:transaction(T) of</font>
+        |          {atomic, ok} -&gt;
+<font color=red>     0..|              {ok, weapon_type_removed};</font>
+        |          {aborted, Reason} -&gt;
+<font color=red>     0..|              {error, Reason}</font>
+        |      end.
+        |  
+        |  weapon_type_exists(Name, GalaxyId, _State) -&gt;
+<font color=red>     0..|  	WeaponTypesTable = get_weapon_types_table(GalaxyId),</font>
+<font color=red>     0..|      case table_exists(WeaponTypesTable) of</font>
+        |          false -&gt;
+<font color=red>     0..|              false;</font>
+        |          true -&gt;
+<font color=red>     0..|              find_or_create_weapon_types_table(GalaxyId),</font>
+<font color=red>     0..|              T = fun() -&gt;</font>
+<font color=red>     0..|                  mnesia:read(WeaponTypesTable, Name)</font>
+        |              end,
+<font color=red>     0..|              case mnesia:transaction(T) of</font>
+<font color=red>     0..|                  {atomic, []} -&gt; false;</font>
+<font color=red>     0..|  		        {atomic, [_FoundWeaponType]} -&gt; true</font>
+        |              end
+        |      end.
+        |  
+        |  get_weapon_type(Name, GalaxyId, _State) -&gt;
+<font color=red>     0..|  	WeaponTypesTable = get_weapon_types_table(GalaxyId),</font>
+<font color=red>     0..|      case table_exists(WeaponTypesTable) of</font>
+        |          false -&gt;
+<font color=red>     0..|              false;</font>
+        |          true -&gt;
+<font color=red>     0..|              find_or_create_weapon_types_table(GalaxyId),</font>
+<font color=red>     0..|              T = fun() -&gt;</font>
+<font color=red>     0..|                  mnesia:read(WeaponTypesTable, Name)</font>
+        |              end,
+<font color=red>     0..|              case mnesia:transaction(T) of</font>
+<font color=red>     0..|                  {atomic, []} -&gt; {error, not_found};</font>
+<font color=red>     0..|  		        {atomic, [WeaponType]} -&gt; {ok, WeaponType} </font>
+        |              end
+        |      end.
+        |  
+        |  get_weapon_types(GalaxyId, _State) -&gt;
+<font color=red>     0..|  	WeaponTypesTable = get_weapon_types_table(GalaxyId),</font>
+<font color=red>     0..|      case table_exists(WeaponTypesTable) of</font>
+<font color=red>     0..|          false -&gt; [];</font>
+<font color=red>     0..|          true -&gt; read_all_records(WeaponTypesTable)</font>
+        |      end.
+        |  
+        |  get_weapon_types(Names, GalaxyId, _State) -&gt;
+<font color=red>     0..|  	WeaponTypesTable = get_weapon_types_table(GalaxyId),</font>
+<font color=red>     0..|      F = fun() -&gt;</font>
+<font color=red>     0..|          Q = qlc:q([W || W &lt;- mnesia:table(WeaponTypesTable),</font>
+        |              lists:member(W#weapon_type.name, Names)]),
+<font color=red>     0..|  	    qlc:e(Q)</font>
+        |      end,
+<font color=red>     0..|      case mnesia:transaction(F) of</font>
+        |          {atomic, WeaponTypes} -&gt;
+<font color=red>     0..|              {ok, WeaponTypes};</font>
+        |          {error, Reason} -&gt;
+<font color=red>     0..|              error_logger:error_report({?MODULE, get_weapon_types,</font>
+        |                                         Reason})
+        |      end.
+        |  
+        |  read_all_records(Table) -&gt;
+<font color=red>     0..|      Iterator = fun(Record, Acc) -&gt; lists:append(Acc, [Record]) end,</font>
+<font color=red>     0..|      T = fun() -&gt;</font>
+<font color=red>     0..|          mnesia:foldl(Iterator, [], Table)</font>
+        |      end,
+<font color=red>     0..|      case mnesia:transaction(T) of</font>
+        |          {atomic, AllRecords} -&gt;
+<font color=red>     0..|              {ok, AllRecords};</font>
+        |          {aborted, Reason} -&gt;
+<font color=red>     0..|              {error, Reason}</font>
+        |      end.
+        |  
+        |  get_force_table(GalaxyId) -&gt;
+<font color=red>     0..|      list_to_atom(binary_to_list(GalaxyId) ++ "_forces").</font>
+        |  
+        |  get_force_model_table(GalaxyId) -&gt;
+<font color=red>     0..|      list_to_atom(binary_to_list(GalaxyId) ++ "_force_models").</font>
+        |  
+        |  get_force_class_table(GalaxyId) -&gt;
+<font color=red>     0..|      list_to_atom(binary_to_list(GalaxyId) ++ "_force_class").</font>
+        |  
+        |  get_weapon_types_table(GalaxyId) -&gt;
+<font color=red>     0..|      list_to_atom(binary_to_list(GalaxyId) ++ "_weapon_types").</font>
+        |  
+        |  table_exists(TableName) -&gt;
+<font color=red>     0..|      lists:member(TableName, mnesia:system_info(tables)).</font>
+</pre>
+</body>
+</html>

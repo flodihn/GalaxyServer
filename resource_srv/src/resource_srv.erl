@@ -22,8 +22,8 @@
     add_event_handler/1,
     create_resource_tables/0,
     create_resource_table/1,
-    create_resource_type/5,
-    create_resource_type/7,
+    create_resource_type/6,
+    create_resource_type/8,
 	remove_resource_type/2,
 	get_resource_types/1,
     get_resource_type/2,
@@ -53,14 +53,17 @@ create_resource_tables() ->
 create_resource_table(GalaxyId) ->
     gen_server:call(?SERVER, {create_resource_table, GalaxyId}).
 
-create_resource_type(Name, GalaxyId, Category, StorageSpace, DisplayName) ->
+create_resource_type(Name, GalaxyId, Category, StorageSpace,
+                     DisplayName, Type) ->
     create_resource_type(Name, GalaxyId, Category, StorageSpace,
-        DisplayName, [], 0).
+        DisplayName, [], 0, Type).
 
-create_resource_type(Name, GalaxyId, Category, StorageSpace, DisplayName,
-		BuildMaterials, BuildTime) ->
-    gen_server:call(?SERVER, {create_resource_type, Name, GalaxyId,
-		Category, StorageSpace, DisplayName, BuildMaterials, BuildTime}).
+create_resource_type(Name, GalaxyId, Category, StorageSpace,
+                     DisplayName, BuildMaterials, BuildTime,
+                     Type) ->
+    gen_server:call(?SERVER, {create_resource_type, Name,
+        GalaxyId, Category, StorageSpace, DisplayName,
+        BuildMaterials, BuildTime}).
 
 get_resource_types(GalaxyId) ->
     gen_server:call(?SERVER, {get_resource_types, GalaxyId}).
@@ -106,14 +109,19 @@ handle_call({create_resource_table, GalaxyId}, _From,
     ImplMod:create_resource_table(GalaxyId),
     {reply, ok, State};
 
-
 handle_call({create_resource_type, Name, GalaxyId, Category, StorageSpace, 
-        DisplayName, BuildMaterials, BuildTime}, _From,
+        DisplayName, BuildMaterials, BuildTime, Type}, _From,
         #state{implmod=ImplMod, implstate=ImplState} = State) ->
     {ok, resource_type_created} = ImplMod:create_resource_type(
-        #resource_type{name = Name, galaxy_id=GalaxyId, category = Category,
-        storage_space = StorageSpace, build_materials = BuildMaterials,
-        build_time = BuildTime, display_name=DisplayName}, ImplState),
+        #resource_type{
+            name = Name,
+            galaxy_id=GalaxyId,
+            category = Category,
+            storage_space = StorageSpace,
+            build_materials = BuildMaterials,
+            build_time = BuildTime,
+            display_name = DisplayName,
+            type = Type}, ImplState),
     {reply, ok, State};
 
 handle_call({get_resource_types, GalaxyId}, _From, #state{implmod=ImplMod,

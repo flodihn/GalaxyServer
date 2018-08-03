@@ -1,0 +1,43 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<title>/Volumes/Work/Projects/GalaxyServer/sws_srv/.eunit/sws_srv_app.COVER.html</title>
+</head><body style='background-color: white; color: black'>
+<pre>
+File generated from /Volumes/Work/Projects/GalaxyServer/sws_srv/.eunit/sws_srv_app.erl by COVER 2018-07-25 at 20:28:28
+
+****************************************************************************
+
+        |  -module(sws_srv_app).
+        |  
+        |  -behaviour(application).
+        |  
+        |  %% Application callbacks
+        |  -export([start/0, start/2, stop/1]).
+        |  
+        |  %% ===================================================================
+        |  %% Start function from shell (only for development)
+        |  %% ===================================================================
+        |  start() -&gt;
+<font color=red>     0..|      application:start(resource_srv),</font>
+<font color=red>     0..|  	application:start(galaxy_srv),</font>
+<font color=red>     0..|  	application:start(faction_srv),</font>
+<font color=red>     0..|  	application:start(battle_srv),</font>
+<font color=red>     0..|      application:start(sws_srv),</font>
+<font color=red>     0..|  	resource_srv:create_resource_tables(),</font>
+<font color=red>     0..|      galaxy_srv:start_simulation(),</font>
+<font color=red>     0..|      faction_srv:simulate_strategies().</font>
+        |  
+        |  %% ===================================================================
+        |  %% Application callbacks
+        |  %% ===================================================================
+        |  
+        |  start(_StartType, _StartArgs) -&gt;
+<font color=red>     0..|      sws_srv_sup:start_link().</font>
+        |  
+        |  stop(_State) -&gt;
+<font color=red>     0..|      ok.</font>
+</pre>
+</body>
+</html>

@@ -2,7 +2,6 @@
 -behaviour(gen_server).
 
 -include("galaxy_defs.hrl").
--include("resource_defs.hrl").
 
 -define(SERVER, ?MODULE).
 
@@ -120,19 +119,6 @@ get_systems(GalaxyId) ->
 
 get_system(GalaxyId, SystemName) ->
     gen_server:call(?SERVER, {get_system, GalaxyId, SystemName}).
-
-create_resource_type(Name, Category, StorageSpace, BuildTime,
-        DisplayName) ->
-    create_resource_type(Name, Category, StorageSpace, [], BuildTime,
-        DisplayName).
-
-create_resource_type(Name, Category, StorageSpace, BuildMaterials,
-        BuildTime, DisplayName) ->
-    gen_server:call(?SERVER, {create_resource_type, Name, Category,
-        StorageSpace, BuildMaterials, BuildTime, DisplayName}).
-
-get_resource_type(Name) ->
-    gen_server:call(?SERVER, {get_resource_type, Name}).
 
 add_structure(GalaxyId, Structure, LinkId, LinkType) ->
     gen_server:call(?SERVER, {add_structure, GalaxyId, Structure,
@@ -321,20 +307,6 @@ handle_call({get_system, GalaxyId, SystemName}, _From,
            #state{implmod=ImplMod, implstate=ImplState} = State) ->
     {ok, System} = ImplMod:get_system(GalaxyId, SystemName, ImplState),
     {reply, {ok, System}, State};
-
-handle_call({create_resource_type, Name, Category, StorageSpace, 
-        BuildMaterials, BuildTime, DisplayName}, _From,
-        #state{implmod=ImplMod, implstate=ImplState} = State) ->
-    {ok, resource_type_created} = ImplMod:create_resource_type(
-        #resource_type{name = Name, category = Category,
-        storage_space = StorageSpace, build_materials = BuildMaterials,
-        build_time = BuildTime, display_name=DisplayName}, ImplState),
-    {reply, ok, State};
-
-handle_call({get_resource_type, Name}, _From, #state{implmod=ImplMod,
-        implstate=ImplState} = State) ->
-    {ok, ResourceType} = ImplMod:get_resource_type(Name, ImplState),
-    {reply, {ok, ResourceType}, State};
 
 handle_call({add_structure, GalaxyId, StructureType, LinkId, LinkType},
         _From, #state{implmod=ImplMod, implstate=ImplState} = State) ->

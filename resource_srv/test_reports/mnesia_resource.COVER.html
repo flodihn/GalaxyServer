@@ -1,0 +1,198 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<title>/Volumes/Work/Projects/GalaxyServer/resource_srv/.eunit/mnesia_resource.COVER.html</title>
+</head><body style='background-color: white; color: black'>
+<pre>
+File generated from /Volumes/Work/Projects/GalaxyServer/resource_srv/.eunit/mnesia_resource.erl by COVER 2018-08-01 at 12:44:40
+
+****************************************************************************
+
+        |  -module(mnesia_resource).
+        |  
+        |  -include("resource_defs.hrl").
+        |  -include("../galaxy_srv/include/galaxy_defs.hrl").
+        |  
+        |  -export([
+        |      init/0
+        |      ]).
+        |  
+        |  -export([
+        |  	create_resource_tables/0,
+        |  	create_resource_table/1,
+        |      create_resource_type/2,
+        |      create_structure_type/2,
+        |  	get_resource_types/2,
+        |      get_resource_type/3,
+        |  	remove_resource_type/3,
+        |  	get_structure_types/2,
+        |      get_structure_type/3,
+        |  	remove_structure_type/2
+        |      ]).
+        |  
+        |  init() -&gt;
+<font color=red>     0..|      mnesia:start(),</font>
+<font color=red>     0..|      {ok, []}.</font>
+        |  
+        |  create_resource_tables() -&gt;
+<font color=red>     0..|  	try </font>
+<font color=red>     0..|      	{ok, GalaxyList} = galaxy_srv:get_galaxies(),</font>
+<font color=red>     0..|  		[create_resource_table(X#galaxy.id) || X &lt;- GalaxyList]</font>
+        |  	catch _:_ -&gt;
+<font color=red>     0..|  		error_logger:error_report({?MODULE, create_resource_tables,</font>
+        |  			failed_to_read_galaxies})
+        |  	end.
+        |  		
+        |  create_resource_table(GalaxyId) -&gt;
+<font color=red>     0..|      ResourceTable = get_resource_type_table(GalaxyId),</font>
+<font color=red>     0..|      StructureTable = get_structure_type_table(GalaxyId),</font>
+        |  
+<font color=red>     0..|      ResourceTypeAttributes = record_info(fields, resource_type),</font>
+<font color=red>     0..|      create_table(ResourceTable, resource_type, ResourceTypeAttributes,</font>
+        |  		[galaxy_id, category], set),
+        |  
+<font color=red>     0..|      StructureTypeAttributes = record_info(fields, structure_type),</font>
+<font color=red>     0..|      create_table(StructureTable, structure_type, StructureTypeAttributes, </font>
+        |  		[galaxy_id, category], set),
+<font color=red>     0..|  	ok.</font>
+        |  
+        |  create_table(TableName, RecordName, Attributes, IndexList, Type) -&gt;
+<font color=red>     0..|      case lists:member(TableName, mnesia:system_info(tables)) of</font>
+        |          true -&gt;
+<font color=red>     0..|              {ok, already_exists};</font>
+        |          false -&gt;
+<font color=red>     0..|              change_to_disc_schema(),</font>
+<font color=red>     0..|              mnesia:create_table(TableName, </font>
+        |                  [
+        |                      {record_name, RecordName},
+        |                      {disc_copies, [node()]},
+        |                      {type, Type},
+        |                      {attributes, Attributes}
+        |                  ]),
+<font color=red>     0..|              ok = create_indexes(TableName, IndexList),</font>
+<font color=red>     0..|              {ok, created}</font>
+        |      end.
+        |  
+        |  create_indexes(_TableName, []) -&gt;
+<font color=red>     0..|      ok;</font>
+        |  
+        |  create_indexes(TableName, [Field | Rest]) -&gt;
+<font color=red>     0..|      mnesia:add_table_index(TableName, Field),</font>
+<font color=red>     0..|      create_indexes(TableName, Rest).</font>
+        |  
+        |  change_to_disc_schema() -&gt;
+<font color=red>     0..|      mnesia:change_config(extra_db_nodes, [node()]),</font>
+<font color=red>     0..|      mnesia:change_table_copy_type(schema, node(), disc_copies).</font>
+        |  
+        |  create_resource_type(
+        |          #resource_type{galaxy_id = GalaxyId} = ResourceType, _State) -&gt;
+<font color=red>     0..|      Table = get_resource_type_table(GalaxyId),</font>
+<font color=red>     0..|      T = fun() -&gt;</font>
+<font color=red>     0..|          mnesia:write(Table, ResourceType, write)</font>
+        |      end,
+<font color=red>     0..|      case mnesia:transaction(T) of</font>
+        |          {atomic, ok} -&gt;
+<font color=red>     0..|              {ok, resource_type_created};</font>
+        |          {aborted, Reason} -&gt;
+<font color=red>     0..|              {error, Reason}</font>
+        |      end.
+        |  
+        |  get_resource_types(GalaxyId, _State) -&gt;
+<font color=red>     0..|     Table = get_resource_type_table(GalaxyId),</font>
+<font color=red>     0..|     read_all_records(Table).</font>
+        |  
+        |  get_resource_type(ResourceName, GalaxyId, _State) -&gt;
+<font color=red>     0..|      Table = get_resource_type_table(GalaxyId),</font>
+<font color=red>     0..|      T = fun() -&gt;</font>
+<font color=red>     0..|          mnesia:read(Table, ResourceName)</font>
+        |      end,
+<font color=red>     0..|      case mnesia:transaction(T) of</font>
+        |          {atomic, [ResourceType]} -&gt;
+<font color=red>     0..|              {ok, ResourceType};</font>
+        |          {atomic, []} -&gt;
+<font color=red>     0..|              {error, not_found};</font>
+        |          {aborted, Reason} -&gt;
+<font color=red>     0..|              {error, Reason}</font>
+        |      end.
+        |  
+        |  remove_resource_type(ResourceName, GalaxyId, _State) -&gt;
+<font color=red>     0..|      Table = get_resource_type_table(GalaxyId),</font>
+<font color=red>     0..|  	T = fun() -&gt;</font>
+<font color=red>     0..|          mnesia:delete(Table, ResourceName, write)</font>
+        |      end,
+<font color=red>     0..|      case mnesia:transaction(T) of</font>
+        |          {atomic, ok} -&gt;
+<font color=red>     0..|              {ok, resource_removed};</font>
+        |          {aborted, Reason} -&gt;
+<font color=red>     0..|              {error, Reason}</font>
+        |      end.
+        |  
+        |  create_structure_type(
+        |          #structure_type{galaxy_id = GalaxyId} = StructureType,
+        |          _State) -&gt;
+<font color=red>     0..|      Table = get_structure_type_table(GalaxyId),</font>
+<font color=red>     0..|      T = fun() -&gt;</font>
+<font color=red>     0..|          mnesia:write(Table, StructureType, write)</font>
+        |      end,
+<font color=red>     0..|      case mnesia:transaction(T) of</font>
+        |          {atomic, ok} -&gt;
+<font color=red>     0..|              {ok, structure_type_created};</font>
+        |          {atomic, []} -&gt;
+<font color=red>     0..|              {error, not_found};</font>
+        |          {aborted, Reason} -&gt;
+<font color=red>     0..|              {error, Reason}</font>
+        |      end.
+        |  
+        |  get_structure_types(GalaxyId, _State) -&gt;
+<font color=red>     0..|      Table = get_structure_type_table(GalaxyId),</font>
+<font color=red>     0..|  	read_all_records(Table).</font>
+        |  
+        |  get_structure_type(StructureName, GalaxyId, _State) -&gt;
+<font color=red>     0..|      Table = get_structure_type_table(GalaxyId),</font>
+<font color=red>     0..|      T = fun() -&gt;</font>
+<font color=red>     0..|          mnesia:read(Table, StructureName)</font>
+        |      end,
+<font color=red>     0..|      case mnesia:transaction(T) of</font>
+        |          {atomic, [StructureType]} -&gt;
+<font color=red>     0..|              {ok, StructureType};</font>
+        |          {atomic, []} -&gt;
+<font color=red>     0..|              {error, not_found};</font>
+        |          {aborted, _Reason} -&gt;
+<font color=red>     0..|              {error, planet_not_found}</font>
+        |      end.
+        |  
+        |  remove_structure_type(
+        |          #structure_type{galaxy_id = GalaxyId} = StructureType,
+        |          _State) -&gt;
+<font color=red>     0..|      Table = get_structure_type_table(GalaxyId),</font>
+<font color=red>     0..|  	T = fun() -&gt;</font>
+<font color=red>     0..|          mnesia:delete(Table, StructureType, write)</font>
+        |      end,
+<font color=red>     0..|      case mnesia:transaction(T) of</font>
+        |          {atomic, ok} -&gt;
+<font color=red>     0..|              {ok, structure_type_removed};</font>
+        |          {aborted, Reason} -&gt;
+<font color=red>     0..|              {error, Reason}</font>
+        |      end.
+        |  
+        |  get_resource_type_table(GalaxyId) -&gt;
+<font color=red>     0..|      list_to_atom(binary_to_list(GalaxyId) ++ "_resource_types").</font>
+        |  
+        |  get_structure_type_table(GalaxyId) -&gt;
+<font color=red>     0..|      list_to_atom(binary_to_list(GalaxyId) ++ "_structure_types").</font>
+        |  
+        |  read_all_records(Table) -&gt;
+<font color=red>     0..|      Iterator = fun(Record, Acc) -&gt; lists:append(Acc, [Record]) end,</font>
+<font color=red>     0..|      T = fun() -&gt;</font>
+<font color=red>     0..|          mnesia:foldl(Iterator, [], Table)</font>
+        |      end,
+<font color=red>     0..|      case mnesia:transaction(T) of</font>
+        |          {atomic, AllRecords} -&gt;
+<font color=red>     0..|              {ok, AllRecords};</font>
+        |          {aborted, Reason} -&gt;
+<font color=red>     0..|              {error, Reason}</font>
+        |      end.
+</pre>
+</body>
+</html>

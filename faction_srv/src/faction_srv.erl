@@ -86,8 +86,11 @@ init([ImplMod]) ->
 handle_call({create_faction, Name, GalaxyId, DisplayName,
 		StrategyModules}, _From,
 		#state{implmod=ImplMod, implstate=ImplState} = State) ->
-	Faction = #faction{name=Name, galaxy_id=GalaxyId,
-		display_name=DisplayName, strategy_modules=StrategyModules},
+	Faction = #faction{
+                 name = Name,
+                 galaxy_id = GalaxyId,
+		         display_name = DisplayName,
+                 strategy_modules = StrategyModules},
 	case ImplMod:create_faction(Faction, ImplState) of
 		{ok, faction_created} ->
     		{reply, {ok, faction_created}, State};
@@ -219,6 +222,14 @@ simulate_strategies([], _ImplMod, _ImplState) ->
     done;
 
 simulate_strategies([Galaxy | GalaxyList], ImplMod, ImplState) ->
-	{ok, FactionList} = ImplMod:get_factions(Galaxy#galaxy.id, ImplState),
-    [faction_strategy_sup:start_strategy(Faction) || Faction <- FactionList],
+    GalaxyId = Galaxy#galaxy.id,
+    case ImplMod:has_factions(GalaxyId, ImplState) of
+        true ->
+	        {ok, FactionList} = ImplMod:get_factions(GalaxyId, ImplState),
+            [faction_strategy_sup:start_strategy(Faction) ||
+                Faction <- FactionList];
+        false ->
+            pass
+    end,
     simulate_strategies(GalaxyList, ImplMod, ImplState).
+        

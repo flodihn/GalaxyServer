@@ -1,0 +1,63 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<title>/Volumes/Work/Projects/GalaxyServer/sws_srv/.eunit/sws_srv_sup.COVER.html</title>
+</head><body style='background-color: white; color: black'>
+<pre>
+File generated from /Volumes/Work/Projects/GalaxyServer/sws_srv/.eunit/sws_srv_sup.erl by COVER 2018-07-25 at 20:28:28
+
+****************************************************************************
+
+        |  -module(sws_srv_sup).
+        |  
+        |  -behaviour(supervisor).
+        |  
+        |  %% API
+        |  -export([start_link/0]).
+        |  
+        |  %% Supervisor callbacks
+        |  -export([init/1]).
+        |  
+        |  %% ===================================================================
+        |  %% API functions
+        |  %% ===================================================================
+        |  
+        |  start_link() -&gt;
+<font color=red>     0..|      supervisor:start_link({local, ?MODULE}, ?MODULE, []).</font>
+        |  
+        |  %% ===================================================================
+        |  %% Supervisor callbacks
+        |  %% ===================================================================
+        |  
+        |  init([]) -&gt;
+<font color=red>     0..|      RestartStrategy = one_for_one,</font>
+<font color=red>     0..|      MaxRestarts = 10, </font>
+<font color=red>     0..|      MaxSecondsBetweenRestarts = 30, </font>
+        |  
+<font color=red>     0..|      SupFlags = {RestartStrategy, MaxRestarts, MaxSecondsBetweenRestarts},</font>
+<font color=red>     0..|      Restart = permanent,</font>
+<font color=red>     0..|      Shutdown = 6000,</font>
+        |  
+<font color=red>     0..|  	ElliOpts = [{callback, rest_callback}, {port, 2000}],</font>
+        |  	
+<font color=red>     0..|      SwsSrv = {</font>
+        |          sws_srv,
+        |          {sws_srv, start_link, []},
+        |          Restart,
+        |          Shutdown,
+        |          worker,
+        |          []},
+        |  	
+<font color=red>     0..|  	RestAPI = {</font>
+        |          rest_api,
+        |          {elli, start_link, [ElliOpts]},
+        |          Restart,
+        |          Shutdown,
+        |          worker,
+        |          []},
+        |  	
+<font color=red>     0..|      {ok, {SupFlags, [SwsSrv, RestAPI]}}.</font>
+</pre>
+</body>
+</html>

@@ -1,0 +1,112 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<title>/Volumes/Work/Projects/GalaxyServer/sws_srv/.eunit/sws_srv.COVER.html</title>
+</head><body style='background-color: white; color: black'>
+<pre>
+File generated from /Volumes/Work/Projects/GalaxyServer/sws_srv/.eunit/sws_srv.erl by COVER 2018-07-25 at 20:28:28
+
+****************************************************************************
+
+        |  -module(sws_srv).
+        |  -behaviour(gen_server).
+        |  -define(SERVER, ?MODULE).
+        |  
+        |  %% ------------------------------------------------------------------
+        |  %% API Function Exports
+        |  %% ------------------------------------------------------------------
+        |  
+        |  -export([
+        |  		create_squadron/3,
+        |  		upgrade_squadron_to_wing/1,
+        |  		upgrade_wing_to_fleet/1,
+        |  		upgrade_code/1,
+        |  		disband/1,
+        |  		assemble_force/2,
+        |  		start_link/0]).
+        |  
+        |  %% ------------------------------------------------------------------
+        |  %% gen_server Function Exports
+        |  %% ------------------------------------------------------------------
+        |  
+        |  -export([
+        |  		 init/1,
+        |  		 handle_call/3,
+        |  		 handle_cast/2,
+        |  		 handle_info/2,
+        |           terminate/2,
+        |  		 code_change/3]).
+        |  
+        |  %% ------------------------------------------------------------------
+        |  %% API Function Definitions
+        |  %% ------------------------------------------------------------------
+        |  
+        |  start_link() -&gt;
+<font color=red>     0..|      gen_server:start_link({local, ?SERVER}, ?MODULE, [], []).</font>
+        |  
+        |  create_squadron(SquadronName, Founder, Members) -&gt;
+<font color=red>     0..|  	gen_server:call(?SERVER, {create_squadron, SquadronName, Founder,</font>
+        |  		Members}).
+        |  
+        |  upgrade_squadron_to_wing(SquadronId) -&gt;
+<font color=red>     0..|  	gen_server:call(?SERVER, {upgrade_squadron_to_wing, SquadronId}).</font>
+        |  
+        |  upgrade_wing_to_fleet(WingId) -&gt;
+<font color=red>     0..|  	gen_server:call(?SERVER, {upgrade_wing_to_fleet, WingId}).</font>
+        |  
+        |  disband(Id) -&gt;
+<font color=red>     0..|  	gen_server:call(?SERVER, {disband, Id}).</font>
+        |  
+        |  assemble_force(Strength, Faction) -&gt;
+<font color=red>     0..|  	gen_server:call(?SERVER, {assemble_force, Strength, Faction}).</font>
+        |  
+        |  %% ------------------------------------------------------------------
+        |  %% gen_server Function Definitions
+        |  %% ------------------------------------------------------------------
+        |  
+        |  upgrade_code(Module) -&gt;
+<font color=red>     0..|      code:purge(Module),</font>
+<font color=red>     0..|      code:load_file(Module).</font>
+        |  
+        |  init(Args) -&gt;
+        |      %galaxy_srv:set_simulation_callback(sws_system_simulation_callback),
+<font color=red>     0..|      {ok, Args}.</font>
+        |  
+        |  handle_call({create_squadron, SquadronName, Founder, Members}, _From,
+        |  		State) -&gt;
+<font color=red>     0..|      {reply, ok, State};</font>
+        |  
+        |  handle_call({upgrade_squadron_to_wing, SquadronId}, _From,
+        |  		State) -&gt;
+<font color=red>     0..|      {reply, ok, State};</font>
+        |  
+        |  handle_call({upgrade_wing_to_fleet, FleetId}, _From,
+        |  		State) -&gt;
+<font color=red>     0..|      {reply, ok, State};</font>
+        |  
+        |  handle_call({disband, Id}, _From, State) -&gt;
+<font color=red>     0..|      {reply, ok, State};</font>
+        |  
+        |  handle_call(_Request, _From, State) -&gt;
+<font color=red>     0..|      {reply, ok, State}.</font>
+        |  
+        |  handle_cast(_Msg, State) -&gt;
+<font color=red>     0..|      {noreply, State}.</font>
+        |  
+        |  handle_info(_Info, State) -&gt;
+<font color=red>     0..|      {noreply, State}.</font>
+        |  
+        |  terminate(_Reason, _State) -&gt;
+<font color=red>     0..|      ok.</font>
+        |  
+        |  code_change(_OldVsn, State, _Extra) -&gt;
+<font color=red>     0..|      {ok, State}.</font>
+        |  
+        |  %% ------------------------------------------------------------------
+        |  %% Internal Function Definitions
+        |  %% ------------------------------------------------------------------
+        |  
+</pre>
+</body>
+</html>

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<testsuite tests="1" failures="0" errors="0" skipped="0" time="0.691" name="module 'battle_srv'">
+  <testcase time="0.001" name="battle_srv_tests:319 fixture_test_ (Test calculate force capabilities)">
+    <system-out>
+    </system-out>
+  </testcase>
+</testsuite>

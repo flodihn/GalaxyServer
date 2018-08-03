@@ -5,6 +5,6 @@
               {applications,[kernel,stdlib]},
               {mod,{resource_srv_app,[]}},
               {env,[]},
-              {modules,[mnesia_resource,resource_srv,resource_srv_app,
-                        resource_srv_sup,resource_structure,
-                        resource_structure_tests]}]}.
+              {modules,[mnesia_resource,resource_helper,resource_helper_tests,
+                        resource_srv,resource_srv_app,resource_srv_sup,
+                        resource_structure,resource_structure_tests]}]}.

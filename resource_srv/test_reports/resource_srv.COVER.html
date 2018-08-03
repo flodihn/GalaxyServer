@@ -1,0 +1,211 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<title>/Volumes/Work/Projects/GalaxyServer/resource_srv/.eunit/resource_srv.COVER.html</title>
+</head><body style='background-color: white; color: black'>
+<pre>
+File generated from /Volumes/Work/Projects/GalaxyServer/resource_srv/.eunit/resource_srv.erl by COVER 2018-08-01 at 12:44:40
+
+****************************************************************************
+
+        |  -module(resource_srv).
+        |  -behaviour(gen_server).
+        |  
+        |  -include("resource_defs.hrl").
+        |  
+        |  -define(SERVER, ?MODULE).
+        |  
+        |  %% ------------------------------------------------------------------
+        |  %% API Function Exports
+        |  %% ------------------------------------------------------------------
+        |  
+        |  -export([start_link/1]).
+        |  
+        |  %% ------------------------------------------------------------------
+        |  %% gen_server Function Exports
+        |  %% ------------------------------------------------------------------
+        |  
+        |  -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
+        |           terminate/2, code_change/3]).
+        |  
+        |  -export([
+        |      add_event_handler/1,
+        |      create_resource_tables/0,
+        |      create_resource_table/1,
+        |      create_resource_type/6,
+        |      create_resource_type/8,
+        |  	remove_resource_type/2,
+        |  	get_resource_types/1,
+        |      get_resource_type/2,
+        |      create_structure_type/8,
+        |  	get_structure_types/1,
+        |      get_structure_type/2,
+        |  	remove_structure_type/2]).
+        |  
+        |  -record(state, {implmod, implstate}).
+        |  
+        |  %% ------------------------------------------------------------------
+        |  %% gen_server API Function Definitions
+        |  %% ------------------------------------------------------------------
+        |  
+        |  start_link(ImplMod) -&gt;
+<font color=red>     0..|      gen_server:start_link({local, ?SERVER}, ?MODULE, [ImplMod], []).</font>
+        |  
+        |  %% ------------------------------------------------------------------
+        |  %% Galaxy Server API Function Definitions
+        |  %% ------------------------------------------------------------------
+        |  add_event_handler(EventHandler) -&gt;
+<font color=red>     0..|      gen_event:add_handler(?RESOURCE_RESOURCE_EVENT_MANAGER, EventHandler).</font>
+        |  
+        |  create_resource_tables() -&gt;
+<font color=red>     0..|      gen_server:call(?SERVER, create_resource_tables).</font>
+        |  
+        |  create_resource_table(GalaxyId) -&gt;
+<font color=red>     0..|      gen_server:call(?SERVER, {create_resource_table, GalaxyId}).</font>
+        |  
+        |  create_resource_type(Name, GalaxyId, Category, StorageSpace,
+        |                       DisplayName, Type) -&gt;
+<font color=red>     0..|      create_resource_type(Name, GalaxyId, Category, StorageSpace,</font>
+        |          DisplayName, [], 0, Type).
+        |  
+        |  create_resource_type(Name, GalaxyId, Category, StorageSpace,
+        |                       DisplayName, BuildMaterials, BuildTime,
+        |                       Type) -&gt;
+<font color=red>     0..|      gen_server:call(?SERVER, {create_resource_type, Name,</font>
+        |          GalaxyId, Category, StorageSpace, DisplayName,
+        |          BuildMaterials, BuildTime}).
+        |  
+        |  get_resource_types(GalaxyId) -&gt;
+<font color=red>     0..|      gen_server:call(?SERVER, {get_resource_types, GalaxyId}).</font>
+        |  
+        |  get_resource_type(Name, GalaxyId) -&gt;
+<font color=red>     0..|      gen_server:call(?SERVER, {get_resource_type, Name, GalaxyId}).</font>
+        |  
+        |  remove_resource_type(Name, GalaxyId) -&gt;
+<font color=red>     0..|      gen_server:call(?SERVER, {remove_resource_type, Name, GalaxyId}).</font>
+        |  
+        |  create_structure_type(Name, GalaxyId, Category, ProductionRate, Produces,
+        |          InputStorageSpace, OutputStorageSpace, DisplayName) -&gt;
+<font color=red>     0..|      gen_server:call(?SERVER, {create_structure_type, Name, GalaxyId, </font>
+        |  		Category, ProductionRate, Produces, InputStorageSpace,
+        |  		OutputStorageSpace, DisplayName}).
+        |  
+        |  get_structure_type(Name, GalaxyId) -&gt;
+<font color=red>     0..|      gen_server:call(?SERVER, {get_structure_type, Name, GalaxyId}).</font>
+        |  
+        |  get_structure_types(GalaxyId) -&gt;
+<font color=red>     0..|      gen_server:call(?SERVER, {get_structure_types, GalaxyId}).</font>
+        |  
+        |  remove_structure_type(Name, GalaxyId) -&gt;
+<font color=red>     0..|      gen_server:call(?SERVER, {remove_structure_type, Name, GalaxyId}).</font>
+        |  
+        |  %% ------------------------------------------------------------------
+        |  %% gen_server Function Definitions
+        |  %% ------------------------------------------------------------------
+        |  
+        |  init([ImplMod]) -&gt;
+<font color=red>     0..|      State = ImplMod:init(),</font>
+<font color=red>     0..|      {ok, #state{implmod=ImplMod, implstate=State}}.</font>
+        |  
+        |  handle_call(create_resource_tables, _From,
+        |          #state{implmod=ImplMod,
+        |          implstate=ImplState} = State) -&gt;
+<font color=red>     0..|      ImplMod:create_resource_tables(),</font>
+<font color=red>     0..|      {reply, ok, State};</font>
+        |  
+        |  handle_call({create_resource_table, GalaxyId}, _From,
+        |          #state{implmod=ImplMod,
+        |          implstate=ImplState} = State) -&gt;
+<font color=red>     0..|      ImplMod:create_resource_table(GalaxyId),</font>
+<font color=red>     0..|      {reply, ok, State};</font>
+        |  
+        |  handle_call({create_resource_type, Name, GalaxyId, Category, StorageSpace, 
+        |          DisplayName, BuildMaterials, BuildTime, Type}, _From,
+        |          #state{implmod=ImplMod, implstate=ImplState} = State) -&gt;
+<font color=red>     0..|      {ok, resource_type_created} = ImplMod:create_resource_type(</font>
+        |          #resource_type{
+        |              name = Name,
+        |              galaxy_id=GalaxyId,
+        |              category = Category,
+        |              storage_space = StorageSpace,
+        |              build_materials = BuildMaterials,
+        |              build_time = BuildTime,
+        |              display_name = DisplayName,
+        |              type = Type}, ImplState),
+<font color=red>     0..|      {reply, ok, State};</font>
+        |  
+        |  handle_call({get_resource_types, GalaxyId}, _From, #state{implmod=ImplMod,
+        |          implstate=ImplState} = State) -&gt;
+<font color=red>     0..|      {ok, ResourceTypes} = ImplMod:get_resource_types(GalaxyId, ImplState),</font>
+<font color=red>     0..|      {reply, {ok, ResourceTypes}, State};</font>
+        |  
+        |  handle_call({get_resource_type, Name, GalaxyId}, _From,
+        |  		#state{implmod=ImplMod, implstate=ImplState} = State) -&gt;
+<font color=red>     0..|      case ImplMod:get_resource_type(Name, GalaxyId, ImplState) of</font>
+        |          {ok, ResourceType} -&gt;
+<font color=red>     0..|              {reply, {ok, ResourceType}, State};</font>
+        |          {error, not_found} -&gt;
+<font color=red>     0..|              {reply, {error, not_found}, State}</font>
+        |      end;
+        |  
+        |  handle_call({remove_resource_type, Name, GalaxyId}, _From,
+        |  		#state{implmod=ImplMod, implstate=ImplState} = State) -&gt;
+<font color=red>     0..|      {ok, resource_removed} = ImplMod:remove_resource_type(Name, GalaxyId,</font>
+        |  		 ImplState),
+<font color=red>     0..|      {reply, {ok, resource_removed}, State};</font>
+        |  
+        |  handle_call({create_structure_type, Name, GalaxyId, Category,
+        |  		ProductionRate, Produces, InputStorageSpace, OutputStorageSpace,
+        |  		DisplayName}, _From,
+        |  		#state{implmod=ImplMod, implstate=ImplState} = State) -&gt;
+<font color=red>     0..|      {ok, structure_type_created} = ImplMod:create_structure_type(</font>
+        |          #structure_type{name=Name, galaxy_id=GalaxyId, category=Category,
+        |              production_rate = ProductionRate, produces = Produces,
+        |              input_storage_space = InputStorageSpace,
+        |              output_storage_space = OutputStorageSpace,
+        |              display_name = DisplayName}, ImplState),
+<font color=red>     0..|      {reply, ok, State};</font>
+        |  
+        |  handle_call({get_structure_types, GalaxyId}, _From, #state{implmod=ImplMod,
+        |          implstate=ImplState} = State) -&gt;
+<font color=red>     0..|      case ImplMod:get_structure_types(GalaxyId, ImplState) of</font>
+        |          {ok, StructureTypes} -&gt;
+<font color=red>     0..|              {reply, {ok, StructureTypes}, State};</font>
+        |          {error, not_found} -&gt;
+<font color=red>     0..|              {reply, {errot, not_found}, State}</font>
+        |      end;
+        |  
+        |  handle_call({get_structure_type, Name, GalaxyId}, _From,
+        |  		#state{implmod=ImplMod, implstate=ImplState} = State) -&gt;
+<font color=red>     0..|      case ImplMod:get_structure_type(Name, GalaxyId, ImplState) of</font>
+        |          {ok, StructureType} -&gt;
+<font color=red>     0..|              {reply, {ok, StructureType}, State};</font>
+        |          {error, not_found} -&gt;
+<font color=red>     0..|              {reply, {error, not_found}, State}</font>
+        |      end;
+        |  
+        |  handle_call({remove_structure_type, Name, GalaxyId}, _From,
+        |  		#state{implmod=ImplMod, implstate=ImplState} = State) -&gt;
+<font color=red>     0..|      {ok, structure_type_removed} = ImplMod:remove_structure_type(Name,</font>
+        |  		GalaxyId, ImplState),
+<font color=red>     0..|      {reply, {ok, structure_type_removed}, State};</font>
+        |  
+        |  handle_call(Request, _From, State) -&gt;
+<font color=red>     0..|      error_logger:info_report({unknown_request, Request}),</font>
+<font color=red>     0..|      {reply, {error, unknown_request}, State}.</font>
+        |  
+        |  handle_cast(_Msg, State) -&gt;
+<font color=red>     0..|      {noreply, State}.</font>
+        |  
+        |  handle_info(_Info, State) -&gt;
+<font color=red>     0..|      {noreply, State}.</font>
+        |  
+        |  terminate(_Reason, _State) -&gt;
+<font color=red>     0..|      ok.</font>
+        |  
+        |  code_change(_OldVsn, State, _Extra) -&gt;
+<font color=red>     0..|      {ok, State}.</font>
+</pre>
+</body>
+</html>

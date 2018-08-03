@@ -10,19 +10,8 @@
     hourly_resource_rate/2,
     simulate_structures/2,
     simulate_structure/2,
-    pretty_print/1,
-    t/0
+    pretty_print/1
     ]).
-
-t() ->
-    Structure = #structure{
-        name = <<"quadanium_mine">>,
-        output_resources = [],
-        input_resources = [],
-        output_storage_space = 970,
-        input_storage_space = 0},
- 
-    simulate_structure(Structure, 3.0).
 
 simulate_structures(StructureList, DeltaTime) ->
     simulate_structures(StructureList, [], DeltaTime).
@@ -37,7 +26,7 @@ simulate_structures([Structure | Rest], UpdatedStructures, DeltaTime) ->
 
 simulate_structure(Structure, DeltaTime) ->
      {ok, StructureType} = resource_srv:get_structure_type(
-        Structure#structure.name),
+        Structure#structure.galaxy_id, Structure#structure.name),
     ResourceList = StructureType#structure_type.produces,
     {ok, UpdatedStructure} = create_or_convert_resources(ResourceList,
         Structure, StructureType, DeltaTime),
@@ -76,7 +65,7 @@ create_or_convert_resources([], Structure, _StructureType, _DeltaTime) ->
 create_or_convert_resources([Resource | Rest], Structure, StructureType,
         DeltaTime) ->
     {ok, ResourceType} = resource_srv:get_resource_type(
-        Resource#resource.name),
+        Resource#resource.galaxy_id, Resource#resource.name),
     case ResourceType#resource_type.build_materials of
         [] ->
             {ok, UpdatedStructure} = create_resource(Resource, ResourceType,
@@ -283,8 +272,9 @@ truncate(F, N) ->
     Prec = math:pow(10, N),
     trunc(F * Prec) / Prec.
 
-resource_storage_space(#resource{name = Name, amount = Amount}) ->
-    {ok, ResourceType} = resource_srv:get_resource_type(Name),
+resource_storage_space(#resource{name = Name, galaxy_id=GalaxyId,
+        amount = Amount}) ->
+    {ok, ResourceType} = resource_srv:get_resource_type(GalaxyId, Name),
     ResourceType#resource_type.storage_space * Amount;
 
 resource_storage_space(ResourceList) when is_list(ResourceList) ->

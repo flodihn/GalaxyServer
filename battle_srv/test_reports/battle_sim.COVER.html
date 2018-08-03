@@ -1,0 +1,129 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<title>/Volumes/Work/Projects/GalaxyServer/battle_srv/.eunit/battle_sim.COVER.html</title>
+</head><body style='background-color: white; color: black'>
+<pre>
+File generated from /Volumes/Work/Projects/GalaxyServer/battle_srv/.eunit/battle_sim.erl by COVER 2018-08-01 at 09:05:49
+
+****************************************************************************
+
+        |  -module(battle_sim).
+        |  -behaviour(gen_server).
+        |  
+        |  -define(SIMULATION_STEP_TIME, 10000).
+        |  
+        |  -include("../faction_srv/include/faction_defs.hrl").
+        |  -include("battle_defs.hrl").
+        |  
+        |  -record(state, {
+        |      galaxy_id,
+        |      faction_name,
+        |  	sim_proc_name,
+        |      last_run_time}).
+        |  
+        |  %% ------------------------------------------------------------------
+        |  %% API Function Exports
+        |  %% ------------------------------------------------------------------
+        |  
+        |  -export([start_link/1]).
+        |  
+        |  %% ------------------------------------------------------------------
+        |  %% gen_server Function Exports
+        |  %% ------------------------------------------------------------------
+        |  
+        |  -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
+        |           terminate/2, code_change/3]).
+        |  
+        |  %% ------------------------------------------------------------------
+        |  %% Internal Function Exports
+        |  %% ------------------------------------------------------------------
+        |  -export([tick/1]).
+        |  
+        |  %% ------------------------------------------------------------------
+        |  %% gen_server API Function Definitions
+        |  %% ------------------------------------------------------------------
+        |  
+        |  start_link(#faction{galaxy_id = GalaxyId, name = FactionName}) -&gt;
+<font color=red>     0..|      SimulationName = get_faction_strategy_sim_name(GalaxyId, FactionName),</font>
+<font color=red>     0..|      State = #state{</font>
+        |          galaxy_id = GalaxyId, 
+        |          sim_proc_name = SimulationName,
+        |          faction_name = FactionName},
+<font color=red>     0..|      gen_server:start_link({local, SimulationName}, ?MODULE, [State], []).</font>
+        |  
+        |  %% ------------------------------------------------------------------
+        |  %% Galaxy Simulation API Function Definitions
+        |  %% ------------------------------------------------------------------
+        |  
+        |  %% ------------------------------------------------------------------
+        |  %% gen_server Function Definitions
+        |  %% ------------------------------------------------------------------
+        |  
+        |  init([#state{sim_proc_name = SimProcName} = State]) -&gt;
+<font color=red>     0..|      spawn_link(?MODULE, tick, [SimProcName]),</font>
+<font color=red>     0..|      Now = get_run_time(),</font>
+<font color=red>     0..|      {ok, State#state{last_run_time = Now}}.</font>
+        |  
+        |  handle_call(tick, _From, #state{galaxy_id = GalaxyId, faction_name = FactionName,
+        |  		last_run_time = LastRunTime} = State) -&gt;
+<font color=red>     0..|      Now = get_run_time(),</font>
+<font color=red>     0..|  	DeltaTime = get_delta_time(Now, LastRunTime),</font>
+<font color=red>     0..|  	{ok, Faction} = faction_srv:get_faction(GalaxyId, FactionName),</font>
+<font color=red>     0..|  	simulate_faction(Faction, DeltaTime),</font>
+<font color=red>     0..|      {reply, ok, State#state{last_run_time=Now}};</font>
+        |  
+        |  handle_call(Request, _From, GalaxyId) -&gt;
+<font color=red>     0..|      error_logger:info_report({unknown_request, Request}),</font>
+<font color=red>     0..|      {reply, ok, GalaxyId}.</font>
+        |  
+        |  handle_cast(_Msg, GalaxyId) -&gt;
+<font color=red>     0..|      {noreply, GalaxyId}.</font>
+        |  
+        |  handle_info(_Info, GalaxyId) -&gt;
+<font color=red>     0..|      {noreply, GalaxyId}.</font>
+        |  
+        |  terminate(_Reason, _GalaxyId) -&gt;
+<font color=red>     0..|      ok.</font>
+        |  
+        |  code_change(_OldVsn, GalaxyId, _Extra) -&gt;
+<font color=red>     0..|      {ok, GalaxyId}.</font>
+        |  
+        |  %% ------------------------------------------------------------------
+        |  %% Internal Function Definitions
+        |  %% ------------------------------------------------------------------
+        |  
+        |  get_faction_strategy_sim_name(GalaxyId, FactionName) -&gt;
+<font color=red>     0..|      list_to_atom(binary_to_list(GalaxyId) ++ "_" ++</font>
+        |      binary_to_list(FactionName) ++ "_strategy_sim").
+        |  
+        |  get_delta_time(Now, Past) -&gt;
+<font color=red>     0..|      timer:now_diff(Now, Past) / 1000000.</font>
+        |  
+        |  get_run_time() -&gt;
+<font color=red>     0..|      erlang:timestamp().</font>
+        |  
+        |  simulate_faction(Faction, DeltaTime) -&gt;
+<font color=red>     0..|  	StrategyList = Faction#faction.strategy_modules,</font>
+<font color=red>     0..|  	simulate_strategies(StrategyList, Faction, DeltaTime).</font>
+        |  
+        |  simulate_strategies([], _Faction, _DeltaTime) -&gt;
+<font color=red>     0..|      done;</font>
+        |  
+        |  simulate_strategies([StrategyModule| Rest], Faction, DeltaTime) -&gt;
+<font color=red>     0..|  	StrategyModule:simulate_faction(Faction, DeltaTime),</font>
+<font color=red>     0..|  	simulate_strategies(Rest, Faction, DeltaTime).</font>
+        |  
+        |  %% ------------------------------------------------------------------
+        |  %% Internal Tick process.
+        |  %% This operation is potentially harmful since it does not check
+        |  %% if the old simulation has finished before ticking.
+        |  %% ------------------------------------------------------------------
+        |  tick(SimulationProcName) -&gt;
+<font color=red>     0..|      gen_server:call(SimulationProcName, tick),</font>
+<font color=red>     0..|      timer:sleep(?SIMULATION_STEP_TIME),</font>
+<font color=red>     0..|      tick(SimulationProcName).</font>
+</pre>
+</body>
+</html>

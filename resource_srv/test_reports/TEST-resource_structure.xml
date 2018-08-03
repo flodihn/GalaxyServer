@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<testsuite tests="9" failures="0" errors="0" skipped="0" time="0.476" name="module 'resource_structure'">
+  <testcase time="0.000" name="resource_structure_tests:124 fixture_test_ (Structure over output space capacity)">
+    <system-out>
+    </system-out>
+  </testcase>
+  <testcase time="0.000" name="resource_structure_tests:126 fixture_test_ (Structure over output space capacity (heavy resource))">
+    <system-out>
+    </system-out>
+  </testcase>
+  <testcase time="0.000" name="resource_structure_tests:128 fixture_test_ (Structure over output space capacity (half resource))">
+    <system-out>
+    </system-out>
+  </testcase>
+  <testcase time="0.001" name="resource_structure_tests:131 fixture_test_ (Mine resource production)">
+    <system-out>
+    </system-out>
+  </testcase>
+  <testcase time="0.000" name="resource_structure_tests:133 fixture_test_ (Hourly resource rate conversion)">
+    <system-out>
+    </system-out>
+  </testcase>
+  <testcase time="0.000" name="resource_structure_tests:135 fixture_test_ (Truncate floating point)">
+    <system-out>
+    </system-out>
+  </testcase>
+  <testcase time="0.012" name="resource_structure_tests:137 fixture_test_ (Simulate structure)">
+    <system-out>
+    </system-out>
+  </testcase>
+  <testcase time="0.001" name="resource_structure_tests:139 fixture_test_ (Simulate structures)">
+    <system-out>
+    </system-out>
+  </testcase>
+  <testcase time="0.008" name="resource_structure_tests:141 fixture_test_ (Pretty print)">
+    <system-out>
+========== STRUCTURE ==========
+uid: undefined
+name: &lt;&lt;"small_shipyard"&gt;&gt;
+build_queue: []
+output_resources: [{resource,&lt;&lt;"small_spaceship"&gt;&gt;,&lt;&lt;"structure_test"&gt;&gt;,1}]
+input_resources: []
+output_storage_space: 10
+input_storage_space: 0
+
+    </system-out>
+  </testcase>
+</testsuite>

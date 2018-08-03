@@ -1,0 +1,62 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<title>/Volumes/Work/Projects/GalaxyServer/resource_srv/.eunit/resource_helper.COVER.html</title>
+</head><body style='background-color: white; color: black'>
+<pre>
+File generated from /Volumes/Work/Projects/GalaxyServer/resource_srv/.eunit/resource_helper.erl by COVER 2018-08-01 at 12:44:40
+
+****************************************************************************
+
+        |  -module(resource_helper).
+        |  
+        |  -include("resource_defs.hrl").
+        |  
+        |  -ifdef(TEST).
+        |  -compile(export_all).
+        |  -endif.
+        |  
+        |  -export([
+        |      add_to_resource_list/2,
+        |      remove_from_resource_list/2
+        |      ]).
+        |  
+        |  add_to_resource_list(Resource, ResourceList) -&gt;
+     2..|      case lists:keytake(Resource#resource.name, 2, ResourceList) of
+        |          {value, ExistingResource, NewResourceList} -&gt;
+     1..|              CurrentAmount = ExistingResource#resource.amount,
+     1..|              AmountToAdd = Resource#resource.amount,
+     1..|              NewAmount = CurrentAmount + AmountToAdd,
+     1..|              UpdatedResource = Resource#resource{amount = NewAmount},
+     1..|              UpdatedResourceList = lists:append([UpdatedResource],
+        |                                                 NewResourceList), 
+     1..|              {ok, UpdatedResourceList};
+        |          false -&gt;
+     1..|              UpdatedResourceList = lists:append(ResourceList,
+        |                                                 [Resource]),
+     1..|              {ok, UpdatedResourceList}
+        |      end.      
+        |  
+        |  remove_from_resource_list(Resource, ResourceList) -&gt;
+     4..|      case lists:keytake(Resource#resource.name, 2, ResourceList) of
+        |          {value, ExistingResource, NewResourceList} -&gt;
+     3..|              CurrentAmount = ExistingResource#resource.amount,
+     3..|              AmountToRemove = Resource#resource.amount,
+     3..|              NewAmount = CurrentAmount - AmountToRemove,
+     3..|              case NewAmount =&lt; 0 of
+        |                  true -&gt;
+     2..|                      {ok, NewResourceList};
+        |                  false -&gt;
+     1..|                      UpdatedResource = Resource#resource{
+        |                                          amount = NewAmount},
+     1..|                      UpdatedResourceList= lists:append(NewResourceList, 
+        |                          [UpdatedResource]),
+     1..|                      {ok, UpdatedResourceList}
+        |              end;
+        |          false -&gt;
+     1..|              {ok, ResourceList}
+        |      end.      
+</pre>
+</body>
+</html>

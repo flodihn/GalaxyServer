@@ -1,0 +1,114 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<title>/Volumes/Work/Projects/GalaxyServer/sws_srv/.eunit/galaxy_helper.COVER.html</title>
+</head><body style='background-color: white; color: black'>
+<pre>
+File generated from /Volumes/Work/Projects/GalaxyServer/sws_srv/.eunit/galaxy_helper.erl by COVER 2018-07-25 at 20:28:28
+
+****************************************************************************
+
+        |  -module(galaxy_helper).
+        |  
+        |  -include("galaxy_defs.hrl").
+        |  -include("resource_defs.hrl").
+        |  
+        |  -export([
+        |      init/0
+        |      ]).
+        |  
+        |  init() -&gt;
+<font color=red>     0..|      galaxy_srv:create_galaxy(</font>
+        |          &lt;&lt;"test"&gt;&gt;,
+        |          {0, 0, 0}),
+        |  
+<font color=red>     0..|      galaxy_srv:create_region(</font>
+        |          &lt;&lt;"test"&gt;&gt;,
+        |          &lt;&lt;"core"&gt;&gt;,
+        |          &lt;&lt;"Core Worlds"&gt;&gt;),
+        |  
+<font color=red>     0..|      resource_srv:create_resource_type(</font>
+        |          &lt;&lt;"quadanium"&gt;&gt;,
+        |          &lt;&lt;"material"&gt;&gt;,
+        |          2,
+        |          0,
+        |          &lt;&lt;"Quadanium steel"&gt;&gt;),
+<font color=red>     0..|      resource_srv:create_resource_type(</font>
+        |          &lt;&lt;"tie-fighter"&gt;&gt;,
+        |          &lt;&lt;"starfighter"&gt;&gt;,
+        |          10,
+        |          [#resource{name=list_to_binary("quadanium"), amount=10}],
+        |          2,
+        |          &lt;&lt;"TIE/LN Fighter"&gt;&gt;),
+<font color=red>     0..|      resource_srv:create_resource_type(</font>
+        |          &lt;&lt;"small_spaceship"&gt;&gt;,
+        |          &lt;&lt;"spaceship"&gt;&gt;,
+        |          10,
+        |          [#resource{name=list_to_binary("metal"), amount=10}],
+        |          2,
+        |          &lt;&lt;"Small spaceship"&gt;&gt;),
+        |   
+<font color=red>     0..|      resource_srv:create_structure_type(</font>
+        |          &lt;&lt;"quadanium_mine"&gt;&gt;,
+        |          &lt;&lt;"mine"&gt;&gt;,
+        |          1,
+        |          [#resource{name = list_to_binary("quadanium"), amount = 10}],
+        |          0,
+        |          1000,
+        |          &lt;&lt;"Quadanium Mine"&gt;&gt;),
+        |  
+<font color=red>     0..|      resource_srv:create_structure_type(</font>
+        |          &lt;&lt;"small_shipyard"&gt;&gt;,
+        |          &lt;&lt;"shipyard"&gt;&gt;,
+        |          3,
+        |          [#resource{
+        |              name = list_to_binary("small_spaceship"),
+        |              amount = 1}],
+        |          1000,
+        |          720,
+        |          &lt;&lt;"Small Shipyard"&gt;&gt;),
+        |  
+<font color=red>     0..|      resource_srv:create_structure_type(</font>
+        |          &lt;&lt;"small_shipyard"&gt;&gt;,
+        |          &lt;&lt;"shipyard"&gt;&gt;,
+        |          3,
+        |          [#resource{name = list_to_binary("small_spaceship"), amount = 1}],
+        |          1000,
+        |          1000,
+        |          &lt;&lt;"Small Shipyard"&gt;&gt;),
+        |  
+<font color=red>     0..|      create_sol_system(),</font>
+<font color=red>     0..|      create_alpha_centauri_system(),</font>
+<font color=red>     0..|      ok.</font>
+        |  
+        |  create_sol_system() -&gt;
+<font color=red>     0..|      galaxy_srv:create_system(</font>
+        |          &lt;&lt;"test"&gt;&gt;,
+        |          &lt;&lt;"core"&gt;&gt;,
+        |          &lt;&lt;"sol"&gt;&gt;,
+        |          {0,0,0},
+        |          &lt;&lt;"Sol System"&gt;&gt;),
+<font color=red>     0..|      galaxy_srv:create_planet(</font>
+        |          &lt;&lt;"test"&gt;&gt;,
+        |          &lt;&lt;"sol"&gt;&gt;,
+        |          &lt;&lt;"terra"&gt;&gt;,
+        |          #orbit{distance=10, angle=360, speed=1}, &lt;&lt;"Earth"&gt;&gt;),
+<font color=red>     0..|      galaxy_srv:add_structure(</font>
+        |          &lt;&lt;"test"&gt;&gt;,
+        |          #structure{name=list_to_binary("quadanium_mine")},
+        |          &lt;&lt;"terra"&gt;&gt;,
+        |          planet),
+<font color=red>     0..|      ok.</font>
+        |  
+        |  create_alpha_centauri_system() -&gt;
+<font color=red>     0..|     galaxy_srv:create_system(</font>
+        |          &lt;&lt;"test"&gt;&gt;,
+        |          &lt;&lt;"core"&gt;&gt;,
+        |          &lt;&lt;"alpha_centauri"&gt;&gt;,
+        |          {1.3,0, 6.2},
+        |          &lt;&lt;"Alpha Centauri"&gt;&gt;),
+<font color=red>     0..|      ok.</font>
+</pre>
+</body>
+</html>

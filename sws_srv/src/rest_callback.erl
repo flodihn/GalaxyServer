@@ -159,8 +159,8 @@ handle('DELETE',[<<"galaxies">>, GalaxyId, <<"systems">>, SystemName], _Req) ->
 	end;
 
 % TODO: Make resources specific for each galaxy.
-handle('GET',[<<"galaxies">>, _GalaxyId, <<"resource_types">>], _Req) ->
-    case resource_srv:get_resource_types() of 
+handle('GET',[<<"galaxies">>, GalaxyId, <<"resource_types">>], _Req) ->
+    case resource_srv:get_resource_types(GalaxyId) of 
         {ok, ResourceTypes} ->
             Response = rest_util:resource_types_to_json(ResourceTypes),
 			{200, [], Response};
@@ -172,8 +172,8 @@ handle('GET',[<<"galaxies">>, _GalaxyId, <<"resource_types">>], _Req) ->
     end;
 
 % TODO: Make resources specific for each galaxy.
-handle('GET',[<<"galaxies">>, _GalaxyId, <<"structure_types">>], _Req) ->
-    case resource_srv:get_structure_types() of 
+handle('GET',[<<"galaxies">>, GalaxyId, <<"structure_types">>], _Req) ->
+    case resource_srv:get_structure_types(GalaxyId) of 
         {ok, StructureTypes} ->
             Response = rest_util:structure_types_to_json(StructureTypes),
 			{200, [], Response};

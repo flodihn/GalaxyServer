@@ -1,0 +1,208 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<title>/Volumes/Work/Projects/GalaxyServer/sws_srv/.eunit/rest_callback.COVER.html</title>
+</head><body style='background-color: white; color: black'>
+<pre>
+File generated from /Volumes/Work/Projects/GalaxyServer/sws_srv/.eunit/rest_callback.erl by COVER 2018-07-25 at 20:28:28
+
+****************************************************************************
+
+        |  %% @author Cflow
+        |  %% @doc @todo Add description to rest_callback.
+        |  -module(rest_callback).
+        |  
+        |  -include("galaxy_defs.hrl").
+        |  -include("../deps/elli/include/elli.hrl").
+        |  -behaviour(elli_handler).
+        |  
+        |  -export([handle/2, handle/3, handle_event/3]).
+        |  
+        |  -define(DEFAULT_REQUEST_HEADERS, [
+        |      {&lt;&lt;"Content-Type"&gt;&gt;, &lt;&lt;"application/json"&gt;&gt;},
+        |  	{&lt;&lt;"Access-Control-Allow-Origin"&gt;&gt;, &lt;&lt;"*"&gt;&gt;},
+        |  	{&lt;&lt;"Access-Control-Allow-Methods"&gt;&gt;, &lt;&lt;"GET, PUT, DELETE"&gt;&gt;}]).
+        |  
+        |  handle(Req, _Args) -&gt;
+        |      %% Delegate to our handler function
+<font color=red>     0..|      handle(Req#req.method, elli_request:path(Req), Req).</font>
+        |  
+        |  handle('GET',[&lt;&lt;"galaxies"&gt;&gt;], _Req) -&gt;
+<font color=red>     0..|  	{ok, GalaxyList} = galaxy_srv:get_galaxies(),</font>
+<font color=red>     0..|  	JsonGalaxyList = rest_util:galaxies_to_json(GalaxyList),</font>
+<font color=red>     0..|      {200, [], json2:encode(JsonGalaxyList)};</font>
+        |  
+        |  handle('GET',[&lt;&lt;"galaxies"&gt;&gt;, GalaxyId], _Req) -&gt;
+<font color=red>     0..|      case galaxy_srv:get_galaxy(GalaxyId) of </font>
+        |          {ok, #galaxy{} = Galaxy} -&gt;
+<font color=red>     0..|              Response = rest_util:galaxy_to_json(Galaxy),</font>
+<font color=red>     0..|              {200, [], Response};</font>
+        |          {error, not_found} -&gt;
+<font color=red>     0..|              rest_util:response404();</font>
+        |          {error, Reason} -&gt;
+<font color=red>     0..|              error_logger:error_report(Reason),</font>
+<font color=red>     0..|              rest_util:response500()</font>
+        |      end;
+        |  
+        |  handle('DELETE',[&lt;&lt;"galaxies"&gt;&gt;, GalaxyId], _Req) -&gt;
+<font color=red>     0..|      rest_util:response404();</font>
+        |  
+        |  handle('GET',[&lt;&lt;"galaxies"&gt;&gt;, GalaxyId, &lt;&lt;"regions"&gt;&gt;], _Req) -&gt;
+<font color=red>     0..|      case galaxy_srv:get_regions(GalaxyId) of </font>
+        |          {ok, Regions} -&gt;
+<font color=red>     0..|              Response = rest_util:regions_to_json(Regions),</font>
+<font color=red>     0..|  			{200, [], Response};</font>
+        |          {error, not_found} -&gt;
+<font color=red>     0..|              rest_util:response404();</font>
+        |          {error, Reason} -&gt;
+<font color=red>     0..|              error_logger:error_report(Reason),</font>
+<font color=red>     0..|              rest_util:response500()</font>
+        |      end;
+        |  
+        |  handle('GET',[&lt;&lt;"galaxies"&gt;&gt;, GalaxyId, &lt;&lt;"systems"&gt;&gt;], _Req) -&gt;
+<font color=red>     0..|      case galaxy_srv:get_systems(GalaxyId) of </font>
+        |          {ok, Systems} -&gt;
+<font color=red>     0..|              Response = rest_util:systems_to_json(Systems),</font>
+<font color=red>     0..|  			{200, [], Response};</font>
+        |          {error, not_found} -&gt;
+<font color=red>     0..|              rest_util:response404();</font>
+        |          {error, Reason} -&gt;
+<font color=red>     0..|              error_logger:error_report(Reason),</font>
+<font color=red>     0..|              rest_util:response500()</font>
+        |      end;
+        |  
+        |  handle('GET',[&lt;&lt;"galaxies"&gt;&gt;, GalaxyId, &lt;&lt;"systems"&gt;&gt;, SystemName], _Req) -&gt;
+<font color=red>     0..|      case galaxy_srv:get_system(GalaxyId, SystemName) of </font>
+        |          {ok, System} -&gt;
+<font color=red>     0..|              Response = rest_util:system_to_json(System),</font>
+<font color=red>     0..|  			{200, [], Response};</font>
+        |          {error, not_found} -&gt;
+<font color=red>     0..|              rest_util:response404();</font>
+        |          {error, Reason} -&gt;
+<font color=red>     0..|              error_logger:error_report(Reason),</font>
+<font color=red>     0..|              rest_util:response500()</font>
+        |      end;
+        |  
+        |  handle('PUT',[&lt;&lt;"galaxies"&gt;&gt;, GalaxyId], Req) -&gt;
+<font color=red>     0..|      Body = elli_request:body(Req),</font>
+<font color=red>     0..|      {ok, JsonBody} = json2:decode_string(binary_to_list(Body)),</font>
+<font color=red>     0..|      {ok, Galaxy} = rest_util:json_to_record(galaxy, JsonBody),</font>
+<font color=red>     0..|      case galaxy_srv:update_galaxy(Galaxy) of</font>
+        |          {error, not_found} -&gt;
+<font color=red>     0..|              rest_util:response404();</font>
+        |          {ok, galaxy_updated} -&gt;
+<font color=red>     0..|              rest_util:response200(&lt;&lt;"galaxy_updated"&gt;&gt;)</font>
+        |      end;
+        |   
+        |   handle('POST',[&lt;&lt;"galaxies"&gt;&gt;, GalaxyId], _Req) -&gt;
+<font color=red>     0..|  	{200, [], json2:encode({struct, [{&lt;&lt;"ok"&gt;&gt;, &lt;&lt;"galaxy"&gt;&gt;}]})};</font>
+        |  
+        |   handle('POST',[&lt;&lt;"galaxies"&gt;&gt;, GalaxyId, &lt;&lt;"systems"&gt;&gt;], Req) -&gt;
+<font color=red>     0..|      Body = elli_request:body(Req),</font>
+<font color=red>     0..|      {ok, JsonBody} = json2:decode_string(binary_to_list(Body)),</font>
+<font color=red>     0..|      {ok, System} = rest_util:json_to_record(system, JsonBody),</font>
+        |  	
+<font color=red>     0..|      case galaxy_srv:create_system(System#system{galaxy_id=GalaxyId}) of</font>
+        |          {ok, system_created} -&gt;
+<font color=red>     0..|              rest_util:response200(&lt;&lt;"system_created"&gt;&gt;)</font>
+        |      end;
+        |  
+        |   handle('POST',[&lt;&lt;"galaxies"&gt;&gt;, GalaxyId, &lt;&lt;"systems"&gt;&gt;, SystemName,
+        |          &lt;&lt;"hyperspaceroutes"&gt;&gt;], Req) -&gt;
+<font color=red>     0..|      Body = elli_request:body(Req),</font>
+<font color=red>     0..|      {ok, JsonBody} = json2:decode_string(binary_to_list(Body)),</font>
+<font color=red>     0..|      {ok, HyperspaceRoute} = rest_util:json_to_record(</font>
+        |  		hyperspace_route, JsonBody),
+        |  	
+<font color=red>     0..|      case galaxy_srv:connect_systems(GalaxyId, HyperspaceRoute) of</font>
+        |          {ok, systems_connected} -&gt;
+<font color=red>     0..|              rest_util:response200(&lt;&lt;"systems_connected"&gt;&gt;);</font>
+        |  		{error, Reason} -&gt;
+<font color=red>     0..|  			rest_util:response500(list_to_binary(atom_to_list(Reason)))</font>
+        |      end;
+        |  
+        |  handle('POST',[&lt;&lt;"galaxies"&gt;&gt;, GalaxyId, &lt;&lt;"systems"&gt;&gt;, SystemName,
+        |          &lt;&lt;"structures"&gt;&gt;], Req) -&gt;
+<font color=red>     0..|      Body = elli_request:body(Req),</font>
+<font color=red>     0..|      {ok, JsonBody} = json2:decode_string(binary_to_list(Body)),</font>
+<font color=red>     0..|      {ok, StructureType} = rest_util:json_to_structure_type_name(JsonBody),</font>
+        |  	
+<font color=red>     0..|      case galaxy_srv:add_structure(GalaxyId, StructureType, SystemName,</font>
+        |              system) of
+        |          {ok, structure_added, Structure} -&gt;
+<font color=red>     0..|              StructureJson = rest_util:structure_to_json(Structure),</font>
+<font color=red>     0..|              rest_util:response200(StructureJson);</font>
+        |  		{error, Reason} -&gt;
+<font color=red>     0..|  			rest_util:response500(list_to_binary(atom_to_list(Reason)))</font>
+        |      end;
+        |  
+        |  handle('DELETE',[&lt;&lt;"galaxies"&gt;&gt;, GalaxyId, &lt;&lt;"systems"&gt;&gt;, SystemName,
+        |          &lt;&lt;"structures"&gt;&gt;, Uid], Req) -&gt;
+<font color=red>     0..|      case galaxy_srv:remove_structure(GalaxyId, Uid, SystemName, system) of</font>
+        |          {ok, structure_removed} -&gt;
+<font color=red>     0..|              rest_util:response200(&lt;&lt;"structure_removed"&gt;&gt;);</font>
+        |  		{error, Reason} -&gt;
+<font color=red>     0..|  			rest_util:response500(list_to_binary(atom_to_list(Reason)))</font>
+        |      end;
+        |  
+        |   handle('DELETE',[&lt;&lt;"galaxies"&gt;&gt;, GalaxyId, &lt;&lt;"systems"&gt;&gt;, OriginSystem,
+        |          &lt;&lt;"hyperspaceroutes"&gt;&gt;, DestinationSystem], Req) -&gt;
+<font color=red>     0..|  	HyperspaceRoute = #hyperspace_route{</font>
+        |          origin=OriginSystem,
+        |          destination=DestinationSystem},
+<font color=red>     0..|      case galaxy_srv:disconnect_systems(GalaxyId, HyperspaceRoute) of</font>
+        |          {ok, systems_disconnected} -&gt;
+<font color=red>     0..|              rest_util:response200(&lt;&lt;"systems_disconnected"&gt;&gt;);</font>
+        |  		{error, Reason} -&gt;
+<font color=red>     0..|  			rest_util:response500(list_to_binary(atom_to_list(Reason)))</font>
+        |  	end;
+        |  
+        |  handle('DELETE',[&lt;&lt;"galaxies"&gt;&gt;, GalaxyId, &lt;&lt;"systems"&gt;&gt;, SystemName], _Req) -&gt;
+<font color=red>     0..|  	case galaxy_srv:remove_system(GalaxyId, SystemName) of</font>
+        |  		{ok, system_removed} -&gt;
+<font color=red>     0..|  			rest_util:response200(&lt;&lt;"system_removed"&gt;&gt;);</font>
+        |  		{error, system_not_found} -&gt;
+<font color=red>     0..|  			rest_util:response404();</font>
+        |  		{error, Reason} -&gt;
+<font color=red>     0..|  			error_logger:error_report(Reason),</font>
+<font color=red>     0..|  			rest_util:respons500()</font>
+        |  	end;
+        |  
+        |  % TODO: Make resources specific for each galaxy.
+        |  handle('GET',[&lt;&lt;"galaxies"&gt;&gt;, GalaxyId, &lt;&lt;"resource_types"&gt;&gt;], _Req) -&gt;
+<font color=red>     0..|      case resource_srv:get_resource_types(GalaxyId) of </font>
+        |          {ok, ResourceTypes} -&gt;
+<font color=red>     0..|              Response = rest_util:resource_types_to_json(ResourceTypes),</font>
+<font color=red>     0..|  			{200, [], Response};</font>
+        |          {error, not_found} -&gt;
+<font color=red>     0..|              rest_util:response404();</font>
+        |          {error, Reason} -&gt;
+<font color=red>     0..|              error_logger:error_report(Reason),</font>
+<font color=red>     0..|              rest_util:response500()</font>
+        |      end;
+        |  
+        |  % TODO: Make resources specific for each galaxy.
+        |  handle('GET',[&lt;&lt;"galaxies"&gt;&gt;, GalaxyId, &lt;&lt;"structure_types"&gt;&gt;], _Req) -&gt;
+<font color=red>     0..|      case resource_srv:get_structure_types(GalaxyId) of </font>
+        |          {ok, StructureTypes} -&gt;
+<font color=red>     0..|              Response = rest_util:structure_types_to_json(StructureTypes),</font>
+<font color=red>     0..|  			{200, [], Response};</font>
+        |          {error, not_found} -&gt;
+<font color=red>     0..|              rest_util:response404();</font>
+        |          {error, Reason} -&gt;
+<font color=red>     0..|              error_logger:error_report(Reason),</font>
+<font color=red>     0..|              rest_util:response500()</font>
+        |      end;
+        |  
+        |  
+        |  handle(_, _, _Req) -&gt;
+<font color=red>     0..|      rest_util:response404().</font>
+        |  
+        |  %% @doc: Handle request events, like request completed, exception
+        |  %% thrown, client timeout, etc. Must return 'ok'.
+        |  handle_event(_Event, _Data, _Args) -&gt;
+<font color=red>     0..|      ok.</font>
+</pre>
+</body>
+</html>

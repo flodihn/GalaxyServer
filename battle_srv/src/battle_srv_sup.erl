@@ -1,4 +1,4 @@
--module(faction_srv_sup).
+-module(battle_srv_sup).
 
 -behaviour(supervisor).
 
@@ -28,21 +28,21 @@ init([]) ->
     Restart = transient,
     Shutdown = 6000,
 
-    FactionSrv = {
-        faction_srv,
-        {faction_srv, start_link, [mnesia_faction]},
+    BattleSrv = {
+        battle_srv,
+        {battle_srv, start_link, [mnesia_battle]},
         Restart,
         Shutdown,
         worker,
         []},
 
-    FactionStrategySup = {
-        faction_strategy_sup,
-        {faction_strategy_sup, start_link, []},
+    BattleSimSup = {
+        battle_sim_sup,
+        {battle_sim_sup, start_link, []},
         Restart,
         Shutdown,
         supervisor,
         [dynamic]},
 
-    {ok, {SupFlags, [FactionSrv, FactionStrategySup]}}.
+    {ok, {SupFlags, [BattleSrv, BattleSimSup]}}.
 

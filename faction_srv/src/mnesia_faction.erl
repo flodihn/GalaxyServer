@@ -9,6 +9,7 @@
     ]).
 
 -export([
+	has_factions/2,
 	create_faction/2,
 	get_factions/2,
 	get_faction/3,
@@ -18,6 +19,10 @@
 init() ->
     mnesia:start(),
     {ok, []}.
+
+has_factions(GalaxyId, _State) ->
+	FactionTable = get_faction_table(GalaxyId),
+	lists:member(FactionTable, mnesia:system_info(tables)).
 
 create_table(TableName, RecordName, Attributes, IndexList, Type) ->
     case lists:member(TableName, mnesia:system_info(tables)) of
@@ -87,8 +92,7 @@ update_faction(#faction{galaxy_id=GalaxyId} = Faction, _State) ->
             {error, Reason}
     end.
 
-find_or_create_faction_table(GalaxyId) ->
-    TableName = get_faction_table(GalaxyId),
+find_or_create_faction_table(TableName) ->
 	case lists:member(TableName, mnesia:system_info(tables)) of
 		true ->
 			pass;
@@ -98,8 +102,7 @@ find_or_create_faction_table(GalaxyId) ->
         		ResourceTypeAttributes, [category], set)
 	end.
 
-find_or_create_faction_claim_table(GalaxyId) ->
-    TableName = get_faction_claim_table(GalaxyId),
+find_or_create_faction_claim_table(TableName) ->
 	case lists:member(TableName, mnesia:system_info(tables)) of
 		true ->
 			pass;

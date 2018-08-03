@@ -1,4 +1,4 @@
--module(faction_strategy_sup).
+-module(battle_sim_sup).
 
 -behaviour(supervisor).
 
@@ -8,7 +8,7 @@
 %% Supervisor callbacks
 -export([init/1]).
 
--export([start_strategy/1]).
+-export([start_battle/1]).
 
 %% ===================================================================
 %% API functions
@@ -30,11 +30,11 @@ init([]) ->
     Restart = transient,
     Shutdown = 6000,
 
-    FactionStrategySim = {faction_strategy_sim,
-		{faction_strategy_sim, start_link, []}, Restart, 
+    BattleSim = {battle_sim,
+		{battle_sim, start_link, []}, Restart, 
         Shutdown, worker, []},
 
-    {ok, {SupFlags, [FactionStrategySim]}}.
+    {ok, {SupFlags, [BattleSim]}}.
 
- start_strategy(Faction) ->
-    supervisor:start_child(?MODULE, [Faction]).
+ start_battle(Battle) ->
+    supervisor:start_child(?MODULE, [Battle]).

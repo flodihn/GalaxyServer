@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<testsuite tests="6" failures="0" errors="0" skipped="0" time="0.019" name="module 'resource_helper'">
+  <testcase time="0.000" name="resource_helper_tests:19 fixture_test_ (Add To Empty Resource List)">
+    <system-out>
+    </system-out>
+  </testcase>
+  <testcase time="0.000" name="resource_helper_tests:21 fixture_test_ (Add To Existing Resource List)">
+    <system-out>
+    </system-out>
+  </testcase>
+  <testcase time="0.000" name="resource_helper_tests:23 fixture_test_ (Remove From Existing Resource List)">
+    <system-out>
+    </system-out>
+  </testcase>
+  <testcase time="0.000" name="resource_helper_tests:25 fixture_test_ (Remove From empty Resource List)">
+    <system-out>
+    </system-out>
+  </testcase>
+  <testcase time="0.000" name="resource_helper_tests:27 fixture_test_ (Remove From Zero Value  Resource List)">
+    <system-out>
+    </system-out>
+  </testcase>
+  <testcase time="0.000" name="resource_helper_tests:29 fixture_test_ (Remove From Lower Than Zero Value  Resource List)">
+    <system-out>
+    </system-out>
+  </testcase>
+</testsuite>

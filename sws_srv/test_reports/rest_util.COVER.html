@@ -1,0 +1,289 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<title>/Volumes/Work/Projects/GalaxyServer/sws_srv/.eunit/rest_util.COVER.html</title>
+</head><body style='background-color: white; color: black'>
+<pre>
+File generated from /Volumes/Work/Projects/GalaxyServer/sws_srv/.eunit/rest_util.erl by COVER 2018-07-25 at 20:28:28
+
+****************************************************************************
+
+        |  %% @author Cflow
+        |  %% @doc @todo Add description to rest_util.
+        |  -module(rest_util).
+        |  
+        |  -include("galaxy_defs.hrl").
+        |  -include("resource_defs.hrl").
+        |  
+        |  %% ====================================================================
+        |  %% API functions
+        |  %% ====================================================================
+        |  -export([
+        |  	response200/1,
+        |  	response404/0,
+        |  	response500/0,
+        |  	galaxies_to_json/1,
+        |  	galaxy_to_json/1,
+        |  	regions_to_json/1,
+        |  	systems_to_json/1,
+        |  	system_to_json/1,
+        |  	resource_types_to_json/1,
+        |  	structure_types_to_json/1,
+        |  	structure_to_json/1,
+        |  	json_to_structure_type_name/1,
+        |  	json_to_record/2]).
+        |  
+        |  response200({struct, Json}) -&gt;
+<font color=red>     0..|  	{200, [], json2:encode({struct, Json})};</font>
+        |  
+        |  response200(Message) -&gt;
+<font color=red>     0..|  	{200, [], json2:encode({struct, [{&lt;&lt;"status"&gt;&gt;, &lt;&lt;"ok"&gt;&gt;},</font>
+        |  		{&lt;&lt;"message"&gt;&gt;, Message}]})}.
+        |  
+        |  response404() -&gt;
+<font color=red>     0..|  	{404, [], json2:encode({struct, [{&lt;&lt;"status"&gt;&gt;, &lt;&lt;"error"&gt;&gt;},</font>
+        |  		{&lt;&lt;"message"&gt;&gt;, &lt;&lt;"Not Found"&gt;&gt;}]})}.
+        |  
+        |  response500() -&gt;
+<font color=red>     0..|  	{500, [], json2:encode({struct, [</font>
+        |  		{&lt;&lt;"status"&gt;&gt;, &lt;&lt;"error"&gt;&gt;}, {&lt;&lt;"message"&gt;&gt;,
+        |  		&lt;&lt;"Internal Server Error"&gt;&gt;}]})}.
+        |  
+        |  galaxies_to_json(GalaxyList) -&gt;
+<font color=red>     0..|  	galaxies_to_json(GalaxyList, []).</font>
+        |  
+        |  galaxies_to_json([], Acc) -&gt;
+<font color=red>     0..|  	{struct, [{galaxies, Acc}]};</font>
+        |  
+        |  galaxies_to_json([Galaxy | GalaxyList], Acc) -&gt;
+<font color=red>     0..|  	GalaxyJson = galaxy_id_to_json(Galaxy),</font>
+<font color=red>     0..|  	galaxies_to_json(GalaxyList, [ GalaxyJson | Acc]).</font>
+        |  	
+        |  galaxy_id_to_json(#galaxy{id=GalaxyId}) -&gt;
+<font color=red>     0..|  	GalaxyId.</font>
+        |  
+        |  galaxy_to_json(Galaxy) -&gt;
+<font color=red>     0..|  	PropList = record_to_proplist(Galaxy),</font>
+<font color=red>     0..|  	JsonPropList = [proplist_values_to_json(Value) || Value &lt;- PropList],</font>
+<font color=red>     0..|  	json2:encode({struct, [{galaxy, {struct, JsonPropList}}]}).</font>
+        |  
+        |  regions_to_json(Regions) -&gt;
+<font color=red>     0..|  	regions_to_json(Regions, []).</font>
+        |  
+        |  regions_to_json([], Acc) -&gt;
+<font color=red>     0..|  	json2:encode({struct, [{regions, {array, Acc}}]});</font>
+        |  
+        |  regions_to_json([Region | Regions], Acc) -&gt;
+<font color=red>     0..|  	PropList = record_to_proplist(Region),</font>
+<font color=red>     0..|  	JsonPropList = [proplist_values_to_json(Value) || Value &lt;- PropList],</font>
+<font color=red>     0..|  	regions_to_json(Regions, [{struct, JsonPropList} | Acc]).</font>
+        |  
+        |  systems_to_json(Systems) -&gt;
+<font color=red>     0..|  	systems_to_json(Systems, []).</font>
+        |  
+        |  systems_to_json([], Acc) -&gt;
+<font color=red>     0..|  	json2:encode({struct, [{systems, {array, Acc}}]});</font>
+        |  
+        |  systems_to_json([System | Systems], Acc) -&gt;
+<font color=red>     0..|  	PropList = record_to_proplist(System),</font>
+<font color=red>     0..|  	JsonPropList = [proplist_values_to_json(Value) || Value &lt;- PropList],</font>
+<font color=red>     0..|  	systems_to_json(Systems, [{struct, JsonPropList} | Acc]).</font>
+        |  
+        |  system_to_json(#system{} = System) -&gt;
+<font color=red>     0..|  	PropList = record_to_proplist(System),</font>
+<font color=red>     0..|  	JsonPropList = [proplist_values_to_json(Value) || Value &lt;- PropList],</font>
+<font color=red>     0..|  	json2:encode({struct, [{system, {struct, JsonPropList}}]}).</font>
+        |  
+        |  resource_types_to_json(ResourceTypes) -&gt;
+<font color=red>     0..|  	resource_types_to_json(ResourceTypes, []).</font>
+        |  
+        |  resource_types_to_json([], Acc) -&gt;
+<font color=red>     0..|  	json2:encode({struct, [{resource_types, {array, Acc}}]});</font>
+        |  
+        |  resource_types_to_json([ResourceType | ResourceTypes], Acc) -&gt;
+<font color=red>     0..|  	PropList = record_to_proplist(ResourceType),</font>
+<font color=red>     0..|  	JsonPropList = [proplist_values_to_json(Value) || Value &lt;- PropList],</font>
+<font color=red>     0..|  	resource_types_to_json(ResourceTypes, [{struct, JsonPropList} | Acc]).</font>
+        |  
+        |  structure_types_to_json(StructureTypes) -&gt;
+<font color=red>     0..|  	structure_types_to_json(StructureTypes, []).</font>
+        |  
+        |  structure_types_to_json([], Acc) -&gt;
+<font color=red>     0..|  	json2:encode({struct, [{structure_types, {array, Acc}}]});</font>
+        |  
+        |  structure_types_to_json([StructureType | StructureTypes], Acc) -&gt;
+<font color=red>     0..|  	PropList = record_to_proplist(StructureType),</font>
+<font color=red>     0..|  	JsonPropList = [proplist_values_to_json(Value) || Value &lt;- PropList],</font>
+<font color=red>     0..|  	structure_types_to_json(StructureTypes, [{struct, JsonPropList} | Acc]).</font>
+        |  
+        |  structure_to_json(Structure) -&gt;
+<font color=red>     0..|  	PropList = record_to_proplist(Structure),</font>
+<font color=red>     0..|  	JsonPropList = [proplist_values_to_json(Value) || Value &lt;- PropList],</font>
+<font color=red>     0..|  	{struct, [{structure, {struct, JsonPropList}}]}.</font>
+        |  
+        |  record_to_proplist(#galaxy{} = Rec) -&gt;
+<font color=red>     0..|  	lists:zip(record_info(fields, galaxy), tl(tuple_to_list(Rec)));</font>
+        |  
+        |  record_to_proplist(#region{} = Rec) -&gt;
+<font color=red>     0..|  	[{name, Rec#region.name}, {display_name, Rec#region.display_name}];</font>
+        |  
+        |  record_to_proplist(#system{} = Rec) -&gt;
+<font color=red>     0..|  	lists:zip(record_info(fields, system), tl(tuple_to_list(Rec)));</font>
+        |  
+        |  record_to_proplist(#resource_type{} = Rec) -&gt;
+<font color=red>     0..|  	lists:zip(record_info(fields, resource_type), tl(tuple_to_list(Rec)));</font>
+        |  
+        |  record_to_proplist(#structure_type{} = Rec) -&gt;
+<font color=red>     0..|  	lists:zip(record_info(fields, structure_type), tl(tuple_to_list(Rec)));</font>
+        |  
+        |  record_to_proplist(#structure{} = Rec) -&gt;
+<font color=red>     0..|  	lists:zip(record_info(fields, structure), tl(tuple_to_list(Rec)));</font>
+        |  
+        |  record_to_proplist(Rec) -&gt;
+<font color=red>     0..|  	error_logger:error_report({?MODULE, record_to_proplist, </font>
+        |  		unknown_record, Rec}).
+        |  
+        |  proplist_values_to_json(#resource{
+        |  		name=Name,
+        |  		galaxy_id=GalaxyId,
+        |  		amount=Amount}) -&gt;
+<font color=red>     0..|  	{struct, [{name, Name}, {galaxy_id, GalaxyId}, {amount, Amount}]};</font>
+        |  
+        |  proplist_values_to_json(#resource_type{
+        |  		name=Name,
+        |  		galaxy_id=GalaxyId,
+        |  		category=Category,
+        |  		storage_space=StorageSpace,
+        |  		display_name=DisplayName,
+        |  		build_materials=BuildMaterials,
+        |  		build_time=BuildTime,
+        |  		metadata=MetaData}) -&gt;
+<font color=red>     0..|  	{resource_type, {struct, [</font>
+        |  		{name, Name},
+        |  		{galaxy_id, GalaxyId},
+        |  		{category, Category},
+        |  		{storage_space, StorageSpace},
+        |  		{build_materials, BuildMaterials},
+        |  		{build_time, BuildTime},
+        |  		{meta_data, MetaData}
+        |  	]}};
+        |  
+        |  proplist_values_to_json(#structure{
+        |  		uid=Uid,
+        |  		galaxy_id=GalaxyId,
+        |  		name=Name,
+        |  		build_queue=BuildQueue,
+        |  		output_resources=OutputResources,
+        |  		input_resources=InputResources,
+        |  		output_storage_space=OutputStorageSpace,
+        |  		input_storage_space=InputStorageSpace}) -&gt;
+<font color=red>     0..|      error_logger:info_report({?MODULE, structure_values_to_json}),</font>
+<font color=red>     0..|  	OutputResourcesJson = [proplist_values_to_json(Value) || </font>
+<font color=red>     0..|  		Value &lt;- OutputResources],</font>
+<font color=red>     0..|  	InputResourcesJson = [proplist_values_to_json(Value) || </font>
+<font color=red>     0..|  		Value &lt;- InputResources],</font>
+<font color=red>     0..|  	{struct, [</font>
+        |  				{uid, Uid},
+        |  				{galaxy_id, GalaxyId},
+        |  				{name, Name},
+        |  				{build_queue, {array, []}},
+        |  				{output_resources, {array, OutputResourcesJson}},
+        |  				{input_resources, {array, InputResourcesJson}},
+        |  				{output_storage_space, OutputStorageSpace},
+        |  				{input_storage_space, InputStorageSpace}
+        |  				]};
+        |  
+        |  proplist_values_to_json({Key, {X, Y, Z}}) -&gt;
+<font color=red>     0..|  	{Key, {struct, [{x, X}, {y, Y}, {z, Z}]}};</font>
+        |  
+        |  proplist_values_to_json({routes, List}) -&gt;
+<font color=red>     0..|  	{routes, {array, List}};</font>
+        |  
+        |  proplist_values_to_json({regions, List}) -&gt;
+<font color=red>     0..|  	{regions, {array, List}};</font>
+        |  
+        |  proplist_values_to_json({Key, List}) when is_list(List) -&gt;
+<font color=red>     0..|  	case List of</font>
+        |  		[] -&gt; 
+<font color=red>     0..|  			{Key, {array, List}};</font>
+        |  		_NonEmptyList -&gt;
+<font color=red>     0..|  			case io_lib:latin1_char_list(List) of</font>
+        |  				true -&gt; 
+<font color=red>     0..|  					{Key, list_to_binary(List)};</font>
+        |  				false -&gt;
+<font color=red>     0..|  					SubJsonPropList = [proplist_values_to_json(Value) || </font>
+<font color=red>     0..|  						Value &lt;- List],</font>
+<font color=red>     0..|  					{Key, {array, SubJsonPropList}}</font>
+        |  			end
+        |  	end;
+        |  
+        |  proplist_values_to_json({Key, Value}) -&gt;
+<font color=red>     0..|  	{Key, Value};</font>
+        |  
+        |  proplist_values_to_json(BadPropListValue) -&gt;
+<font color=red>     0..|  	{error, bad_proplist_value, BadPropListValue}.</font>
+        |  
+        |  json_to_record(galaxy, Json) -&gt;
+        |  	{struct, [{"galaxy", {struct, [
+        |  		{"id", Id},
+        |  		{"pos", {struct, [{"x", X}, {"y", Y}, {"z", Z}]}},
+        |  		{"seed", Seed},
+        |  		{"num_arms", NumArms},
+        |  		{"num_stars", NumStars},
+        |  		{"stars_in_core", StarsInCore},
+        |  		{"core_size", CoreSize},
+        |  		{"spin", Spin},
+        |  		{"arm_spread", ArmSpread},
+        |  		{"thickness", Thickness}
+<font color=red>     0..|  	]}}]} = Json,</font>
+<font color=red>     0..|  	Record =  #galaxy{id=list_to_binary(Id), pos={X, Y, Z},</font>
+        |  		seed=Seed, num_arms=NumArms, num_stars=NumStars,
+        |  		stars_in_core=StarsInCore, core_size=CoreSize, spin=Spin,
+        |  		arm_spread=ArmSpread, thickness=Thickness},
+<font color=red>     0..|  	{ok, Record};</font>
+        |  
+        |  json_to_record(system, Json) -&gt;
+        |  	{struct, [{"system", {struct, [
+        |  		{"name", Name},
+        |  		{"galaxy_id", GalaxyId},
+        |  		{"region", Region},
+        |  		{"pos", {struct, [{"x", X}, {"y", Y}, {"z", Z}]}},
+        |  		{"display_name", DisplayName},
+        |  		{"star_type", StarType},
+        |  		{"star_size", StarSize},
+        |          {"structures", {array, Structures}},
+        |  		{"routes", {array, Routes}},
+        |  		{"metadata", MetaData}
+<font color=red>     0..|  	]}}]} = Json,</font>
+<font color=red>     0..|  	Record =  #system{</font>
+        |          name=list_to_binary(Name),
+        |          galaxy_id=list_to_binary(GalaxyId),
+        |  		region=list_to_binary(Region),
+        |          pos={X, Y, Z},
+        |  		display_name=list_to_binary(DisplayName),
+        |          star_type=StarType,
+        |          star_size=StarSize,
+        |          structures=Structures,
+        |  		routes=Routes,
+        |          metadata=list_to_binary(MetaData)},
+<font color=red>     0..|  	{ok, Record};</font>
+        |  
+        |  json_to_record(hyperspace_route, Json) -&gt;
+        |  	{struct, [
+        |  		{"origin", OriginSystem},
+        |  		{"destination", DestinationSystem}
+<font color=red>     0..|  	]} = Json,</font>
+<font color=red>     0..|  	Record =  #hyperspace_route{</font>
+        |  		origin=list_to_binary(OriginSystem),
+        |  		destination=list_to_binary(DestinationSystem)},
+<font color=red>     0..|  	{ok, Record}.</font>
+        |  
+        |  json_to_structure_type_name(Json) -&gt;
+        |  	{struct, [
+        |  		{"structure_type", StructureTypeName}
+<font color=red>     0..|  	]} = Json,</font>
+<font color=red>     0..|  	{ok, list_to_binary(StructureTypeName)}.</font>
+</pre>
+</body>
+</html>

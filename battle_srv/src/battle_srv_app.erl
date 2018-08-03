@@ -1,4 +1,4 @@
--module(faction_srv_app).
+-module(battle_srv_app).
 
 -behaviour(application).
 
@@ -13,15 +13,14 @@
 %% ===================================================================
 start() ->
     application:start(sasl),
-    application:start(faction_srv),
-    observer:start().
+    application:start(battle_srv).
 
 %% ===================================================================
 %% Application callbacks
 %% ===================================================================
 
 start(_StartType, _StartArgs) ->
-    faction_srv_sup:start_link().
+    battle_srv_sup:start_link().
 
 stop(_State) ->
     ok.

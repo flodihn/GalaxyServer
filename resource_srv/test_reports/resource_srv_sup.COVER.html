@@ -1,0 +1,62 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<title>/Volumes/Work/Projects/GalaxyServer/resource_srv/.eunit/resource_srv_sup.COVER.html</title>
+</head><body style='background-color: white; color: black'>
+<pre>
+File generated from /Volumes/Work/Projects/GalaxyServer/resource_srv/.eunit/resource_srv_sup.erl by COVER 2018-08-01 at 12:44:40
+
+****************************************************************************
+
+        |  -module(resource_srv_sup).
+        |  
+        |  -behaviour(supervisor).
+        |  
+        |  %% API
+        |  -export([start_link/0]).
+        |  
+        |  %% Supervisor callbacks
+        |  -export([init/1]).
+        |  
+        |  %% ===================================================================
+        |  %% API functions
+        |  %% ===================================================================
+        |  
+        |  start_link() -&gt;
+<font color=red>     0..|      supervisor:start_link({local, ?MODULE}, ?MODULE, []).</font>
+        |  
+        |  %% ===================================================================
+        |  %% Supervisor callbacks
+        |  %% ===================================================================
+        |  
+        |  init([]) -&gt;
+<font color=red>     0..|      RestartStrategy = one_for_one,</font>
+<font color=red>     0..|      MaxRestarts = 10, </font>
+<font color=red>     0..|      MaxSecondsBetweenRestarts = 30, </font>
+        |  
+<font color=red>     0..|      SupFlags = {RestartStrategy, MaxRestarts, MaxSecondsBetweenRestarts},</font>
+<font color=red>     0..|      Restart = transient,</font>
+<font color=red>     0..|      Shutdown = 6000,</font>
+        |  
+<font color=red>     0..|      ResourceSrv = {</font>
+        |          resource_srv,
+        |          {resource_srv, start_link, [mnesia_resource]},
+        |          Restart,
+        |          Shutdown,
+        |          worker,
+        |          []},
+        |  
+<font color=red>     0..|      ResourceEventManager = {</font>
+        |          resource_event_manager,
+        |          {gen_event, start_link, [{local, resource_event_manager}]},
+        |          Restart,
+        |          Shutdown,
+        |          worker,
+        |          []},
+        |  
+<font color=red>     0..|      {ok, {SupFlags, [ResourceSrv, ResourceEventManager]}}.</font>
+        |  
+</pre>
+</body>
+</html>

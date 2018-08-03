@@ -133,15 +133,24 @@ record_to_proplist(Rec) ->
 	error_logger:error_report({?MODULE, record_to_proplist, 
 		unknown_record, Rec}).
 
-proplist_values_to_json(#resource{name=Name, amount=Amount}) ->
-	{struct, [{name, Name}, {amount, Amount}]};
+proplist_values_to_json(#resource{
+		name=Name,
+		galaxy_id=GalaxyId,
+		amount=Amount}) ->
+	{struct, [{name, Name}, {galaxy_id, GalaxyId}, {amount, Amount}]};
 
-proplist_values_to_json(#resource_type{name=Name, category=Category,
-		storage_space=StorageSpace, display_name=DisplayName,
-		build_materials=BuildMaterials, build_time=BuildTime,
+proplist_values_to_json(#resource_type{
+		name=Name,
+		galaxy_id=GalaxyId,
+		category=Category,
+		storage_space=StorageSpace,
+		display_name=DisplayName,
+		build_materials=BuildMaterials,
+		build_time=BuildTime,
 		metadata=MetaData}) ->
 	{resource_type, {struct, [
 		{name, Name},
+		{galaxy_id, GalaxyId},
 		{category, Category},
 		{storage_space, StorageSpace},
 		{build_materials, BuildMaterials},
@@ -151,6 +160,7 @@ proplist_values_to_json(#resource_type{name=Name, category=Category,
 
 proplist_values_to_json(#structure{
 		uid=Uid,
+		galaxy_id=GalaxyId,
 		name=Name,
 		build_queue=BuildQueue,
 		output_resources=OutputResources,
@@ -164,6 +174,7 @@ proplist_values_to_json(#structure{
 		Value <- InputResources],
 	{struct, [
 				{uid, Uid},
+				{galaxy_id, GalaxyId},
 				{name, Name},
 				{build_queue, {array, []}},
 				{output_resources, {array, OutputResourcesJson}},

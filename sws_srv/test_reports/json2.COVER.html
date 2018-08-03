@@ -1,0 +1,738 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<title>/Volumes/Work/Projects/GalaxyServer/sws_srv/.eunit/json2.COVER.html</title>
+</head><body style='background-color: white; color: black'>
+<pre>
+File generated from /Volumes/Work/Projects/GalaxyServer/sws_srv/.eunit/json2.erl by COVER 2018-07-25 at 20:28:28
+
+****************************************************************************
+
+        |  %%% Copyright (c) 2005-2006, A2Z Development USA, Inc.  All Rights Reserved.
+        |  %%%
+        |  %%% The contents of this file are subject to the Erlang Public License,
+        |  %%% Version 1.1, (the "License"); you may not use this file except in
+        |  %%% compliance with the License. You should have received a copy of the
+        |  %%% Erlang Public License along with this software. If not, it can be
+        |  %%% retrieved via the world wide web at http://www.erlang.org/.
+        |  %%%
+        |  %%% Software distributed under the License is distributed on an "AS IS"
+        |  %%% basis, WITHOUT WARRANTY OF ANY KIND, either express or implied. See
+        |  %%% the License for the specific language governing rights and limitations
+        |  %%% under the License.
+        |  %%%
+        |  %%% The Initial Developer of the Original Code is A2Z Development USA, Inc.
+        |  %%% All Rights Reserved.
+        |  
+        |  -module(json2).
+        |  -export([encode/1, decode_string/1, decode/2]).
+        |  -export([is_obj/1, obj_new/0, obj_fetch/2, obj_find/2, obj_is_key/2]).
+        |  -export([obj_store/3, obj_from_list/1, obj_fold/3]).
+        |  -export([test/0]).
+        |  -author("Jim Larson &lt;jalarson@amazon.com&gt;, Robert Wai-Chi Chu &lt;robchu@amazon.com&gt;").
+        |  -author("Gaspar Chilingarov &lt;nm@web.am&gt;, Gurgen Tumanyan &lt;barbarian@armkb.com&gt;").
+        |  -author("Steve Vinoski &lt;vinoski@ieee.org&gt;").
+        |  -vsn("3").
+        |  
+        |  %%% JavaScript Object Notation ("JSON", http://www.json.org) is a simple
+        |  %%% data syntax meant as a lightweight alternative to other representations,
+        |  %%% such as XML.  JSON is natively supported by JavaScript, but many
+        |  %%% other languages have conversion libraries available.
+        |  %%%
+        |  %%% This module translates JSON types into the following Erlang types:
+        |  %%%
+        |  %%%     JSON                    Erlang
+        |  %%%     ----                    ------
+        |  %%%     number                  number
+        |  %%%     string                  string
+        |  %%%     array                   {array, ElementList}
+        |  %%%     object                  tagged proplist with string keys (i.e. {struct, PropList} )
+        |  %%%     true, false, null       atoms 'true', 'false', and 'null'
+        |  %%%
+        |  %%% Character Sets: the external representation, and the internal
+        |  %%% representation of strings, are lists of UTF-8 code units.
+        |  %%%
+        |  %%% Numbers: Thanks to Erlang's bignums, JSON-encoded integers of any
+        |  %%% size can be parsed.  Conversely, extremely large integers may
+        |  %%% be JSON-encoded.  This may cause problems for interoperability
+        |  %%% with JSON parsers which can't handle arbitrary-sized integers.
+        |  %%% Erlang's floats are of fixed precision and limited range, so
+        |  %%% syntactically valid JSON floating-point numbers could silently
+        |  %%% lose precision or noisily cause an overflow.  However, most
+        |  %%% other JSON libraries are likely to behave in the same way.
+        |  %%%
+        |  %%% Strings: If we represented JSON string data as Erlang binaries,
+        |  %%% we would have to choose a particular unicode format.  Instead,
+        |  %%% we use lists of UTF-16 code units, which applications may then
+        |  %%% change to binaries in their application-preferred manner.
+        |  %%%
+        |  %%% Arrays: Because of the string decision above, and Erlang's
+        |  %%% lack of a distinguished string datatype, JSON arrays map
+        |  %%% to {array, ArrayElementList}, where ArrayElementList -&gt; list.
+        |  %%%
+        |  %%% Objects: Though not explicitly stated in the JSON "spec",
+        |  %%% JSON's JavaScript heritage mandates that member names must
+        |  %%% be unique within an object.  The object/tuple ambiguity is
+        |  %%% not a problem, since the atom 'struct' is not an
+        |  %%% allowable value.  Object keys may be atoms or strings on
+        |  %%% encoding but are always decoded as strings.
+        |  %%%
+        |  
+        |  %%% ENCODING
+        |  
+        |  %% Encode an erlang number, string, tuple, or object to JSON syntax, as a
+        |  %% possibly deep list of UTF-8 code units, throwing a runtime error in the
+        |  %% case of un-convertible input.
+        |  %% Note: object keys may be either strings or atoms.
+        |  
+<font color=red>     0..|  encode(true) -&gt; "true";</font>
+<font color=red>     0..|  encode(false) -&gt; "false";</font>
+<font color=red>     0..|  encode(null) -&gt; "null";</font>
+<font color=red>     0..|  encode(undefined) -&gt; "null";</font>
+<font color=red>     0..|  encode(B) when is_binary(B) -&gt; encode_string(B);</font>
+<font color=red>     0..|  encode(I) when is_integer(I) -&gt; integer_to_list(I);</font>
+<font color=red>     0..|  encode(F) when is_float(F) -&gt; float_to_list(F);</font>
+        |  encode(L) when is_list(L) -&gt;
+<font color=red>     0..|      case is_string(L) of</font>
+<font color=red>     0..|          yes -&gt; encode_string(L);</font>
+<font color=red>     0..|          unicode -&gt; encode_string(xmerl_ucs:to_utf8(L));</font>
+<font color=red>     0..|          no -&gt; encode({array, L})</font>
+        |      end;
+<font color=red>     0..|  encode({array, Props}) when is_list(Props) -&gt; encode_array(Props);</font>
+<font color=red>     0..|  encode({struct, Props} = T) when is_list(Props) -&gt; encode_object(T);</font>
+<font color=red>     0..|  encode(Bad) -&gt; exit({json_encode, {bad_term, Bad}}).</font>
+        |  
+        |  %% Encode an Erlang string to JSON.
+        |  %% Accumulate strings in reverse.
+        |  
+<font color=red>     0..|  encode_string(B) when is_binary(B) -&gt; encode_string(binary_to_list(B));</font>
+<font color=red>     0..|  encode_string(S) -&gt; encode_string(S, [$"]).</font>
+        |  
+<font color=red>     0..|  encode_string([], Acc) -&gt; lists:reverse([$" | Acc]);</font>
+        |  encode_string([C | Cs], Acc) -&gt;
+<font color=red>     0..|      case C of</font>
+<font color=red>     0..|          $" -&gt; encode_string(Cs, [$", $\\ | Acc]);</font>
+        |          % (don't escape solidus on encode)
+<font color=red>     0..|          $\\ -&gt; encode_string(Cs, [$\\, $\\ | Acc]);</font>
+<font color=red>     0..|          $\b -&gt; encode_string(Cs, [$b, $\\ | Acc]);      % note missing \</font>
+<font color=red>     0..|          $\f -&gt; encode_string(Cs, [$f, $\\ | Acc]);</font>
+<font color=red>     0..|          $\n -&gt; encode_string(Cs, [$n, $\\ | Acc]);</font>
+<font color=red>     0..|          $\r -&gt; encode_string(Cs, [$r, $\\ | Acc]);</font>
+<font color=red>     0..|          $\t -&gt; encode_string(Cs, [$t, $\\ | Acc]);</font>
+        |          C when C &gt;= 0, C &lt; $\s -&gt;
+        |              % Control characters must be unicode-encoded.
+<font color=red>     0..|              Hex = lists:flatten(io_lib:format("~4.16.0b", [C])),</font>
+<font color=red>     0..|              encode_string(Cs, lists:reverse(Hex) ++ "u\\" ++ Acc); % "</font>
+<font color=red>     0..|          C when C =&lt; 16#FFFF -&gt; encode_string(Cs, [C | Acc]);</font>
+<font color=red>     0..|          _ -&gt; exit({json_encode, {bad_char, C}})</font>
+        |      end.
+        |  
+        |  %% Encode an Erlang object as a JSON object, allowing string or atom keys.
+        |  %% Note that order is irrelevant in both internal and external object
+        |  %% representations.  Nevertheless, the output will respect the order
+        |  %% of the input.
+        |  
+        |  encode_object({struct, _Props} = Obj) -&gt;
+<font color=red>     0..|      M = obj_fold(fun({Key, Value}, Acc) -&gt;</font>
+<font color=red>     0..|          S = case Key of</font>
+<font color=red>     0..|                  B when is_binary(B) -&gt; encode_string(B);</font>
+        |                  L when is_list(L) -&gt;
+<font color=red>     0..|                      case is_string(L) of</font>
+<font color=red>     0..|                          yes -&gt; encode_string(L);</font>
+<font color=red>     0..|                          unicode -&gt; encode_string(xmerl_ucs:to_utf8(L));</font>
+<font color=red>     0..|                          no -&gt; exit({json_encode, {bad_key, Key}})</font>
+        |                      end;
+<font color=red>     0..|                  A when is_atom(A) -&gt; encode_string(atom_to_list(A));</font>
+<font color=red>     0..|                  _ -&gt; exit({json_encode, {bad_key, Key}})</font>
+        |              end,
+<font color=red>     0..|          V = encode(Value),</font>
+<font color=red>     0..|          case Acc of</font>
+<font color=red>     0..|              [] -&gt; [S, $:, V];</font>
+<font color=red>     0..|              _ -&gt; [Acc, $,, S, $:, V]</font>
+        |          end
+        |      end, [], Obj),
+<font color=red>     0..|      [${, M, $}].</font>
+        |  
+        |  %% Encode an Erlang tuple as a JSON array.
+        |  %% Order *is* significant in a JSON array!
+        |  
+        |  encode_array(T) -&gt;
+<font color=red>     0..|      M = lists:foldl(fun(E, Acc) -&gt;</font>
+<font color=red>     0..|          V = encode(E),</font>
+<font color=red>     0..|          case Acc of</font>
+<font color=red>     0..|              [] -&gt; V;</font>
+<font color=red>     0..|              _ -&gt; [Acc, $,, V]</font>
+        |          end
+        |      end, [], T),
+<font color=red>     0..|      [$[, M, $]].</font>
+        |  
+        |  %%% SCANNING
+        |  %%%
+        |  %%% Scanning funs return either:
+        |  %%%    {done, Result, LeftOverChars}
+        |  %%% if a complete token is recognized, or
+        |  %%%    {more, Continuation}
+        |  %%% if more input is needed.
+        |  %%% Result is {ok, Term}, 'eof', or {error, Reason}.
+        |  %%% Here, the Continuation is a simple Erlang string.
+        |  %%%
+        |  %%% Currently, error handling is rather crude - errors are recognized
+        |  %%% by match failures.  EOF is handled only by number scanning, where
+        |  %%% it can delimit a number, and otherwise causes a match failure.
+        |  %%%
+        |  %%% Tokens are one of the following
+        |  %%% JSON string -&gt; erlang string
+        |  %%% JSON number -&gt; erlang number
+        |  %%% true, false, null -&gt; erlang atoms
+        |  %%% { } [ ] : , -&gt; lcbrace rcbrace lsbrace rsbrace colon comma
+        |  
+<font color=red>     0..|  token([]) -&gt; {more, []};</font>
+<font color=red>     0..|  token(eof) -&gt; {done, eof, []};</font>
+        |  
+<font color=red>     0..|  token("true" ++ Rest) -&gt; {done, {ok, true}, Rest};</font>
+<font color=red>     0..|  token("tru")    -&gt; {more, "tru"};</font>
+<font color=red>     0..|  token("tr")     -&gt; {more, "tr"};</font>
+<font color=red>     0..|  token("t")      -&gt; {more, "t"};</font>
+        |  
+<font color=red>     0..|  token("false" ++ Rest) -&gt; {done, {ok, false}, Rest};</font>
+<font color=red>     0..|  token("fals")   -&gt; {more, "fals"};</font>
+<font color=red>     0..|  token("fal")    -&gt; {more, "fal"};</font>
+<font color=red>     0..|  token("fa")     -&gt; {more, "fa"};</font>
+<font color=red>     0..|  token("f")      -&gt; {more, "f"};</font>
+        |  
+<font color=red>     0..|  token("null" ++ Rest) -&gt; {done, {ok, null}, Rest};</font>
+<font color=red>     0..|  token("nul")    -&gt; {more, "nul"};</font>
+<font color=red>     0..|  token("nu")     -&gt; {more, "nu"};</font>
+<font color=red>     0..|  token("n")      -&gt; {more, "n"};</font>
+        |  
+        |  token([C | Cs] = Input) -&gt;
+<font color=red>     0..|      case C of</font>
+<font color=red>     0..|          $\s -&gt; token(Cs);       % eat whitespace</font>
+<font color=red>     0..|          $\t -&gt; token(Cs);       % eat whitespace</font>
+<font color=red>     0..|          $\n -&gt; token(Cs);       % eat whitespace</font>
+<font color=red>     0..|          $\r -&gt; token(Cs);       % eat whitespace</font>
+<font color=red>     0..|          $" -&gt; scan_string(Input);</font>
+<font color=red>     0..|          $- -&gt; scan_number(Input);</font>
+<font color=red>     0..|          D when D &gt;= $0, D =&lt; $9-&gt; scan_number(Input);</font>
+<font color=red>     0..|          ${ -&gt; {done, {ok, lcbrace}, Cs};</font>
+<font color=red>     0..|          $} -&gt; {done, {ok, rcbrace}, Cs};</font>
+<font color=red>     0..|          $[ -&gt; {done, {ok, lsbrace}, Cs};</font>
+<font color=red>     0..|          $] -&gt; {done, {ok, rsbrace}, Cs};</font>
+<font color=red>     0..|          $: -&gt; {done, {ok, colon}, Cs};</font>
+<font color=red>     0..|          $, -&gt; {done, {ok, comma}, Cs};</font>
+<font color=red>     0..|          _ -&gt; {done, {error, {bad_char, C}}, Cs}</font>
+        |      end.
+        |  
+        |  scan_string([$" | Cs] = Input) -&gt;
+<font color=red>     0..|      scan_string(Cs, [], Input).</font>
+        |  
+        |  %% Accumulate in reverse order, save original start-of-string for continuation.
+        |  
+<font color=red>     0..|  scan_string([], _, X) -&gt; {more, X};</font>
+<font color=red>     0..|  scan_string(eof, _, X) -&gt; {done, {error, missing_close_quote}, X};</font>
+<font color=red>     0..|  scan_string([$" | Rest], A, _) -&gt; {done, {ok, lists:reverse(A)}, Rest};</font>
+<font color=red>     0..|  scan_string([$\\], _, X) -&gt; {more, X};</font>
+        |  scan_string([$\\, $u, U1, U2, U3, U4 | Rest], A, X) -&gt;
+<font color=red>     0..|      scan_string(Rest, [uni_char([U1, U2, U3, U4]) | A], X);</font>
+<font color=red>     0..|  scan_string([$\\, $u | _], _, X) -&gt; {more, X};</font>
+        |  scan_string([$\\, C | Rest], A, X) -&gt;
+<font color=red>     0..|      scan_string(Rest, [esc_to_char(C) | A], X);</font>
+        |  scan_string([C | Rest], A, X) -&gt;
+<font color=red>     0..|      scan_string(Rest, [C | A], X).</font>
+        |  
+        |  %% Given a list of hex characters, convert to the corresponding integer.
+        |  
+        |  uni_char(HexList) -&gt;
+<font color=red>     0..|      erlang:list_to_integer(HexList, 16).</font>
+        |  
+<font color=red>     0..|  esc_to_char($") -&gt; $";</font>
+<font color=red>     0..|  esc_to_char($/) -&gt; $/;</font>
+<font color=red>     0..|  esc_to_char($\\) -&gt; $\\;</font>
+<font color=red>     0..|  esc_to_char($b) -&gt; $\b;</font>
+<font color=red>     0..|  esc_to_char($f) -&gt; $\f;</font>
+<font color=red>     0..|  esc_to_char($n) -&gt; $\n;</font>
+<font color=red>     0..|  esc_to_char($r) -&gt; $\r;</font>
+<font color=red>     0..|  esc_to_char($t) -&gt; $\t.</font>
+        |  
+<font color=red>     0..|  scan_number([]) -&gt; {more, []};</font>
+<font color=red>     0..|  scan_number(eof) -&gt; {done, {error, incomplete_number}, []};</font>
+<font color=red>     0..|  scan_number([$-, $- | _Ds]) -&gt; {done, {error, invalid_number}, []};</font>
+        |  scan_number([$- | Ds] = Input) -&gt;
+<font color=red>     0..|      case scan_number(Ds) of</font>
+<font color=red>     0..|          {more, _Cont} -&gt; {more, Input};</font>
+<font color=red>     0..|          {done, {ok, N}, CharList} -&gt; {done, {ok, -1 * N}, CharList};</font>
+<font color=red>     0..|          {done, Other, Chars} -&gt; {done, Other, Chars}</font>
+        |      end;
+        |  scan_number([D | Ds] = Input) when D &gt;= $0, D =&lt; $9 -&gt;
+<font color=red>     0..|      scan_number(Ds, D - $0, Input).</font>
+        |  
+        |  %% Numbers don't have a terminator, so stop at the first non-digit,
+        |  %% and ask for more if we run out.
+        |  
+<font color=red>     0..|  scan_number([], _A, X) -&gt; {more, X};</font>
+<font color=red>     0..|  scan_number(eof, A, _X) -&gt; {done, {ok, A}, eof};</font>
+<font color=red>     0..|  scan_number([$.], _A, X) -&gt; {more, X};</font>
+        |  scan_number([$., D | Ds], A, X) when D &gt;= $0, D =&lt; $9 -&gt;
+<font color=red>     0..|      scan_fraction([D | Ds], A, X);</font>
+        |  scan_number([D | Ds], A, X) when A &gt; 0, D &gt;= $0, D =&lt; $9 -&gt;
+        |      % Note that nonzero numbers can't start with "0".
+<font color=red>     0..|      scan_number(Ds, 10 * A + (D - $0), X);</font>
+        |  scan_number([D | Ds], A, X) when D == $E; D == $e -&gt;
+<font color=red>     0..|      scan_exponent_begin(Ds, integer_to_list(A) ++ ".0", X);</font>
+        |  scan_number([D | _] = Ds, A, _X) when D &lt; $0; D &gt; $9 -&gt;
+<font color=red>     0..|      {done, {ok, A}, Ds}.</font>
+        |  
+<font color=red>     0..|  scan_fraction(Ds, I, X) -&gt; scan_fraction(Ds, [], I, X).</font>
+        |  
+<font color=red>     0..|  scan_fraction([], _Fs, _I, X) -&gt; {more, X};</font>
+        |  scan_fraction(eof, Fs, I, _X) -&gt;
+<font color=red>     0..|      R = list_to_float(lists:append([integer_to_list(I), ".",</font>
+        |                                      lists:reverse(Fs)])),
+<font color=red>     0..|      {done, {ok, R}, eof};</font>
+        |  scan_fraction([D | Ds], Fs, I, X) when D &gt;= $0, D =&lt; $9 -&gt;
+<font color=red>     0..|      scan_fraction(Ds, [D | Fs], I, X);</font>
+        |  scan_fraction([D | Ds], Fs, I, X) when D == $E; D == $e -&gt;
+<font color=red>     0..|      R = lists:append([integer_to_list(I), ".", lists:reverse(Fs)]),</font>
+<font color=red>     0..|      scan_exponent_begin(Ds, R, X);</font>
+        |  scan_fraction(Rest, Fs, I, _X) -&gt;
+<font color=red>     0..|      R = list_to_float(lists:append([integer_to_list(I), ".",</font>
+        |                                      lists:reverse(Fs)])),
+<font color=red>     0..|      {done, {ok, R}, Rest}.</font>
+        |  
+        |  scan_exponent_begin(Ds, R, X) -&gt;
+<font color=red>     0..|      scan_exponent_begin(Ds, [], R, X).</font>
+        |  
+<font color=red>     0..|  scan_exponent_begin([], _Es, _R, X) -&gt; {more, X};</font>
+<font color=red>     0..|  scan_exponent_begin(eof, _Es, _R, X) -&gt; {done, {error, missing_exponent}, X};</font>
+        |  scan_exponent_begin([D | Ds], Es, R, X) when D == $-;
+        |                                               D == $+;
+        |                                               D &gt;= $0, D =&lt; $9 -&gt;
+<font color=red>     0..|      scan_exponent(Ds, [D | Es], R, X).</font>
+        |  
+<font color=red>     0..|  scan_exponent([], _Es, _R, X) -&gt; {more, X};</font>
+        |  scan_exponent(eof, Es, R, _X) -&gt;
+<font color=red>     0..|      X = list_to_float(lists:append([R, "e", lists:reverse(Es)])),</font>
+<font color=red>     0..|      {done, {ok, X}, eof};</font>
+        |  scan_exponent([D | Ds], Es, R, X) when D &gt;= $0, D =&lt; $9 -&gt;
+<font color=red>     0..|      scan_exponent(Ds, [D | Es], R, X);</font>
+        |  scan_exponent(Rest, Es, R, _X) -&gt;
+<font color=red>     0..|      X = list_to_float(lists:append([R, "e", lists:reverse(Es)])),</font>
+<font color=red>     0..|      {done, {ok, X}, Rest}.</font>
+        |  
+        |  %%% PARSING
+        |  %%%
+        |  %%% The decode function takes a char list as input, but
+        |  %%% interprets the end of the list as only an end to the available
+        |  %%% input, and returns a "continuation" requesting more input.
+        |  %%% When additional characters are available, they, and the
+        |  %%% continuation, are fed into decode/2.  You can use the atom 'eof'
+        |  %%% as a character to signal a true end to the input stream, and
+        |  %%% possibly flush out an unfinished number.  The decode_string/1
+        |  %%% function appends 'eof' to its input and calls decode/1.
+        |  %%%
+        |  %%% Parsing and scanning errors are handled only by match failures.
+        |  %%% The external caller must take care to wrap the call in a "catch"
+        |  %%% or "try" if better error-handling is desired.  Eventually parse
+        |  %%% or scan errors will be returned explicitly with a description,
+        |  %%% and someday with line numbers too.
+        |  %%%
+        |  %%% The parsing code uses a continuation-passing style to allow
+        |  %%% for the parsing to suspend at any point and be resumed when
+        |  %%% more input is available.
+        |  %%% See http://en.wikipedia.org/wiki/Continuation_passing_style
+        |  
+        |  %% Return the first JSON value decoded from the input string.
+        |  %% The string must contain at least one complete JSON value.
+        |  
+        |  decode_string(CharList) -&gt;
+<font color=red>     0..|      {done, V, _} = decode([], CharList ++ eof),</font>
+<font color=red>     0..|      V.</font>
+        |  
+        |  %% Attempt to decode a JSON value from the input string
+        |  %% and continuation, using empty list for the initial continuation.
+        |  %% Return {done, Result, LeftoverChars} if a value is recognized,
+        |  %% or {more, Continuation} if more input characters are needed.
+        |  %% The Result can be {ok, Value}, eof, or {error, Reason}.
+        |  %% The Continuation is then fed as an argument to decode/2 when
+        |  %% more input is available.
+        |  %% Use the atom 'eof' instead of a char list to signal
+        |  %% a true end to the input, and may flush a final number.
+        |  
+        |  decode([], CharList) -&gt;
+<font color=red>     0..|      decode(first_continuation(), CharList);</font>
+        |  
+        |  decode(Continuation, CharList) -&gt;
+<font color=red>     0..|      {OldChars, Kt} = Continuation,</font>
+<font color=red>     0..|      get_token(OldChars ++ CharList, Kt).</font>
+        |  
+        |  first_continuation() -&gt;
+<font color=red>     0..|      {[], fun</font>
+        |          (eof, Cs) -&gt;
+<font color=red>     0..|                  {done, eof, Cs};</font>
+        |          (T, Cs) -&gt;
+<font color=red>     0..|              parse_value(T, Cs, fun(V, C2) -&gt;</font>
+<font color=red>     0..|                  {done, {ok, V}, C2}</font>
+        |              end)
+        |      end}.
+        |  
+        |  %% Continuation Kt must accept (TokenOrEof, Chars)
+        |  
+        |  get_token(Chars, Kt) -&gt;
+<font color=red>     0..|      case token(Chars) of</font>
+<font color=red>     0..|          {done, {ok, T}, Rest} -&gt; Kt(T, Rest);</font>
+<font color=red>     0..|          {done, eof, Rest} -&gt; Kt(eof, Rest);</font>
+<font color=red>     0..|          {done, {error, Reason}, Rest} -&gt; {done, {error, Reason}, Rest};</font>
+<font color=red>     0..|          {more, X} -&gt; {more, {X, Kt}}</font>
+        |      end.
+        |  
+        |  %% Continuation Kv must accept (Value, Chars)
+        |  
+<font color=red>     0..|  parse_value(eof, C, _Kv) -&gt; {done, {error, premature_eof}, C};</font>
+<font color=red>     0..|  parse_value(true, C, Kv) -&gt; Kv(true, C);</font>
+<font color=red>     0..|  parse_value(false, C, Kv) -&gt; Kv(false, C);</font>
+<font color=red>     0..|  parse_value(null, C, Kv) -&gt; Kv(null, C);</font>
+<font color=red>     0..|  parse_value(S, C, Kv) when is_list(S) -&gt; Kv(S, C);</font>
+<font color=red>     0..|  parse_value(N, C, Kv) when is_number(N) -&gt; Kv(N, C);</font>
+<font color=red>     0..|  parse_value(lcbrace, C, Kv) -&gt; parse_object(C, Kv);</font>
+<font color=red>     0..|  parse_value(lsbrace, C, Kv) -&gt; parse_array(C, Kv);</font>
+<font color=red>     0..|  parse_value(_, C, _Kv) -&gt; {done, {error, syntax_error}, C}.</font>
+        |  
+        |  %% Continuation Kv must accept (Value, Chars)
+        |  
+        |  parse_object(Chars, Kv) -&gt;
+<font color=red>     0..|      get_token(Chars, fun(T, C2) -&gt;</font>
+<font color=red>     0..|          Obj = obj_new(),</font>
+<font color=red>     0..|          case T of</font>
+<font color=red>     0..|              rcbrace -&gt; Kv(Obj, C2);             % empty object</font>
+<font color=red>     0..|              _ -&gt; parse_object(Obj, T, C2, Kv)   % token must be string</font>
+        |          end
+        |      end).
+        |  
+        |  parse_object(_Obj, eof, C, _Kv) -&gt;
+<font color=red>     0..|      {done, {error, premature_eof}, C};</font>
+        |  
+        |  parse_object(Obj, S, C, Kv) when is_list(S) -&gt;    % S is member name
+<font color=red>     0..|      get_token(C, fun</font>
+        |          (colon, C2) -&gt;
+<font color=red>     0..|              parse_object2(Obj, S, C2, Kv);</font>
+        |          (T, C2) -&gt;
+<font color=red>     0..|              {done, {error, {expecting_colon, T}}, C2}</font>
+        |      end);
+        |  
+        |  parse_object(_Obj, M, C, _Kv) -&gt;
+<font color=red>     0..|      {done, {error, {member_name_not_string, M}}, C}.</font>
+        |  
+        |  parse_object2(Obj, S, C, Kv) -&gt;
+<font color=red>     0..|      get_token(C, fun</font>
+        |          (eof, C2) -&gt;
+<font color=red>     0..|              {done, {error, premature_eof}, C2};</font>
+        |          (T, C2) -&gt;
+<font color=red>     0..|              parse_value(T, C2, fun(V, C3) -&gt;    % V is member value</font>
+<font color=red>     0..|                  Obj2 = obj_store(S, V, Obj),</font>
+<font color=red>     0..|                  get_token(C3, fun</font>
+        |                      (rcbrace, C4) -&gt;    % "}" end of object
+<font color=red>     0..|                                                  {struct, PropList1} = Obj2,</font>
+<font color=red>     0..|                          Kv({struct, lists:reverse(PropList1)}, C4);</font>
+        |                      (comma, C4) -&gt;              % "," another member follows
+<font color=red>     0..|                          get_token(C4, fun(T3, C5) -&gt;</font>
+<font color=red>     0..|                              parse_object(Obj2, T3, C5, Kv)</font>
+        |                          end);
+        |                      (eof, C4) -&gt;
+<font color=red>     0..|                          {done, {error, premature_eof}, C4};</font>
+        |                      (T2, C4) -&gt;
+<font color=red>     0..|                          {done, {error, {expecting_comma_or_curly, T2}}, C4}</font>
+        |                  end)
+        |              end)
+        |      end).
+        |  
+        |  %% Continuation Kv must accept (Value, Chars)
+        |  
+        |  parse_array(C, Kv) -&gt;
+<font color=red>     0..|      get_token(C, fun</font>
+<font color=red>     0..|          (eof, C2) -&gt; {done, {error, premature_eof}, C2};</font>
+<font color=red>     0..|          (rsbrace, C2) -&gt; Kv({array, []}, C2);  % empty array</font>
+<font color=red>     0..|          (T, C2) -&gt; parse_array([], T, C2, Kv)</font>
+        |      end).
+        |  
+        |  parse_array(E, T, C, Kv) -&gt;
+<font color=red>     0..|      parse_value(T, C, fun(V, C2) -&gt;</font>
+<font color=red>     0..|          E2 = [V | E],</font>
+<font color=red>     0..|          get_token(C2, fun</font>
+        |              (rsbrace, C3) -&gt;        % "]" end of array
+<font color=red>     0..|                  Kv({array, lists:reverse(E2)}, C3);</font>
+        |  
+        |              (comma, C3) -&gt;          % "," another value follows
+<font color=red>     0..|                  get_token(C3, fun(T3, C4) -&gt;</font>
+<font color=red>     0..|                      parse_array(E2, T3, C4, Kv)</font>
+        |                  end);
+        |              (eof, C3) -&gt;
+<font color=red>     0..|                  {done, {error, premature_eof}, C3};</font>
+        |              (T2, C3) -&gt;
+<font color=red>     0..|                  {done, {error, {expecting_comma_or_close_array, T2}}, C3}</font>
+        |          end)
+        |      end).
+        |  
+        |  %%% OBJECTS
+        |  %%%
+        |  %%% We'll use tagged property lists as the internal representation
+        |  %%% of JSON objects.  Unordered lists perform worse than trees for
+        |  %%% lookup and modification of members, but we expect objects to be
+        |  %%% have only a few members.  Lists also print better.
+        |  
+        |  %% Is this a proper JSON object representation?
+        |  
+        |  is_obj({struct, Props}) when is_list(Props) -&gt;
+<font color=red>     0..|      lists:all(fun</font>
+<font color=red>     0..|          ({Member, _Value}) when is_atom(Member); is_list(Member) -&gt; true;</font>
+<font color=red>     0..|          (_) -&gt; false</font>
+        |      end, Props);
+        |  
+        |  is_obj(_) -&gt;
+<font color=red>     0..|      false.</font>
+        |  
+        |  %% Create a new, empty object.
+        |  
+        |  obj_new() -&gt;
+<font color=red>     0..|      {struct, []}.</font>
+        |  
+        |  %% Fetch an object member's value, expecting it to be in the object.
+        |  %% Return value, runtime error if no member found with that name.
+        |  
+        |  obj_fetch(Key, {struct, Props}) when is_list(Props) -&gt;
+<font color=red>     0..|      case proplists:get_value(Key, Props) of</font>
+        |          undefined -&gt;
+<font color=red>     0..|              exit({struct_no_key, Key});</font>
+        |          Value -&gt;
+<font color=red>     0..|              Value</font>
+        |      end.
+        |  
+        |  %% Fetch an object member's value, or indicate that there is no such member.
+        |  %% Return {ok, Value} or 'error'.
+        |  
+        |  obj_find(Key, {struct, Props}) when is_list(Props) -&gt;
+<font color=red>     0..|      case proplists:get_value(Key, Props) of</font>
+        |          undefined -&gt;
+<font color=red>     0..|              error;</font>
+        |          Value -&gt;
+<font color=red>     0..|              {ok, Value}</font>
+        |      end.
+        |  
+        |  obj_is_key(Key, {struct, Props}) -&gt;
+<font color=red>     0..|      proplists:is_defined(Key, Props).</font>
+        |  
+        |  %% Store a new member in an object.  Returns a new object.
+        |  
+        |  obj_store(Key, Value, {struct, Props}) when is_list(Props) -&gt;
+<font color=red>     0..|      {struct, [{Key, Value} | proplists:delete(Key, Props)]}.</font>
+        |  
+        |  %% Create an object from a list of Key/Value pairs.
+        |  
+        |  obj_from_list(Props) -&gt;
+<font color=red>     0..|      Obj = {struct, Props},</font>
+<font color=red>     0..|      case is_obj(Obj) of</font>
+<font color=red>     0..|          true -&gt; Obj;</font>
+<font color=red>     0..|          false -&gt; exit(json_bad_object)</font>
+        |      end.
+        |  
+        |  %% Fold Fun across object, with initial accumulator Acc.
+        |  %% Fun should take (Value, Acc) as arguments and return Acc.
+        |  
+        |  obj_fold(Fun, Acc, {struct, Props}) -&gt;
+<font color=red>     0..|      lists:foldl(Fun, Acc, Props).</font>
+        |  
+<font color=red>     0..|  is_string([]) -&gt; yes;</font>
+<font color=red>     0..|  is_string(List) -&gt; is_string(List, non_unicode).</font>
+        |  
+        |  is_string([C|Rest], non_unicode) when is_integer(C), C &gt;= 0, C =&lt; 255 -&gt;
+<font color=red>     0..|      is_string(Rest, non_unicode);</font>
+        |  is_string([C|Rest], _) when is_integer(C), C =&lt; 65000 -&gt;
+<font color=red>     0..|      is_string(Rest, unicode);</font>
+<font color=red>     0..|  is_string([], non_unicode) -&gt; yes;</font>
+<font color=red>     0..|  is_string([], unicode) -&gt; unicode;</font>
+<font color=red>     0..|  is_string(_, _) -&gt; no.</font>
+        |  
+        |  
+        |  %%% TESTING
+        |  %%%
+        |  %%% We can't expect to round-trip from JSON -&gt; Erlang -&gt; JSON,
+        |  %%% due to the degrees of freedom in the JSON syntax: whitespace,
+        |  %%% and ordering of object members.  We can, however, expect to
+        |  %%% round-trip from Erlang -&gt; JSON -&gt; Erlang, so the JSON parsing
+        |  %%% tests will in fact test the Erlang equivalence of the
+        |  %%% JSON -&gt; Erlang -&gt; JSON -&gt; Erlang coding chain.
+        |  
+        |  %% Test driver.  Return 'ok' or {failed, Failures}.
+        |  
+        |  test() -&gt;
+<font color=red>     0..|      E2Js = e2j_test_vec(),</font>
+<font color=red>     0..|      Failures =</font>
+        |          lists:foldl(
+        |            fun({E, J}, Fs) -&gt;
+<font color=red>     0..|                    case (catch test_e2j(E, J)) of</font>
+        |                        ok -&gt;
+<font color=red>     0..|                            case (catch round_trip(E)) of</font>
+        |                                ok -&gt;
+<font color=red>     0..|                                    case (catch round_trip_one_char(E)) of</font>
+        |                                        ok -&gt;
+<font color=red>     0..|                                            Fs;</font>
+        |                                        Reason -&gt;
+<font color=red>     0..|                                            [{round_trip_one_char, E, Reason} |</font>
+        |                                             Fs]
+        |                                    end;
+        |                                Reason -&gt;
+<font color=red>     0..|                                    [{round_trip, E, Reason} | Fs]</font>
+        |                            end;
+        |                        Reason -&gt;
+<font color=red>     0..|                            [{erlang_to_json, E, J, Reason} | Fs]</font>
+        |                    end;
+        |               (end_of_tests, Fs) -&gt;
+<font color=red>     0..|                    Fs</font>
+        |            end, [], E2Js),
+<font color=red>     0..|      case Failures of</font>
+<font color=red>     0..|          [] -&gt; ok;</font>
+<font color=red>     0..|          _ -&gt; {failed, Failures}</font>
+        |      end.
+        |  
+        |  %% Test for conversion from Erlang to JSON.  Note that unequal strings
+        |  %% may represent equal JSON data, due to discretionary whitespace,
+        |  %% object member order, trailing zeroes in floating point, etc.
+        |  %% Legitimate changes to the encoding routines may require tweaks to
+        |  %% the reference JSON strings in e2j_test_vec().
+        |  
+        |  %% This clause handles floats specially due to the need for fuzzy matching
+        |  %% to avoid slight differences due to conversions. Rather than direct
+        |  %% comparison as done in the more general clause below, here we allow a
+        |  %% small relative difference between expected and actual.
+        |  test_e2j(E, J) when is_float(E) -&gt;
+<font color=red>     0..|      J2 = lists:flatten(encode(E)),</font>
+<font color=red>     0..|      E2 = list_to_float(J2),</font>
+<font color=red>     0..|      E1 = list_to_float(J),</font>
+<font color=red>     0..|      Rel = abs(E2 - E1)/E,</font>
+<font color=red>     0..|      true = Rel &lt; 0.005,</font>
+<font color=red>     0..|      ok;</font>
+        |  test_e2j(E, J) -&gt;
+<font color=red>     0..|      J2 = lists:flatten(encode(E)),</font>
+<font color=red>     0..|      J = J2,                                     % raises error if unequal</font>
+<font color=red>     0..|      ok.</font>
+        |  
+        |  %% Test that Erlang -&gt; JSON -&gt; Erlang round-trip yields equivalent term.
+        |  
+        |  round_trip(E) -&gt;
+<font color=red>     0..|      J2 = lists:flatten(encode(E)),</font>
+<font color=red>     0..|      {ok, E2} = decode_string(J2),</font>
+<font color=red>     0..|      true = equiv(E, E2),                        % raises error if false</font>
+<font color=red>     0..|      ok.</font>
+        |  
+        |  %% Round-trip with one character at a time to test all continuations.
+        |  
+        |  round_trip_one_char(E) -&gt;
+<font color=red>     0..|      J = lists:flatten(encode(E)),</font>
+<font color=red>     0..|      {done, {ok, E2}, _} = lists:foldl(fun(C, Ret) -&gt;</font>
+<font color=red>     0..|          case Ret of</font>
+<font color=red>     0..|              {done, _, _} -&gt; Ret;</font>
+<font color=red>     0..|              {more, Cont} -&gt; decode(Cont, [C])</font>
+        |          end
+        |      end, {more, first_continuation()}, J ++ [eof]),
+<font color=red>     0..|      true = equiv(E, E2),                        % raises error if false</font>
+<font color=red>     0..|      ok.</font>
+        |  
+        |  %% Test for equivalence of Erlang terms.
+        |  %% Due to arbitrary order of construction, equivalent objects might
+        |  %% compare unequal as erlang terms, so we need to carefully recurse
+        |  %% through aggregates (arrays and objects).
+        |  
+        |  equiv({struct, Props1}, {struct, Props2}) -&gt;
+<font color=red>     0..|      equiv_object(Props1, Props2);</font>
+        |  equiv({array, ArrayList1}, {array, ArrayList2}) -&gt;
+<font color=red>     0..|      equiv_array(ArrayList1, ArrayList2);</font>
+<font color=red>     0..|  equiv(N1, N2) when is_number(N1), is_number(N2) -&gt; N1 == N2;</font>
+        |  equiv(S1, S2) when is_list(S1), is_list(S2) -&gt;
+<font color=red>     0..|      case {is_string(S1), is_string(S2)} of</font>
+        |          {unicode, unicode} -&gt;
+<font color=red>     0..|              xmerl_ucs:to_utf8(S1) == xmerl_ucs:to_utf8(S2);</font>
+        |          {unicode, _} -&gt;
+<font color=red>     0..|              xmerl_ucs:to_utf8(S1) == S2;</font>
+        |          {_, unicode} -&gt;
+<font color=red>     0..|              S1 == xmerl_ucs:to_utf8(S2);</font>
+        |          _ -&gt;
+<font color=red>     0..|              S1 == S2</font>
+        |      end;
+<font color=red>     0..|  equiv(true, true) -&gt; true;</font>
+<font color=red>     0..|  equiv(false, false) -&gt; true;</font>
+<font color=red>     0..|  equiv(null, null) -&gt; true.</font>
+        |  
+        |  %% Object representation and traversal order is unknown.
+        |  %% Use the sledgehammer and sort property lists.
+        |  
+        |  equiv_object(Props1, Props2) -&gt;
+<font color=red>     0..|      L1 = lists:keysort(1, Props1),</font>
+<font color=red>     0..|      L2 = lists:keysort(1, Props2),</font>
+<font color=red>     0..|      Pairs = lists:zip(L1, L2),</font>
+<font color=red>     0..|      true = lists:all(fun({{K1, V1}, {K2, V2}}) -&gt;</font>
+<font color=red>     0..|          equiv(K1, K2) and equiv(V1, V2)</font>
+        |      end, Pairs).
+        |  
+        |  %% Recursively compare array elements for equivalence.
+        |  
+        |  equiv_array([], []) -&gt;
+<font color=red>     0..|      true;</font>
+        |  equiv_array(A1, A2) when length(A1) == length(A2) -&gt;
+<font color=red>     0..|      lists:all(fun({E1,E2}) -&gt;</font>
+<font color=red>     0..|                        equiv(E1, E2)</font>
+        |                end, lists:zip(A1, A2)).
+        |  
+<font color=red>     0..|  e2j_test_vec() -&gt; [</font>
+        |      {1, "1"},
+        |      {3.1416, "3.14160"}, % text representation may truncate, trail zeroes
+        |      {-1, "-1"},
+        |      {-3.1416, "-3.14160"},
+        |      {12.0e10, "1.20000e+11"},
+        |      {1.234E+10, "1.23400e+10"},
+        |      {-1.234E-10, "-1.23400e-10"},
+        |      {"foo", "\"foo\""},
+        |      {"foo" ++ [500] ++ "bar", [$", $f, $o, $o, $\307, $\264, $b, $a, $r, $"]},
+        |      {"foo" ++ [5] ++ "bar", "\"foo\\u0005bar\""},
+        |      {"", "\"\""},
+        |      {[], "\"\""},
+        |      {"\n\n\n", "\"\\n\\n\\n\""},
+        |      {obj_new(), "{}"},
+        |      {obj_from_list([{"foo", "bar"}]), "{\"foo\":\"bar\"}"},
+        |      {obj_from_list([{"foo", "bar"}, {"baz", 123}]),
+        |       "{\"foo\":\"bar\",\"baz\":123}"},
+        |      {{array, []}, "[]"},
+        |      {{array, [{array, []}]}, "[[]]"},
+        |      {{array, [1, "foo"]}, "[1,\"foo\"]"},
+        |  
+        |      % json array in a json object
+        |      {obj_from_list([{"foo", {array, [123]}}]),
+        |       "{\"foo\":[123]}"},
+        |  
+        |      % json object in a json object
+        |      {obj_from_list([{"foo", obj_from_list([{"bar", true}])}]),
+        |       "{\"foo\":{\"bar\":true}}"},
+        |  
+        |      % fold evaluation order
+        |      {obj_from_list([{"foo", {array, []}},
+        |                       {"bar", obj_from_list([{"baz", true}])},
+        |                       {"alice", "bob"}]),
+        |       "{\"foo\":[],\"bar\":{\"baz\":true},\"alice\":\"bob\"}"},
+        |  
+        |      % json object in a json array
+        |      {{array, [-123, "foo", obj_from_list([{"bar", {array, []}}]), null]},
+        |       "[-123,\"foo\",{\"bar\":[]},null]"},
+        |  
+        |      end_of_tests
+        |  ].
+        |  
+        |  %%% TODO:
+        |  %%%
+        |  %%% Measure the overhead of the CPS-based parser by writing a conventional
+        |  %%% scanner-parser that expects all input to be available.
+        |  %%%
+        |  %%% Allow a compile-time option to decode object member names as atoms,
+        |  %%% to reduce the internal representation overheads when communicating
+        |  %%% with trusted peers.
+</pre>
+</body>
+</html>

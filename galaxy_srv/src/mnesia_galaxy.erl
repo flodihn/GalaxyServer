@@ -1,8 +1,6 @@
 -module(mnesia_galaxy).
 
 -define(DB_GALAXY_TABLE, galaxies).
--define(DB_RESOURCE_TYPE_TABLE, resource_types).
--define(DB_STRUCTURE_TYPE_TABLE, structure_types).
 
 -include("galaxy_defs.hrl").
 -include("resource_defs.hrl").
@@ -44,15 +42,6 @@ init() ->
     mnesia:start(),
     GalaxyAttributes = record_info(fields, galaxy),
     create_table(?DB_GALAXY_TABLE, galaxy, GalaxyAttributes, [], set),
-    
-    ResourceTypeAttributes = record_info(fields, resource_type),
-    create_table(?DB_RESOURCE_TYPE_TABLE, resource_type,
-        ResourceTypeAttributes, [category], set),
-
-    StructureTypeAttributes = record_info(fields, structure_type),
-    create_table(?DB_STRUCTURE_TYPE_TABLE, structure_type,
-        StructureTypeAttributes, [category], set),
- 
     {ok, []}.
 
 create_galaxy_tables(GalaxyId) ->
@@ -302,6 +291,8 @@ get_system(GalaxyId, SystemName, _State) ->
         mnesia:read(SystemsTable, SystemName)
     end,
     case mnesia:transaction(T) of
+		{atomic, []} ->
+			{error, system_not_found};
         {atomic, [System]} ->
             {ok, System};
         {aborted, _Reason} ->

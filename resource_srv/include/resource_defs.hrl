@@ -23,20 +23,24 @@
     display_name,
     build_materials = [],
     build_time = 0,
+    type,
     metadata}).
 
 % Non mnesia table records
 
 -record(resource, {
     name,
+    galaxy_id,
     amount}).
 
 -record(queue_item, {
     resource,
+    galaxy_id,
     finish_time}).
 
 -record(structure, {
     uid,
+    galaxy_id,
     name,
     build_queue = [],
     output_resources = [],

@@ -4,30 +4,39 @@
 
 -include("resource_defs.hrl").
 
+
+-define(GALAXY_ID, <<"structure_test">>).
+
 -define(STRUCTURE_TYPE_MINE, #structure_type{
                         name = <<"test_mine">>,
+                        galaxy_id = <<"structure_test">>,
                         production_rate = 1,
                         produces = [#resource{
                             name = <<"metal">>,
+                            galaxy_id = <<"structure_test">>,
                             amount = 10}],
                         input_storage_space=0,
                         output_storage_space=1000}).
 
 -define(STRUCTURE_TYPE_FACTORY, #structure_type{
                         name = <<"test_factory">>,
+                        galaxy_id = <<"structure_test">>,
                         production_rate = 3,
                         produces = [#resource{
                             name = <<"spaceship">>,
+                            galaxy_id = <<"structure_test">>,
                             amount = 1}],
                         input_storage_space=500,
                         output_storage_space=100}).
 
 -define(STRUCTURE_TYPE_SMALL_SHIPYARD, #structure_type{
                         name = <<"small_shipyard">>,
+                        galaxy_id = <<"structure_test">>,
                         category = <<"shipyard">>,
                         production_rate = 1,
                         produces = [#resource{
                             name = <<"small_spaceship">>,
+                            galaxy_id = <<"structure_test">>,
                             amount = 1}
                         ],
                         input_storage_space = 1000,
@@ -37,6 +46,7 @@
 
 -define(RESOURCE_TYPE_METAL, #resource_type{
                         name = <<"metal">>,
+                        galaxy_id = <<"structure_test">>,
                         category = <<"metal">>,
                         storage_space = 1,
                         display_name = <<"Generic metal">>,
@@ -45,6 +55,7 @@
 
 -define(RESOURCE_TYPE_HEAVY_METAL, #resource_type{
                         name = <<"heavy_metal">>,
+                        galaxy_id = <<"structure_test">>,
                         category = <<"metal">>,
                         storage_space = 2,
                         display_name = <<"Generic metal">>,
@@ -53,6 +64,7 @@
 
 -define(RESOURCE_TYPE_PLASTIC, #resource_type{
                         name = <<"plastic">>,
+                        galaxy_id = <<"structure_test">>,
                         category = <<"plastic">>,
                         storage_space = 1,
                         display_name = <<"Generic plastic">>,
@@ -61,20 +73,22 @@
 
 -define(RESOURCE_TYPE_SMALL_SPACESHIP, #resource_type{
                         name = <<"small_spaceship">>,
+                        galaxy_id = <<"structure_test">>,
                         category = <<"starfighter">>,
                         storage_space = 10,
                         display_name = <<"Small Starfighter">>,
                         build_materials = [
                             #resource{
                                 name = <<"metal">>,
+                                galaxy_id = <<"structure_test">>,
                                 amount = 10}
                         ],
                         metadata = []}).
 
 test_setup() ->
-    meck:new(game_resource_srv, []),
-    meck:expect(game_resource_srv, get_structure_type,
-        fun(StructureName) -> 
+    meck:new(resource_srv, []),
+    meck:expect(resource_srv, get_structure_type,
+        fun(_GalaxyId, StructureName) -> 
             case StructureName of
                 <<"test_mine">> ->
                     {ok, ?STRUCTURE_TYPE_MINE};
@@ -84,8 +98,8 @@ test_setup() ->
                     {ok, ?STRUCTURE_TYPE_SMALL_SHIPYARD}
             end
         end),
-     meck:expect(game_resource_srv, get_resource_type,
-        fun(ResourceName) -> 
+     meck:expect(resource_srv, get_resource_type,
+        fun(_GalaxyId, ResourceName) -> 
             case ResourceName of
                 <<"metal">> ->
                         {ok, ?RESOURCE_TYPE_METAL};
@@ -99,7 +113,7 @@ test_setup() ->
             end).
 
     test_teardown(_Arg) ->
-        meck:unload(game_resource_srv).
+        meck:unload(resource_srv).
 
     fixture_test_() ->
         {
@@ -120,7 +134,11 @@ test_setup() ->
                 {"Truncate floating point",
                     ?_test(test_truncate_floating_point())},
                 {"Simulate structure",
-                    ?_test(test_simulate_structure())}
+                    ?_test(test_simulate_structure())},
+                {"Simulate structures",
+                    ?_test(test_simulate_structures())},
+                {"Pretty print",
+                    ?_test(test_pretty_print())}
             ]
         }.
 
@@ -281,23 +299,95 @@ test_truncate_floating_point() ->
 test_simulate_structure() ->
    Structure = #structure{
         name = <<"small_shipyard">>,
+		galaxy_id = ?GALAXY_ID,
         output_resources = [],
         input_resources = [#resource{
             name = <<"metal">>,
+			galaxy_id = ?GALAXY_ID,
             amount = 10}],
         output_storage_space = 0,
         input_storage_space = 0},
     ExpectedStructure = #structure{
-            name = <<"small_shipyard">>,
-            output_resources = [
-                #resource{
-                    name = <<"small_spaceship">>,
-                    amount = 1}
-            ],
-            input_resources = [],
-            input_storage_space = 0,
-            output_storage_space = 10},
+    	name = <<"small_shipyard">>,
+		galaxy_id = ?GALAXY_ID,
+        output_resources = [
+        	#resource{
+            	name = <<"small_spaceship">>,
+				galaxy_id = ?GALAXY_ID,
+                amount = 1}
+        ],
+        input_resources = [],
+        input_storage_space = 0,
+        output_storage_space = 10},
     DeltaTime = 1.0,
     {ok, Result} = resource_structure:simulate_structure(Structure,
         DeltaTime),
     ?assertEqual(ExpectedStructure, Result).
+
+test_simulate_structures() ->
+   Structures = [
+        #structure{
+            name = <<"small_shipyard">>,
+		    galaxy_id = ?GALAXY_ID,
+            output_resources = [],
+            input_resources = [#resource{
+                name = <<"metal">>,
+			    galaxy_id = ?GALAXY_ID,
+                amount = 10}],
+            output_storage_space = 0,
+            input_storage_space = 0},
+        #structure{
+            name = <<"small_shipyard">>,
+		    galaxy_id = ?GALAXY_ID,
+            output_resources = [],
+            input_resources = [#resource{
+                name = <<"metal">>,
+			    galaxy_id = ?GALAXY_ID,
+                amount = 10}],
+            output_storage_space = 0,
+            input_storage_space = 0}],
+    ExpectedResult = [
+        #structure{
+    	    name = <<"small_shipyard">>,
+		    galaxy_id = ?GALAXY_ID,
+            output_resources = [
+        	    #resource{
+            	    name = <<"small_spaceship">>,
+				    galaxy_id = ?GALAXY_ID,
+                    amount = 1}
+                ],
+            input_resources = [],
+            input_storage_space = 0,
+            output_storage_space = 10},
+        #structure{
+    	    name = <<"small_shipyard">>,
+            galaxy_id = ?GALAXY_ID,
+            output_resources = [
+        	#resource{
+            	name = <<"small_spaceship">>,
+				galaxy_id = ?GALAXY_ID,
+                amount = 1}
+            ],
+            input_resources = [],
+            input_storage_space = 0,
+            output_storage_space = 10}],
+    DeltaTime = 1.0,
+    {ok, Result} = resource_structure:simulate_structures(
+        Structures, DeltaTime),
+    ?assertEqual(ExpectedResult, Result).
+
+test_pretty_print() ->
+    Structure = #structure{
+        name = <<"small_shipyard">>,
+		galaxy_id = ?GALAXY_ID,
+        output_resources = [
+            #resource{
+            	name = <<"small_spaceship">>,
+				galaxy_id = ?GALAXY_ID,
+                amount = 1}
+            ],
+       input_resources = [],
+       input_storage_space = 0,
+       output_storage_space = 10},
+    Result = resource_structure:pretty_print(Structure),
+    ?assertEqual(ok, Result).

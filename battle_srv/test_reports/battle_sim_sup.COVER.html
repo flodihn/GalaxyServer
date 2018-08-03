@@ -1,0 +1,54 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<title>/Volumes/Work/Projects/GalaxyServer/battle_srv/.eunit/battle_sim_sup.COVER.html</title>
+</head><body style='background-color: white; color: black'>
+<pre>
+File generated from /Volumes/Work/Projects/GalaxyServer/battle_srv/.eunit/battle_sim_sup.erl by COVER 2018-08-01 at 09:05:49
+
+****************************************************************************
+
+        |  -module(battle_sim_sup).
+        |  
+        |  -behaviour(supervisor).
+        |  
+        |  %% API
+        |  -export([start_link/0]).
+        |  
+        |  %% Supervisor callbacks
+        |  -export([init/1]).
+        |  
+        |  -export([start_battle/1]).
+        |  
+        |  %% ===================================================================
+        |  %% API functions
+        |  %% ===================================================================
+        |  
+        |  start_link() -&gt;
+<font color=red>     0..|      supervisor:start_link({local, ?MODULE}, ?MODULE, []).</font>
+        |  
+        |  %% ===================================================================
+        |  %% Supervisor callbacks
+        |  %% ===================================================================
+        |  
+        |  init([]) -&gt;
+<font color=red>     0..|      RestartStrategy = simple_one_for_one,</font>
+<font color=red>     0..|      MaxRestarts = 10, </font>
+<font color=red>     0..|      MaxSecondsBetweenRestarts = 30, </font>
+        |  
+<font color=red>     0..|      SupFlags = {RestartStrategy, MaxRestarts, MaxSecondsBetweenRestarts},</font>
+<font color=red>     0..|      Restart = transient,</font>
+<font color=red>     0..|      Shutdown = 6000,</font>
+        |  
+<font color=red>     0..|      BattleSim = {battle_sim,</font>
+        |  		{battle_sim, start_link, []}, Restart, 
+        |          Shutdown, worker, []},
+        |  
+<font color=red>     0..|      {ok, {SupFlags, [BattleSim]}}.</font>
+        |  
+        |   start_battle(Battle) -&gt;
+<font color=red>     0..|      supervisor:start_child(?MODULE, [Battle]).</font>
+</pre>
+</body>
+</html>

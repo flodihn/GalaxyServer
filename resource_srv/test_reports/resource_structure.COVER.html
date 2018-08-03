@@ -1,0 +1,302 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<title>/Volumes/Work/Projects/GalaxyServer/resource_srv/.eunit/resource_structure.COVER.html</title>
+</head><body style='background-color: white; color: black'>
+<pre>
+File generated from /Volumes/Work/Projects/GalaxyServer/resource_srv/.eunit/resource_structure.erl by COVER 2018-08-01 at 12:44:40
+
+****************************************************************************
+
+        |  -module(resource_structure).
+        |  
+        |  -include("resource_defs.hrl").
+        |  
+        |  -ifdef(TEST).
+        |  -compile(export_all).
+        |  -endif.
+        |  
+        |  -export([
+        |      hourly_resource_rate/2,
+        |      simulate_structures/2,
+        |      simulate_structure/2,
+        |      pretty_print/1
+        |      ]).
+        |  
+        |  simulate_structures(StructureList, DeltaTime) -&gt;
+     1..|      simulate_structures(StructureList, [], DeltaTime).
+        |  
+        |  simulate_structures([], UpdatedStructures, _DeltaTime) -&gt;
+     1..|      {ok, UpdatedStructures};
+        |  
+        |  simulate_structures([Structure | Rest], UpdatedStructures, DeltaTime) -&gt;
+     2..|      {ok, UpdatedStructure} = simulate_structure(Structure, DeltaTime),
+     2..|      simulate_structures(Rest, lists:append(
+        |          UpdatedStructures, [UpdatedStructure]), DeltaTime).
+        |  
+        |  simulate_structure(Structure, DeltaTime) -&gt;
+     3..|       {ok, StructureType} = resource_srv:get_structure_type(
+        |          Structure#structure.galaxy_id, Structure#structure.name),
+     3..|      ResourceList = StructureType#structure_type.produces,
+     3..|      {ok, UpdatedStructure} = create_or_convert_resources(ResourceList,
+        |          Structure, StructureType, DeltaTime),
+     3..|      {ok, UpdatedStructure2} = process_build_queue(UpdatedStructure),
+     3..|      {ok, UpdatedStructure2}.
+        |  
+        |  process_build_queue(Structure) -&gt;
+     3..|      BuildQueue = Structure#structure.build_queue,
+     3..|      process_build_queue(BuildQueue, [], Structure).
+        |  
+        |  process_build_queue([], NewBuildQueue, Structure) -&gt;
+     3..|      {ok, Structure#structure{build_queue = NewBuildQueue}};
+        |  
+        |  process_build_queue([QueueItem | Rest], NewBuildQueue, Structure) -&gt;
+     3..|      FinishTime = QueueItem#queue_item.finish_time,
+     3..|      Resource = QueueItem#queue_item.resource,
+     3..|      case has_timestamp_happened(FinishTime) of
+        |          true -&gt;
+     3..|              {ok, UpdatedStructure} = add_output_resource(Resource,
+        |                  Structure),
+        |              %gen_event:notify(?GALAXY_RESOURCE_EVENT_MANAGER,
+        |              %    {resource_created, Resource}),
+     3..|              process_build_queue(Rest, NewBuildQueue, UpdatedStructure);
+        |          false -&gt;
+<font color=red>     0..|              UpdatedBuildQueue = lists:append(NewBuildQueue, [QueueItem]),</font>
+<font color=red>     0..|              process_build_queue(Rest, UpdatedBuildQueue, Structure)</font>
+        |      end.
+        |  
+        |  has_timestamp_happened(TimeStamp) -&gt;
+     3..|      Now = erlang:timestamp(),
+     3..|      timer:now_diff(Now, TimeStamp) &gt;= 0.
+        |  
+        |  create_or_convert_resources([], Structure, _StructureType, _DeltaTime) -&gt;
+     5..|      {ok, Structure};
+        |  
+        |  create_or_convert_resources([Resource | Rest], Structure, StructureType,
+        |          DeltaTime) -&gt;
+     5..|      {ok, ResourceType} = resource_srv:get_resource_type(
+        |          Resource#resource.galaxy_id, Resource#resource.name),
+     5..|      case ResourceType#resource_type.build_materials of
+        |          [] -&gt;
+     2..|              {ok, UpdatedStructure} = create_resource(Resource, ResourceType,
+        |                  Structure, StructureType, DeltaTime),
+     2..|              create_or_convert_resources(Rest, UpdatedStructure,
+        |                  StructureType, DeltaTime);
+        |          _BuildMaterials -&gt;
+     3..|              {ok, UpdatedStructure} = convert_resource(Resource,
+        |                  ResourceType, Structure, StructureType),
+     3..|              create_or_convert_resources(Rest, UpdatedStructure,
+        |                  StructureType, DeltaTime)
+        |      end.
+        |  
+        |  create_resource(Resource, ResourceType, Structure, StructureType,
+        |          DeltaTime) -&gt;
+     2..|      Amount = Resource#resource.amount,
+     2..|      HourlyResourceAmount = hourly_resource_rate(Amount, DeltaTime),
+     2..|      HourlyResource = Resource#resource{amount = HourlyResourceAmount},    
+        |  
+     2..|      HasOutputStorageSpace = has_output_storage_space(HourlyResource,
+        |          Structure, StructureType),
+        |  
+     2..|      case HasOutputStorageSpace of
+        |          true -&gt;
+     2..|              {ok, UpdatedStructure} = add_output_resource(HourlyResource,
+        |                  Structure),
+        |              %gen_event:notify(?GALAXY_RESOURCE_EVENT_MANAGER,
+        |              %    {resource_created, HourlyResource}),
+     2..|              {ok, UpdatedStructure};
+        |          false -&gt;
+<font color=red>     0..|              CappedResource = cap_output_capacity(Structure, StructureType,</font>
+        |                  HourlyResource, ResourceType),
+<font color=red>     0..|              {ok, UpdatedStructure} = add_output_resource(CappedResource,</font>
+        |                  Structure),
+<font color=red>     0..|              {ok, UpdatedStructure}</font>
+        |      end.
+        |  
+        |  convert_resource(Resource, ResourceType, Structure, StructureType) -&gt;
+     3..|      HasBuildMaterials = has_build_materials(ResourceType, Structure),
+     3..|      HasOutputStorageSpace = has_output_storage_space(Resource,
+        |              Structure, StructureType),
+        |  
+     3..|      case {HasBuildMaterials, HasOutputStorageSpace} of
+        |          {true, true} -&gt;
+     3..|              {ok, UpdatedStructure} = add_build_queue(Resource, ResourceType,
+        |                      Structure, StructureType),
+     3..|              {ok, UpdatedStructure};
+        |          {_, _} -&gt;
+<font color=red>     0..|              {ok, Structure}</font>
+        |      end.
+        |  
+        |  has_build_materials(#resource_type{} = ResourceType, Structure) -&gt;
+     3..|      BuildMaterials = ResourceType#resource_type.build_materials,
+     3..|      has_build_materials(BuildMaterials, Structure);
+        |  
+        |  has_build_materials([], _Structure) -&gt;
+     3..|      true;
+        |  
+        |  has_build_materials([BuildMaterial | Rest], Structure) -&gt;
+     3..|      case has_build_material(BuildMaterial, Structure) of
+        |          true -&gt;
+     3..|              has_build_materials(Rest, Structure);
+        |          false -&gt;
+<font color=red>     0..|              false</font>
+        |      end.      
+        |      
+        |  has_build_material(BuildMaterial, Structure) -&gt;
+     3..|      ExistingResources = Structure#structure.input_resources,
+     3..|      Name = BuildMaterial#resource.name,
+     3..|      RequiredAmount = BuildMaterial#resource.amount,
+     3..|      case lists:keytake(Name, 2, ExistingResources) of
+        |          {value, ExistingResource, _ResourceList} -&gt;
+     3..|              ExistingResource#resource.amount &gt;= RequiredAmount;
+        |          false -&gt;
+<font color=red>     0..|              false</font>
+        |      end.
+        |  
+        |  has_output_storage_space(Resource, Structure, StructureType) -&gt;
+     5..|      ResourceSpace = resource_storage_space(Resource),
+     5..|      UsedStorageSpace = Structure#structure.output_storage_space,
+     5..|      MaxStorage = StructureType#structure_type.output_storage_space,
+     5..|      UsedStorageSpace + ResourceSpace =&lt; MaxStorage.
+        |  
+        |  add_build_queue(Resource, ResourceType, Structure, StructureType) -&gt;
+     3..|      case reached_max_production_rate(Structure, StructureType) of
+        |          true -&gt;
+<font color=red>     0..|              {ok, Structure};</font>
+        |          false -&gt;
+     3..|              BuildQueue = Structure#structure.build_queue,
+     3..|              BuildTime = ResourceType#resource_type.build_time,
+     3..|              FinishTime = get_finish_time(BuildTime),
+     3..|              QueueItem = #queue_item{
+        |                  resource = Resource,
+        |                  finish_time = FinishTime},
+     3..|              UpdatedBuildQueue = lists:append(BuildQueue, [QueueItem]),
+     3..|              BuildMaterials = ResourceType#resource_type.build_materials,
+     3..|              {ok, UpdatedStructure} = remove_input_resources(BuildMaterials,
+        |                  Structure),
+     3..|              {ok, UpdatedStructure#structure{
+        |                  build_queue = UpdatedBuildQueue}}
+        |      end.    
+        |  
+        |  add_output_resource(Resource, Structure) -&gt;
+     5..|      ResourceStorageSpace = resource_storage_space(Resource),
+     5..|      CurrentOutputStorageSpace = Structure#structure.output_storage_space,
+     5..|      NewOutputStorageSpace = CurrentOutputStorageSpace +
+        |          ResourceStorageSpace,
+     5..|      ResourceList = Structure#structure.output_resources,
+     5..|      case lists:keytake(Resource#resource.name, 2, ResourceList) of
+        |          {value, ExistingResource, NewResourceList} -&gt;
+<font color=red>     0..|              CurrentAmount = ExistingResource#resource.amount,</font>
+<font color=red>     0..|              AmountToRemove = Resource#resource.amount,</font>
+<font color=red>     0..|              NewAmount = CurrentAmount + AmountToRemove,</font>
+<font color=red>     0..|              UpdatedResource = Resource#resource{amount = NewAmount},</font>
+<font color=red>     0..|              UpdatedStructure = Structure#structure{</font>
+        |                  output_storage_space = NewOutputStorageSpace,
+        |                  output_resources = lists:append(NewResourceList, 
+        |                      [UpdatedResource])},
+<font color=red>     0..|              {ok, UpdatedStructure};</font>
+        |          false -&gt;
+     5..|              UpdatedStructure = Structure#structure{
+        |                  output_storage_space = NewOutputStorageSpace,
+        |                  output_resources = lists:append(ResourceList, [Resource])},
+     5..|              {ok, UpdatedStructure}
+        |      end.      
+        |  
+        |  remove_input_resources([], Structure) -&gt;
+     3..|      {ok, Structure};
+        |  
+        |  remove_input_resources([Resource | Rest], Structure) -&gt;
+     3..|      ResourceList = Structure#structure.input_resources,
+     3..|      case lists:keytake(Resource#resource.name, 2, ResourceList) of
+        |          {value, ExistingResource, NewResourceList} -&gt;
+     3..|              CurrentAmount = ExistingResource#resource.amount,
+     3..|              AmountToRemove = Resource#resource.amount,
+     3..|              NewAmount = CurrentAmount - AmountToRemove,
+     3..|              NewResource = Resource#resource{amount = NewAmount},
+        |  
+        |              %gen_event:notify(?GALAXY_RESOURCE_EVENT_MANAGER,
+        |              %    {resource_removed, Resource}),
+        |  
+     3..|              case NewAmount =&lt; 0 of
+        |                  true -&gt;
+     3..|                      remove_input_resources(Rest, Structure#structure{
+        |                          input_resources = NewResourceList});
+        |                  false -&gt;
+<font color=red>     0..|                      remove_input_resources(Rest, Structure#structure{</font>
+        |                          input_resources = lists:append(NewResourceList,
+        |                              [NewResource])})
+        |              end
+        |      end.      
+        |  
+        |  cap_output_capacity(Structure, StructureType, Resource, ResourceType) -&gt;
+     3..|      OutputStorageSpace = Structure#structure.output_storage_space,
+     3..|      MaxOutputStorageSpace =
+        |          StructureType#structure_type.output_storage_space,
+     3..|      Amount = Resource#resource.amount,
+     3..|      ResourceTypeStorageSpace = ResourceType#resource_type.storage_space,
+     3..|      ResourceSpace = Amount * ResourceTypeStorageSpace, 
+     3..|      case OutputStorageSpace + ResourceSpace &gt; MaxOutputStorageSpace of
+        |          false -&gt;
+<font color=red>     0..|              Resource#resource{amount = Amount};</font>
+        |          true -&gt;
+     3..|              MaxStorage = MaxOutputStorageSpace - OutputStorageSpace,
+     3..|              MaxAmount = MaxStorage / ResourceTypeStorageSpace,
+     3..|              case MaxStorage &lt; 0 of
+<font color=red>     0..|                  true -&gt; Resource#resource{amount = 0};</font>
+     3..|                  false -&gt; Resource#resource{amount = MaxAmount}
+        |              end
+        |      end.
+        |  
+        |  get_finish_time(BuildTime) -&gt;
+     3..|      {MegaSeconds, Seconds, _MilliSeconds} = erlang:timestamp(),
+     3..|      FinishTime = {MegaSeconds, Seconds + BuildTime, 0},
+     3..|      FinishTime.
+        |  
+        |  reached_max_production_rate(Structure, StructureType) -&gt;
+     3..|      ProductionRate = StructureType#structure_type.production_rate,
+     3..|      BuildQueue = Structure#structure.build_queue,
+     3..|      length(BuildQueue) &gt;= ProductionRate.
+        |  
+        |  pretty_print(#structure{
+        |          uid = Uid,
+        |          name = Name,
+        |          build_queue = BuildQueue,
+        |          output_resources = OutputResources,
+        |          input_resources = InputResources,
+        |          output_storage_space = OutputStorageSpace,
+        |          input_storage_space = InputStorageSpace}) -&gt;
+     1..|      io:format("~n========== STRUCTURE ==========~n", []),
+     1..|      io:format("uid: ~p~n", [Uid]),
+     1..|      io:format("name: ~p~n", [Name]),
+     1..|      io:format("build_queue: ~p~n", [BuildQueue]),
+     1..|      io:format("output_resources: ~p~n", [OutputResources]),
+     1..|      io:format("input_resources: ~p~n", [InputResources]),
+     1..|      io:format("output_storage_space: ~p~n", [OutputStorageSpace]),
+     1..|      io:format("input_storage_space: ~p~n", [InputStorageSpace]),
+     1..|      ok.
+        |  
+        |  hourly_resource_rate(Amount, DeltaTime) -&gt;
+     6..|      truncate(1/3600 * Amount * DeltaTime, 6).
+        |  
+        |  truncate(F, N) -&gt;
+     8..|      Prec = math:pow(10, N),
+     8..|      trunc(F * Prec) / Prec.
+        |  
+        |  resource_storage_space(#resource{name = Name, galaxy_id=GalaxyId,
+        |          amount = Amount}) -&gt;
+    10..|      {ok, ResourceType} = resource_srv:get_resource_type(GalaxyId, Name),
+    10..|      ResourceType#resource_type.storage_space * Amount;
+        |  
+        |  resource_storage_space(ResourceList) when is_list(ResourceList) -&gt;
+<font color=red>     0..|      resource_storage_space(ResourceList, 0). </font>
+        |  
+        |  resource_storage_space([], Acc) -&gt;
+<font color=red>     0..|      Acc;</font>
+        |  
+        |  resource_storage_space([Resource | Rest], Acc) -&gt;
+<font color=red>     0..|      StorageSpace = resource_srv:get_resource_type(Resource),</font>
+<font color=red>     0..|      resource_storage_space(Rest, Acc + StorageSpace).</font>
+</pre>
+</body>
+</html>
