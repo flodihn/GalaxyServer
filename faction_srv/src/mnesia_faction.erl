@@ -22,6 +22,7 @@ init() ->
 
 has_factions(GalaxyId, _State) ->
 	FactionTable = get_faction_table(GalaxyId),
+    find_or_create_faction_table(FactionTable),
 	lists:member(FactionTable, mnesia:system_info(tables)).
 
 create_table(TableName, RecordName, Attributes, IndexList, Type) ->
@@ -68,7 +69,7 @@ create_faction(#faction{galaxy_id=GalaxyId} = Faction, _State) ->
 
 claim_exists(Claim, GalaxyId, _State) ->
 	FactionClaimTable = get_faction_claim_table(GalaxyId),
-	find_or_create_faction_claim_table(GalaxyId),
+    find_or_create_faction_claim_table(FactionClaimTable),
     T = fun() ->
         mnesia:read(FactionClaimTable, Claim)
     end,
@@ -114,10 +115,12 @@ find_or_create_faction_claim_table(TableName) ->
 
 get_factions(GalaxyId, _State) ->
 	FactionTable = get_faction_table(GalaxyId),
+    find_or_create_faction_table(FactionTable),
 	read_all_records(FactionTable).
 
 get_faction(FactionName, GalaxyId, _State) ->
 	FactionTable = get_faction_table(GalaxyId),
+    find_or_create_faction_table(FactionTable),
     T = fun() ->
         mnesia:read(FactionTable, FactionName)
     end,
@@ -127,59 +130,6 @@ get_faction(FactionName, GalaxyId, _State) ->
         {aborted, _Reason} ->
             {error, faction_not_found}
     end.
-
-get_resource_type(ResourceName, _State) ->
-    %T = fun() ->
-    %    mnesia:read(?DB_RESOURCE_TYPE_TABLE, ResourceName)
-    %end,
-    %case mnesia:transaction(T) of
-    %    {atomic, [ResourceType]} ->
-    %        {ok, ResourceType};
-    %    {atomic, []} ->
-    %        {error, not_found};
-    %    {aborted, Reason} ->
-    %        {error, Reason}
-    %end.
-	ok.
-
-remove_resource_type(ResourceName, _State) ->
-	%T = fun() ->
-    %    mnesia:delete(?DB_RESOURCE_TYPE_TABLE, ResourceName, write)
-    %end,
-    %case mnesia:transaction(T) of
-    %    {atomic, ok} ->
-    %        {ok, resource_removed};
-    %    {aborted, Reason} ->
-    %        {error, Reason}
-    %end.
-	ok.
-
-create_structure_type(StructureType, _State) ->
-    %T = fun() ->
-    %    mnesia:write(?DB_STRUCTURE_TYPE_TABLE, StructureType, write)
-    %end,
-    %case mnesia:transaction(T) of
-    %    {atomic, ok} ->
-    %        {ok, structure_type_created};
-    %    {aborted, Reason} ->
-    %        {error, Reason}
-    %end.
-	ok.
-
-%get_structure_types(_State) ->
-%	read_all_records(?DB_STRUCTURE_TYPE_TABLE).
-
-get_structure_type(StructureName, _State) ->
-    %T = fun() ->
-    %    mnesia:read(?DB_STRUCTURE_TYPE_TABLE, StructureName)
-    %end,
-    %case mnesia:transaction(T) of
-    %    {atomic, [StructureType]} ->
-    %        {ok, StructureType};
-    %    {aborted, _Reason} ->
-    %        {error, planet_not_found}
-    %end.
-	ok.
 
 read_all_records(Table) ->
     Iterator = fun(Record, Acc) -> lists:append(Acc, [Record]) end,

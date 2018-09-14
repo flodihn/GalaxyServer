@@ -14,6 +14,8 @@
 
 -export([
     create_force/2,
+    get_force/3,
+    update_force/2,
     force_exists/3,
     destroy_force/3,
 
@@ -120,6 +122,34 @@ create_force(#force{galaxy_id=GalaxyId} = Force, _State) ->
             {ok, force_created};
         {aborted, Reason} ->
             {error, Reason}
+    end.
+
+update_force(#force{galaxy_id=GalaxyId} = Force, _State) ->
+	ForceTable = get_force_table(GalaxyId),
+	find_or_create_force_table(ForceTable),
+    T = fun() ->
+        mnesia:write(ForceTable, Force, write)
+    end,
+    case mnesia:transaction(T) of
+        {atomic, ok} ->
+            {ok, force_updated};
+        {aborted, Reason} ->
+            {error, Reason}
+    end.
+
+get_force(Id, GalaxyId, _State) ->
+	ForceTable = get_force_table(GalaxyId),
+    case table_exists(ForceTable) of
+        false ->
+            false;
+        true ->
+            T = fun() ->
+                mnesia:read(ForceTable, Id)
+            end,
+            case mnesia:transaction(T) of
+                {atomic, []} -> {error, not_found};
+		        {atomic, [FoundForce]} -> {ok, FoundForce}
+            end
     end.
 
 force_exists(Id, GalaxyId, _State) ->

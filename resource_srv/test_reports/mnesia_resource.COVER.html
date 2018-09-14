@@ -5,7 +5,7 @@
 <title>/Volumes/Work/Projects/GalaxyServer/resource_srv/.eunit/mnesia_resource.COVER.html</title>
 </head><body style='background-color: white; color: black'>
 <pre>
-File generated from /Volumes/Work/Projects/GalaxyServer/resource_srv/.eunit/mnesia_resource.erl by COVER 2018-08-01 at 12:44:40
+File generated from /Volumes/Work/Projects/GalaxyServer/resource_srv/.eunit/mnesia_resource.erl by COVER 2018-09-04 at 10:18:02
 
 ****************************************************************************
 
@@ -19,8 +19,7 @@ File generated from /Volumes/Work/Projects/GalaxyServer/resource_srv/.eunit/mnes
         |      ]).
         |  
         |  -export([
-        |  	create_resource_tables/0,
-        |  	create_resource_table/1,
+        |      destroy_resource_tables/1,
         |      create_resource_type/2,
         |      create_structure_type/2,
         |  	get_resource_types/2,
@@ -35,27 +34,34 @@ File generated from /Volumes/Work/Projects/GalaxyServer/resource_srv/.eunit/mnes
 <font color=red>     0..|      mnesia:start(),</font>
 <font color=red>     0..|      {ok, []}.</font>
         |  
-        |  create_resource_tables() -&gt;
-<font color=red>     0..|  	try </font>
-<font color=red>     0..|      	{ok, GalaxyList} = galaxy_srv:get_galaxies(),</font>
-<font color=red>     0..|  		[create_resource_table(X#galaxy.id) || X &lt;- GalaxyList]</font>
-        |  	catch _:_ -&gt;
-<font color=red>     0..|  		error_logger:error_report({?MODULE, create_resource_tables,</font>
-        |  			failed_to_read_galaxies})
-        |  	end.
-        |  		
-        |  create_resource_table(GalaxyId) -&gt;
+        |  destroy_resource_tables(GalaxyId) -&gt;
 <font color=red>     0..|      ResourceTable = get_resource_type_table(GalaxyId),</font>
-<font color=red>     0..|      StructureTable = get_structure_type_table(GalaxyId),</font>
+<font color=red>     0..|      StructuresTable = get_structure_type_table(GalaxyId),</font>
+<font color=red>     0..|      mnesia:delete_table(ResourceTable),</font>
+<font color=red>     0..|      mnesia:delete_table(StructuresTable),</font>
+<font color=red>     0..|      ok.</font>
         |  
-<font color=red>     0..|      ResourceTypeAttributes = record_info(fields, resource_type),</font>
-<font color=red>     0..|      create_table(ResourceTable, resource_type, ResourceTypeAttributes,</font>
-        |  		[galaxy_id, category], set),
+        |  find_or_create_resource_type_table(TableName) -&gt;
+<font color=red>     0..|  	case lists:member(TableName, mnesia:system_info(tables)) of</font>
+        |          true -&gt;
+<font color=red>     0..|              pass;</font>
+        |          false -&gt;
+<font color=red>     0..|              ResourceTypeAttributes = record_info(fields, resource_type),</font>
+<font color=red>     0..|              create_table(TableName, resource_type,</font>
+        |                  ResourceTypeAttributes, [galaxy_id, category], set)
+        |      end.
         |  
-<font color=red>     0..|      StructureTypeAttributes = record_info(fields, structure_type),</font>
-<font color=red>     0..|      create_table(StructureTable, structure_type, StructureTypeAttributes, </font>
-        |  		[galaxy_id, category], set),
-<font color=red>     0..|  	ok.</font>
+        |  find_or_create_structure_type_table(TableName) -&gt;
+<font color=red>     0..|  	case lists:member(TableName, mnesia:system_info(tables)) of</font>
+        |          true -&gt;
+<font color=red>     0..|              pass;</font>
+        |          false -&gt;
+<font color=red>     0..|              StructureTypeAttributes = record_info(fields,</font>
+        |                                                    structure_type),
+<font color=red>     0..|              create_table(TableName, structure_type,</font>
+        |                           StructureTypeAttributes,
+        |                           [galaxy_id, category], set)
+        |      end.
         |  
         |  create_table(TableName, RecordName, Attributes, IndexList, Type) -&gt;
 <font color=red>     0..|      case lists:member(TableName, mnesia:system_info(tables)) of</font>
@@ -88,6 +94,7 @@ File generated from /Volumes/Work/Projects/GalaxyServer/resource_srv/.eunit/mnes
         |  create_resource_type(
         |          #resource_type{galaxy_id = GalaxyId} = ResourceType, _State) -&gt;
 <font color=red>     0..|      Table = get_resource_type_table(GalaxyId),</font>
+<font color=red>     0..|      find_or_create_resource_type_table(Table),</font>
 <font color=red>     0..|      T = fun() -&gt;</font>
 <font color=red>     0..|          mnesia:write(Table, ResourceType, write)</font>
         |      end,
@@ -99,11 +106,13 @@ File generated from /Volumes/Work/Projects/GalaxyServer/resource_srv/.eunit/mnes
         |      end.
         |  
         |  get_resource_types(GalaxyId, _State) -&gt;
-<font color=red>     0..|     Table = get_resource_type_table(GalaxyId),</font>
-<font color=red>     0..|     read_all_records(Table).</font>
+<font color=red>     0..|      Table = get_resource_type_table(GalaxyId),</font>
+<font color=red>     0..|      find_or_create_resource_type_table(Table),</font>
+<font color=red>     0..|      read_all_records(Table).</font>
         |  
         |  get_resource_type(ResourceName, GalaxyId, _State) -&gt;
 <font color=red>     0..|      Table = get_resource_type_table(GalaxyId),</font>
+<font color=red>     0..|      find_or_create_resource_type_table(Table),</font>
 <font color=red>     0..|      T = fun() -&gt;</font>
 <font color=red>     0..|          mnesia:read(Table, ResourceName)</font>
         |      end,
@@ -118,6 +127,7 @@ File generated from /Volumes/Work/Projects/GalaxyServer/resource_srv/.eunit/mnes
         |  
         |  remove_resource_type(ResourceName, GalaxyId, _State) -&gt;
 <font color=red>     0..|      Table = get_resource_type_table(GalaxyId),</font>
+<font color=red>     0..|      find_or_create_resource_type_table(Table),</font>
 <font color=red>     0..|  	T = fun() -&gt;</font>
 <font color=red>     0..|          mnesia:delete(Table, ResourceName, write)</font>
         |      end,
@@ -132,6 +142,7 @@ File generated from /Volumes/Work/Projects/GalaxyServer/resource_srv/.eunit/mnes
         |          #structure_type{galaxy_id = GalaxyId} = StructureType,
         |          _State) -&gt;
 <font color=red>     0..|      Table = get_structure_type_table(GalaxyId),</font>
+<font color=red>     0..|      find_or_create_structure_type_table(Table),</font>
 <font color=red>     0..|      T = fun() -&gt;</font>
 <font color=red>     0..|          mnesia:write(Table, StructureType, write)</font>
         |      end,
@@ -146,10 +157,12 @@ File generated from /Volumes/Work/Projects/GalaxyServer/resource_srv/.eunit/mnes
         |  
         |  get_structure_types(GalaxyId, _State) -&gt;
 <font color=red>     0..|      Table = get_structure_type_table(GalaxyId),</font>
+<font color=red>     0..|      find_or_create_structure_type_table(Table),</font>
 <font color=red>     0..|  	read_all_records(Table).</font>
         |  
         |  get_structure_type(StructureName, GalaxyId, _State) -&gt;
 <font color=red>     0..|      Table = get_structure_type_table(GalaxyId),</font>
+<font color=red>     0..|      find_or_create_structure_type_table(Table),</font>
 <font color=red>     0..|      T = fun() -&gt;</font>
 <font color=red>     0..|          mnesia:read(Table, StructureName)</font>
         |      end,
@@ -166,6 +179,7 @@ File generated from /Volumes/Work/Projects/GalaxyServer/resource_srv/.eunit/mnes
         |          #structure_type{galaxy_id = GalaxyId} = StructureType,
         |          _State) -&gt;
 <font color=red>     0..|      Table = get_structure_type_table(GalaxyId),</font>
+<font color=red>     0..|      find_or_create_structure_type_table(Table),</font>
 <font color=red>     0..|  	T = fun() -&gt;</font>
 <font color=red>     0..|          mnesia:delete(Table, StructureType, write)</font>
         |      end,

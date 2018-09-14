@@ -10,6 +10,7 @@
 	strength=0.0,
     faction,
     faction_group,
+    location,
     metadata
     }).
 
@@ -27,6 +28,9 @@
     galaxy_id,
     display_name,
     metadata}).
+
+-record(force_model_name, {
+    name}).
 
 -record(force_model, {
     name,

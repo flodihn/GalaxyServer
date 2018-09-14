@@ -4,6 +4,7 @@
 
 -include("galaxy_defs.hrl").
 -include("resource_defs.hrl").
+-include("battle_defs.hrl").
 
 %% ====================================================================
 %% API functions
@@ -118,10 +119,30 @@ record_to_proplist(#region{} = Rec) ->
 	[{name, Rec#region.name}, {display_name, Rec#region.display_name}];
 
 record_to_proplist(#system{} = Rec) ->
-	lists:zip(record_info(fields, system), tl(tuple_to_list(Rec)));
+	[
+        {name, Rec#system.name},
+        {galaxy_id, Rec#system.galaxy_id},
+        {region, Rec#system.region},
+        {pos, Rec#system.pos},
+        {display_name, Rec#system.display_name},
+        {star_type, Rec#system.star_type},
+        {planets, Rec#system.planets},
+        {moons, Rec#system.moons},
+        {asteroid_belts, Rec#system.asteroid_belts},
+        {structures, Rec#system.structures},
+        {routes, Rec#system.routes}
+    ];
 
 record_to_proplist(#resource_type{} = Rec) ->
-	lists:zip(record_info(fields, resource_type), tl(tuple_to_list(Rec)));
+	[
+        {name, Rec#resource_type.name},
+        {galaxy_id, Rec#resource_type.galaxy_id},
+        {category, Rec#resource_type.category},
+        {storage_space, Rec#resource_type.storage_space},
+        {display_name, Rec#resource_type.display_name},
+        {build_materials, Rec#resource_type.build_materials},
+        {build_time, Rec#resource_type.build_time}
+    ];
 
 record_to_proplist(#structure_type{} = Rec) ->
 	lists:zip(record_info(fields, structure_type), tl(tuple_to_list(Rec)));
@@ -157,6 +178,23 @@ proplist_values_to_json(#resource_type{
 		{build_time, BuildTime},
 		{meta_data, MetaData}
 	]}};
+
+proplist_values_to_json(#force_model_name{name=Name}) ->
+	{force_model_name, {struct, [
+        {name, Name}
+    ]}};
+
+proplist_values_to_json(#force_model{
+        name=Name,
+        galaxy_id=GalaxyId,
+        display_name=DisplayName,
+        class=Class}) ->
+	{force_model, {struct, [
+        {name, Name},
+        {galaxy_id, GalaxyId},
+        {display_name, DisplayName},
+        {class, Class}
+    ]}};
 
 proplist_values_to_json(#structure{
 		uid=Uid,
@@ -266,6 +304,14 @@ json_to_record(hyperspace_route, Json) ->
 	Record =  #hyperspace_route{
 		origin=list_to_binary(OriginSystem),
 		destination=list_to_binary(DestinationSystem)},
+	{ok, Record};
+
+json_to_record(force_model_name, Json) ->
+	{struct, [
+		{"name", Name}
+	]} = Json,
+	Record =  #force_model_name{
+		name=list_to_binary(Name)},
 	{ok, Record}.
 
 json_to_structure_type_name(Json) ->

@@ -25,13 +25,22 @@ simulate_structures([Structure | Rest], UpdatedStructures, DeltaTime) ->
         UpdatedStructures, [UpdatedStructure]), DeltaTime).
 
 simulate_structure(Structure, DeltaTime) ->
-     {ok, StructureType} = resource_srv:get_structure_type(
-        Structure#structure.galaxy_id, Structure#structure.name),
-    ResourceList = StructureType#structure_type.produces,
-    {ok, UpdatedStructure} = create_or_convert_resources(ResourceList,
-        Structure, StructureType, DeltaTime),
-    {ok, UpdatedStructure2} = process_build_queue(UpdatedStructure),
-    {ok, UpdatedStructure2}.
+    StructureName = Structure#structure.name,
+    GalaxyId = Structure#structure.galaxy_id,
+    case resource_srv:get_structure_type(GalaxyId, StructureName) of
+        {ok, StructureType} ->
+            ResourceList = StructureType#structure_type.produces,
+            {ok, UpdatedStructure} = create_or_convert_resources(
+                ResourceList, Structure, StructureType, DeltaTime),
+            {ok, UpdatedStructure2} = process_build_queue(
+                                        UpdatedStructure),
+            {ok, UpdatedStructure2};
+        {error, not_found} ->
+            error_logger:error_report({?MODULE, simulate_structure,
+                                       structure, StructureName,
+                                       not_found_in_galaxy, GalaxyId}),
+            {error, {structure_not_found, StructureName}}
+    end.
 
 process_build_queue(Structure) ->
     BuildQueue = Structure#structure.build_queue,

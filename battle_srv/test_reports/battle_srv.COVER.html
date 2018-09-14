@@ -5,7 +5,7 @@
 <title>/Volumes/Work/Projects/GalaxyServer/battle_srv/.eunit/battle_srv.COVER.html</title>
 </head><body style='background-color: white; color: black'>
 <pre>
-File generated from /Volumes/Work/Projects/GalaxyServer/battle_srv/.eunit/battle_srv.erl by COVER 2018-08-01 at 09:05:49
+File generated from /Volumes/Work/Projects/GalaxyServer/battle_srv/.eunit/battle_srv.erl by COVER 2018-08-23 at 09:10:57
 
 ****************************************************************************
 
@@ -37,7 +37,8 @@ File generated from /Volumes/Work/Projects/GalaxyServer/battle_srv/.eunit/battle
         |           terminate/2, code_change/3]).
         |  
         |  -export([
-        |      create_force/4,
+        |      create_force/5,
+        |      get_force/2,
         |  	destroy_force/2,
         |  	add_resource_to_force/3,
         |  	add_resources_to_force/3,
@@ -64,19 +65,22 @@ File generated from /Volumes/Work/Projects/GalaxyServer/battle_srv/.eunit/battle
         |  %% ------------------------------------------------------------------
         |  %% Battle Server API Function Definitions
         |  %% ------------------------------------------------------------------
-        |  create_force(GalaxyId, DisplayName, Faction, FactionGroup) -&gt;
+        |  create_force(GalaxyId, DisplayName, Faction, FactionGroup, SystemName) -&gt;
 <font color=red>     0..|      gen_server:call(?SERVER, {create_force, GalaxyId, DisplayName,</font>
-        |                               Faction, FactionGroup}).
+        |                               Faction, FactionGroup, SystemName}).
+        |  
+        |  get_force(ForceId, GalaxyId) -&gt;
+<font color=red>     0..|      gen_server:call(?SERVER, {get_force, ForceId, GalaxyId}).</font>
         |  
         |  destroy_force(Id, GalaxyId) -&gt;
 <font color=red>     0..|      gen_server:call(?SERVER, {destroy_force, Id, GalaxyId}).</font>
         |  
-        |  add_resource_to_force(Name, GalaxyId, Resource) -&gt;
-<font color=red>     0..|      gen_server:call(?SERVER, {add_resource_to_force, Name, GalaxyId,</font>
+        |  add_resource_to_force(ForceId, GalaxyId, Resource) -&gt;
+<font color=red>     0..|      gen_server:call(?SERVER, {add_resource_to_force, ForceId, GalaxyId,</font>
         |  		Resource}).
         |  
-        |  add_resources_to_force(Name, GalaxyId, Resources) -&gt;
-<font color=red>     0..|      gen_server:call(?SERVER, {add_resources_to_force, Name, GalaxyId,</font>
+        |  add_resources_to_force(ForceId, GalaxyId, Resources) -&gt;
+<font color=red>     0..|      gen_server:call(?SERVER, {add_resources_to_force, ForceId, GalaxyId,</font>
         |  		Resources}).
         |  
         |  add_force_class(Name, GalaxyId, DisplayName) -&gt;
@@ -116,30 +120,72 @@ File generated from /Volumes/Work/Projects/GalaxyServer/battle_srv/.eunit/battle
 <font color=red>     0..|      {ok, #state{implmod = ImplMod, implstate = State}}.</font>
         |  
         |  handle_call({create_force, GalaxyId, DisplayName, Faction,
-        |               FactionGroup}, _From, #state{implmod = ImplMod,
+        |               FactionGroup, SystemName}, _From, #state{implmod = ImplMod,
         |               implstate = ImplState} = State) -&gt;
-<font color=red>     0..|      Id = uuid:generate(),</font>
-<font color=red>     0..|      case ImplMod:force_exists(Id, GalaxyId, ImplState) of</font>
+<font color=red>     0..|      ForceId = uuid:generate(),</font>
+<font color=red>     0..|      case ImplMod:force_exists(ForceId, GalaxyId, ImplState) of</font>
         |          true -&gt;
-<font color=red>     0..|              {reply, {error, force_id_exists}, State};</font>
+<font color=red>     0..|              {reply, {error, {duplicate_id, ForceId}}, State};</font>
         |          false  -&gt;
 <font color=red>     0..|              Force = #force{</font>
-        |                  id = Id,
+        |                  id = ForceId,
         |                  galaxy_id = GalaxyId,
         |                  display_name = DisplayName,
         |                  faction = Faction,
         |                  faction_group = FactionGroup},
-<font color=red>     0..|              ImplMod:create_force(Force, ImplState),</font>
-<font color=red>     0..|              {reply, {ok, Id}, State}</font>
+<font color=red>     0..|              {ok, force_created} = ImplMod:create_force(Force, ImplState),</font>
+<font color=red>     0..|              {ok, UpdatedForce} = move_force_to_system(</font>
+        |                                    Force, SystemName),
+<font color=red>     0..|              {ok, force_updated} = ImplMod:update_force(</font>
+        |                                UpdatedForce, ImplState),
+<font color=red>     0..|              {reply, {ok, ForceId}, State}</font>
         |      end;
         |  
-        |  handle_call({destroy_force, Id, GalaxyId}, _From,
+        |  handle_call({get_force, ForceId, GalaxyId}, _From,
         |              #state{implmod = ImplMod, implstate = ImplState} = State) -&gt;
-<font color=red>     0..|      case ImplMod:force_exists(Id, GalaxyId, ImplState) of</font>
+<font color=red>     0..|      case ImplMod:get_force(ForceId, GalaxyId, ImplState) of</font>
+        |          {ok, Force} -&gt;
+<font color=red>     0..|              {reply, {ok, Force}, State};</font>
+        |          {error, not_found} -&gt;
+<font color=red>     0..|              {reply, {error, not_found}, State}</font>
+        |      end;
+        |  
+        |  handle_call({add_resource_to_force, ForceId, GalaxyId, Resource}, _From,
+        |              #state{implmod = ImplMod, implstate = ImplState} = State) -&gt;
+<font color=red>     0..|      case ImplMod:get_force(ForceId, GalaxyId, ImplState) of</font>
+        |          {error, not_found}-&gt;
+<font color=red>     0..|              {reply, {error, not_found}, State};</font>
+        |          {ok, Force} -&gt;
+<font color=red>     0..|              {ok, UpdatedForce} = add_force_resources(Force, [Resource]),</font>
+<font color=red>     0..|              {ok, UpdatedForce2} = calculate_force_capabilities(</font>
+        |                               UpdatedForce, ImplMod, ImplState),
+<font color=red>     0..|              {ok, force_updated} = ImplMod:update_force(</font>
+        |                                      UpdatedForce2, ImplState),
+<font color=red>     0..|              {reply, {ok, added}, State}</font>
+        |      end;
+        |  
+        |  handle_call({add_resources_to_force, ForceId, GalaxyId, Resources},
+        |          _From, #state{implmod = ImplMod, implstate = ImplState} = State) -&gt;
+     2..|      case ImplMod:get_force(ForceId, GalaxyId, ImplState) of
+        |          {error, not_found}-&gt;
+<font color=red>     0..|              {reply, {error, not_found}, State};</font>
+        |          {ok, Force} -&gt;
+     2..|              {ok, UpdatedForce} = add_force_resources(Force, Resources),
+     2..|              {ok, UpdatedForce2} = calculate_force_capabilities(
+        |                               UpdatedForce, ImplMod, ImplState),
+     2..|              {ok, force_updated} = ImplMod:update_force(
+        |                                      UpdatedForce2, ImplState),
+     2..|              {reply, {ok, added}, State}
+        |      end;
+        |  
+        |  
+        |  handle_call({destroy_force, ForceId, GalaxyId}, _From,
+        |              #state{implmod = ImplMod, implstate = ImplState} = State) -&gt;
+<font color=red>     0..|      case ImplMod:force_exists(ForceId, GalaxyId, ImplState) of</font>
         |          false -&gt;
 <font color=red>     0..|              {reply, {error, not_found}, State};</font>
         |          true -&gt;
-<font color=red>     0..|              ImplMod:destroy_force(Id, GalaxyId, ImplState),</font>
+<font color=red>     0..|              ImplMod:destroy_force(ForceId, GalaxyId, ImplState),</font>
 <font color=red>     0..|              {reply, {ok, force_destroyed}, State}</font>
         |      end;
         |  
@@ -246,7 +292,6 @@ File generated from /Volumes/Work/Projects/GalaxyServer/battle_srv/.eunit/battle
         |      end;
         |  
         |  handle_call(Request, _From, State) -&gt;
-<font color=red>     0..|      error_logger:info_report({unknown_request, Request}),</font>
 <font color=red>     0..|      {reply, {error, unknown_request}, State}.</font>
         |  
         |  handle_cast(_Msg, State) -&gt;
@@ -301,84 +346,122 @@ File generated from /Volumes/Work/Projects/GalaxyServer/battle_srv/.eunit/battle
         |  calculate_force_capabilities(#force{resources = Resources,
         |                                     galaxy_id = GalaxyId} = Force,
         |                              ImplMod, ImplState) -&gt;
-     1..|      CapabilityDict = dict:new(),
-     1..|      AllMilitaryResources = filter_force_model_resources(Resources,
+     3..|      CapabilityDict = dict:new(),
+     3..|      AllMilitaryResources = filter_force_model_resources(Resources,
         |                                                         GalaxyId),
         |  
-     1..|      {ok, UpdatedCapabilityDict} = process_resource_capabilities(
+     3..|      {ok, UpdatedCapabilityDict} = process_resource_capabilities(
         |                                AllMilitaryResources,
         |                                CapabilityDict,
         |                                ImplMod,
         |                                ImplState),
-     1..|      {ok, Force#force{capabilities = dict:to_list(
+     3..|      {ok, Force#force{capabilities = dict:to_list(
         |                                        UpdatedCapabilityDict)}}.
         |      
         |  process_resource_capabilities([], CapabilitiesDict, _ImplMod,
         |                                _ImplState) -&gt;
-     1..|      {ok, CapabilitiesDict};
+     3..|      {ok, CapabilitiesDict};
         |  
         |  process_resource_capabilities([MilitaryResource | Resouces],
         |                                CapabilitiesDict, ImplMod, ImplState) -&gt;
-     1..|      ResourceName = MilitaryResource#resource.name,
-     1..|      GalaxyId = MilitaryResource#resource.galaxy_id,
-     1..|      ResourceAmount = MilitaryResource#resource.amount,
-     1..|      {ok, UpdatedCapabilitiesDict} = process_weapons_capabilities(ResourceName,
+     3..|      ResourceName = MilitaryResource#resource.name,
+     3..|      GalaxyId = MilitaryResource#resource.galaxy_id,
+     3..|      ResourceAmount = MilitaryResource#resource.amount,
+     3..|      {ok, UpdatedCapabilitiesDict} = process_weapons_capabilities(ResourceName,
         |                                                       GalaxyId,
         |                                                       ResourceAmount,
         |                                                       CapabilitiesDict,
         |                                                       ImplMod,
         |                                                       ImplState),
-     1..|      process_resource_capabilities(Resouces, UpdatedCapabilitiesDict,
+     3..|      process_resource_capabilities(Resouces, UpdatedCapabilitiesDict,
         |                                     ImplMod, ImplState).
         |  
         |  process_weapons_capabilities(ResourceName, GalaxyId, ResourceAmount,
         |                               Dict, ImplMod, ImplState) -&gt;
-     1..|      {ok, ResourceType} = resource_srv:get_resource_type(
+     3..|      {ok, ResourceType} = resource_srv:get_resource_type(
         |                             ResourceName, GalaxyId),
-     1..|      ForceClass = ResourceType#resource_type.type,
+     3..|      ForceModelNameRecord = ResourceType#resource_type.type,
+     3..|      ForceModelName = ForceModelNameRecord#force_model_name.name,
+     3..|      {ok, ForceModel} = ImplMod:get_force_model(ForceModelName, GalaxyId, 
+        |                                           ImplState),
         |      %% Weapons is proplist containg the weapon type and the number of
         |      %% weapons, example: {&lt;&lt;"laser_turret"&gt;&gt;, 6}. 
-     1..|      Weapons = ForceClass#force_model.weapons,
-     1..|      {ok, UpdatedDict} = update_weapons_capabilities(
+     3..|      Weapons = ForceModel#force_model.weapons,
+     3..|      {ok, UpdatedDict} = update_weapons_capabilities(
         |                            Weapons, Dict, ResourceAmount, GalaxyId,
         |                            ImplMod, ImplState),
-     1..|      {ok, UpdatedDict}.
+     3..|      {ok, UpdatedDict}.
         |  
         |  update_weapons_capabilities([], Dict, _ResourceAmount, _GalaxyId,
         |                              _ImplMod, _ImplState) -&gt;
-     1..|      {ok, Dict};
+     3..|      {ok, Dict};
         |  
         |  update_weapons_capabilities([Weapon| Weapons], Dict, ResourceAmount,
         |                              GalaxyId, ImplMod, ImplState) -&gt;
-     1..|      {WeaponName, NumWeapons} = Weapon,
-     1..|      {ok, WeaponType} = ImplMod:get_weapon_type(WeaponName, GalaxyId,
+     3..|      {WeaponName, NumWeapons} = Weapon,
+     3..|      {ok, WeaponType} = ImplMod:get_weapon_type(WeaponName, GalaxyId,
         |                                           ImplState),
-     1..|      Capabilties = WeaponType#weapon_type.strong_vs,
-     1..|      {ok, UpdatedDict} = add_capabilitites_to_dict(Capabilties,
+     3..|      Capabilties = WeaponType#weapon_type.strong_vs,
+     3..|      {ok, UpdatedDict} = add_capabilitites_to_dict(Capabilties,
         |                                                    ResourceAmount,
         |                                                    NumWeapons, Dict),
-     1..|      update_weapons_capabilities(Weapons, UpdatedDict, ResourceAmount,
+     3..|      update_weapons_capabilities(Weapons, UpdatedDict, ResourceAmount,
         |                                  GalaxyId, ImplMod, ImplState).
         |  
         |  add_capabilitites_to_dict([], _NumWeapons, _ResouceAmount, Dict) -&gt;
-     1..|      {ok, Dict};
+     3..|      {ok, Dict};
         |  
         |  add_capabilitites_to_dict([{Capability, Strength} | Capabilties],
         |                            NumWeapons, ResourceAmount, Dict) -&gt;
-     3..|      UpdatedDict = dict:update_counter(
+    10..|      UpdatedDict = dict:update_counter(
         |                      Capability,
         |                      Strength * NumWeapons * ResourceAmount,
         |                      Dict),
-     3..|      add_capabilitites_to_dict(Capabilties, NumWeapons, ResourceAmount,
+    10..|      add_capabilitites_to_dict(Capabilties, NumWeapons, ResourceAmount,
         |                                UpdatedDict).
         |  
         |  filter_force_model_resources(Resources, GalaxyId) -&gt;
-     1..|      ResourceNames = [Resource#resource.name || Resource &lt;- Resources],
-     1..|      {ok, ResourceTypes} = resource_srv:get_resource_types(
+     3..|      ResourceNames = [Resource#resource.name || Resource &lt;- Resources],
+     3..|      {ok, ResourceTypes} = resource_srv:get_resource_types(
         |                                ResourceNames, GalaxyId),
-     1..|      ZippedList = lists:zip(Resources, ResourceTypes),
-     1..|      [Resource || {Resource, ResourceType} &lt;- ZippedList,
-     1..|          element(1, ResourceType#resource_type.type) == force_model].
+     3..|      ZippedList = lists:zip(Resources, ResourceTypes),
+     3..|      [Resource || {Resource, ResourceType} &lt;- ZippedList,
+     3..|          element(1, ResourceType#resource_type.type) == force_model_name].
+        |  
+        |  add_force_resources(Force, []) -&gt;
+     2..|      {ok, Force};
+        |  
+        |  add_force_resources(Force, [Resource | Resources]) -&gt;
+     2..|      {ok, UpdatedResourceList} = resource_helper:add_to_resource_list(
+        |                              Resource, Force#force.resources),
+     2..|      add_force_resources(Force#force{resources = UpdatedResourceList},
+        |                          Resources).
+        |  
+        |  move_force_to_system(Force, SystemName) -&gt;
+     3..|      ForceId = Force#force.id,
+     3..|      GalaxyId = Force#force.galaxy_id,
+     3..|      case galaxy_srv:get_system(GalaxyId, SystemName) of
+        |          {ok, System} -&gt;
+     2..|              ForceList = System#system.forces,
+     2..|              case lists:member(ForceId, ForceList) of
+        |                  true -&gt;
+<font color=red>     0..|                      pass;</font>
+        |                  false -&gt;
+     2..|                      case Force#force.location of
+        |                          undefined -&gt;
+     1..|                              pass;
+        |                          ExistingLocation -&gt;
+     1..|                              galaxy_srv:remove_force_from_system(
+        |                                  GalaxyId, ForceId, SystemName)
+        |                      end,
+     2..|                      {ok, force_added} = galaxy_srv:add_force_to_system(
+        |                                        GalaxyId, ForceId, SystemName),
+     2..|                      UpdatedForce = Force#force{location=SystemName},
+     2..|                      {ok, UpdatedForce}
+        |              end;
+        |          {error, not_found} -&gt;
+     1..|              {error, system_not_found}
+        |      end.
 </pre>
 </body>
 </html>

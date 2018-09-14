@@ -29,13 +29,14 @@
     region,
     pos,
     display_name,
-    star_type=medium_white,
-    star_size=1,
-    planets=[],
-    moons=[],
-    asteroid_belts=[],
-    structures=[],
-	routes=[],
+    star_type = <<"medium_white">>,
+    star_size = 1,
+    planets = [],
+    moons = [],
+    asteroid_belts = [],
+    structures = [],
+	routes = [],
+    forces = [],
     metadata}).
 
 -record(planet, {

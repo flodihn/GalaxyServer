@@ -8,7 +8,7 @@ clean:
 	rm -rf test_reports/*
 
 test: clean compile
-	ERL_FLAGS="-config config/test.config" rebar skip_deps=true eunit; mkdir -p test_reports; mv .eunit/*.xml test_reports/; mv .eunit/*.html test_reports/;
+	ERL_FLAGS="-config config/test.config -pa ../test_lib/ebin/  -pa ../resource_srv/ebin" rebar skip_deps=true eunit; mkdir -p test_reports; mv .eunit/*.xml test_reports/; mv .eunit/*.html test_reports/;
 
 
 doc:

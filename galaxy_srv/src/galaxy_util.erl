@@ -10,16 +10,19 @@
 %% Application callbacks
 -export([
     sector_name_to_sup/1,
-	new_structure/1,
+	new_structure/2,
 	generate_uid/0
     ]).
 
 sector_name_to_sup(SectorName) ->
     list_to_atom(atom_to_list(SectorName) ++ "_sup").
 
-new_structure(StructureType) ->
+new_structure(GalaxyId, StructureType) ->
 	StructureUid = generate_uid(),
-	#structure{uid=StructureUid, name=StructureType}.
+	#structure{
+       uid = StructureUid,
+       galaxy_id = GalaxyId,
+       name = StructureType}.
 
 generate_uid() ->
     <<A:32, B:16, C:16, D:16, E:48>> = crypto:rand_bytes(16),

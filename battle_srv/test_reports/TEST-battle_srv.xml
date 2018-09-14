@@ -1,6 +1,26 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<testsuite tests="1" failures="0" errors="0" skipped="0" time="0.691" name="module 'battle_srv'">
-  <testcase time="0.001" name="battle_srv_tests:319 fixture_test_ (Test calculate force capabilities)">
+<testsuite tests="6" failures="0" errors="0" skipped="0" time="0.752" name="module 'battle_srv'">
+  <testcase time="0.000" name="battle_srv_tests:408 fixture_test_ (Test calculate force capabilities)">
+    <system-out>
+    </system-out>
+  </testcase>
+  <testcase time="0.007" name="battle_srv_tests:410 fixture_test_ (Test add resources to force)">
+    <system-out>
+    </system-out>
+  </testcase>
+  <testcase time="0.001" name="battle_srv_tests:412 fixture_test_ (Test force capabilities recalculated after add resources)">
+    <system-out>
+    </system-out>
+  </testcase>
+  <testcase time="0.001" name="battle_srv_tests:414 fixture_test_ (Test move force to system)">
+    <system-out>
+    </system-out>
+  </testcase>
+  <testcase time="0.001" name="battle_srv_tests:416 fixture_test_ (Test move force to non existing system)">
+    <system-out>
+    </system-out>
+  </testcase>
+  <testcase time="0.001" name="battle_srv_tests:418 fixture_test_ (Test system changed when force moved)">
     <system-out>
     </system-out>
   </testcase>

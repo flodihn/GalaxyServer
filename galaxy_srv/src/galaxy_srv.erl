@@ -41,7 +41,9 @@
     create_moon/3,
     create_asteroid_belt/3,
     add_structure/4,
-    remove_structure/4]).
+    remove_structure/4,
+    add_force_to_system/3,
+    remove_force_from_system/3]).
 
 -record(state, {simulation_callback, implmod, implstate}).
 
@@ -58,8 +60,8 @@ start_link(ImplMod) ->
 start_simulation() ->
     gen_server:cast(?SERVER, start_simulation).
 
-create_galaxy(Id, Pos) when is_binary(Id) ->
-    gen_server:call(?SERVER, {create_galaxy, Id, Pos}).
+create_galaxy(GalaxyId, Pos) when is_binary(GalaxyId) ->
+    gen_server:call(?SERVER, {create_galaxy, GalaxyId, Pos}).
 
 update_galaxy(#galaxy{} = Galaxy) ->
     gen_server:call(?SERVER, {update_galaxy, Galaxy}).
@@ -128,6 +130,14 @@ remove_structure(GalaxyId, StructureUid, LinkId, LinkType) ->
     gen_server:call(?SERVER, {remove_structure, GalaxyId, StructureUid,
         LinkId, LinkType}).
 
+add_force_to_system(GalaxyId, ForceId, SystemName) ->
+    gen_server:call(?SERVER, {add_force_to_system, GalaxyId, ForceId,
+                             SystemName}).
+
+remove_force_from_system(GalaxyId, ForceId, SystemName) ->
+    gen_server:call(?SERVER, {remove_force_from_system, GalaxyId, ForceId,
+                             SystemName}).
+
 %% ------------------------------------------------------------------
 %% gen_server Function Definitions
 %% ------------------------------------------------------------------
@@ -136,12 +146,19 @@ init([ImplMod]) ->
     State = ImplMod:init(),
     {ok, #state{implmod=ImplMod, implstate=State}}.
 
-handle_call({create_galaxy, Id, Pos}, _From,
+handle_call({create_galaxy, GalaxyId, Pos}, _From,
            #state{implmod=ImplMod, implstate=ImplState} = State) ->
-    {ok, galaxy_created} = ImplMod:create_galaxy(
-        #galaxy{id=Id, pos=Pos, regions=[]}, ImplState),
-    error_logger:info_report({starting_simulation, {galaxy_id, Id}}),
-    {reply, {ok, galaxy_created}, State};
+    case ImplMod:get_galaxy(GalaxyId, ImplState) of
+        {error, not_found} ->
+            {ok, galaxy_created} = ImplMod:create_galaxy(
+                #galaxy{id=GalaxyId, pos=Pos, regions=[]}, ImplState),
+                error_logger:info_report(
+                  {starting_simulation, {galaxy_id, GalaxyId}}),
+			    galaxy_sim_sup:start_simulation(GalaxyId),
+                {reply, {ok, galaxy_created}, State};
+        {ok, _ExistingGalaxy} ->
+            {reply, {error, galaxy_already_exists}, State}
+    end;
 
 handle_call({update_galaxy, Galaxy}, _From,
            #state{implmod=ImplMod, implstate=ImplState} = State) ->
@@ -151,6 +168,7 @@ handle_call({update_galaxy, Galaxy}, _From,
 handle_call({destroy_galaxy, Id}, _From,
            #state{implmod=ImplMod, implstate=ImplState} = State) ->
     {ok, galaxy_destroyed} = ImplMod:destroy_galaxy(Id, ImplState),
+    ok = resource_srv:destroy_resource_tables(Id),
     error_logger:info_report({destroy_galaxy, {galaxy_id, Id}}),
     {reply, {ok, galaxy_destroyed}, State};
 
@@ -188,8 +206,8 @@ handle_call({get_regions, GalaxyId}, _From,
     Result = ImplMod:get_regions(GalaxyId, ImplState),
     {reply, Result, State};
 
-handle_call({create_system, #system{} = System},
-        _From, #state{implmod=ImplMod, implstate=ImplState} = State) ->
+handle_call({create_system, #system{} = System}, _From,
+            #state{implmod=ImplMod, implstate=ImplState} = State) ->
     {ok, system_created} = ImplMod:create_system(System, ImplState),
     galaxy_sim:simulate_system(System),
     {reply, {ok, system_created}, State};
@@ -202,12 +220,12 @@ handle_call({create_system, GalaxyId, Region, Name, Pos, DisplayName},
             region = Region,
             pos = Pos,
             display_name = DisplayName},
-	case ImplMod:system_exists(GalaxyId, Name) of 
+	case ImplMod:system_exists(GalaxyId, Name, ImplState) of 
 		true ->
 			{reply, {error, system_already_exists}, State};
 		false ->
     		{ok, system_created} = ImplMod:create_system(System, ImplState),
-    		%galaxy_sim:simulate_system(System),
+    		galaxy_sim:simulate_system(System),
 			{reply, {ok, system_creaed}, State}
 	end;
 
@@ -305,12 +323,17 @@ handle_call({get_systems, GalaxyId}, _From,
 
 handle_call({get_system, GalaxyId, SystemName}, _From,
            #state{implmod=ImplMod, implstate=ImplState} = State) ->
-    {ok, System} = ImplMod:get_system(GalaxyId, SystemName, ImplState),
-    {reply, {ok, System}, State};
+    case ImplMod:get_system(GalaxyId, SystemName, ImplState) of
+        {ok, System} ->
+            {reply, {ok, System}, State};
+        {error, system_not_found} ->
+            {reply, {error, not_found}, State}
+    end;
 
 handle_call({add_structure, GalaxyId, StructureType, LinkId, LinkType},
         _From, #state{implmod=ImplMod, implstate=ImplState} = State) ->
-	StructureInstance = galaxy_util:new_structure(StructureType),
+	StructureInstance = galaxy_util:new_structure(GalaxyId,
+                                                  StructureType),
 	
 	case ImplMod:add_structure(GalaxyId, StructureInstance, LinkId,
             LinkType, ImplState) of
@@ -330,6 +353,34 @@ handle_call({remove_structure, GalaxyId, StructureUid, LinkId, LinkType},
             {reply, {ok, structure_removed}, State};
 		{error, bad_link_type} ->
 			{reply, {error, unknown_link_type}, State}; 
+		{error, Reason} ->
+			{reply, {error, Reason}, State}
+	end;
+
+handle_call({add_force_to_system, GalaxyId, ForceId, SystemName},
+        _From, #state{implmod=ImplMod, implstate=ImplState} = State) ->
+	case ImplMod:get_system(GalaxyId, SystemName, ImplState) of
+		 {ok, System} -> 
+            ForceList = System#system.forces,
+            UpdatedForceList = lists:append([ForceId], ForceList),
+            UpdatedSystem = System#system{forces = UpdatedForceList},
+            {ok, system_updated} = ImplMod:update_system(UpdatedSystem,
+                                                        ImplState),
+            {reply, {ok, force_added}, State};
+		{error, Reason} ->
+			{reply, {error, Reason}, State}
+	end;
+
+handle_call({remove_force_from_system, GalaxyId, ForceId, SystemName},
+        _From, #state{implmod=ImplMod, implstate=ImplState} = State) ->
+	case ImplMod:get_system(GalaxyId, SystemName, ImplState) of
+		 {ok, System} -> 
+            ForceList = System#system.forces,
+            UpdatedForceList = lists:delete(ForceId, ForceList),
+            UpdatedSystem = System#system{forces = UpdatedForceList},
+            {ok, system_updated} = ImplMod:update_system(UpdatedSystem,
+                                                        ImplState),
+            {reply, {ok, force_removed}, State};
 		{error, Reason} ->
 			{reply, {error, Reason}, State}
 	end;
