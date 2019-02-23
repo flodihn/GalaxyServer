@@ -38,7 +38,7 @@
     add_force_model/5,
     remove_force_model/2,
 
-    add_weapon_type/6,
+    add_weapon_type/5,
     remove_weapon_type/2
     ]).
 
@@ -86,15 +86,14 @@ add_force_model(Name, GalaxyId, DisplayName, Class, Weapons) ->
 remove_force_model(Name, GalaxyId) ->
     gen_server:call(?SERVER, {remove_force_model, Name, GalaxyId}).
 
-add_weapon_type(Name, GalaxyId, DisplayName, StrongVs, WeakVs,
+add_weapon_type(Name, GalaxyId, DisplayName, Modifiers,
                BaseStrength) ->
-    case {validate_numeric_proplist(StrongVs),
-            validate_numeric_proplist(StrongVs)} of
-        {false, _} -> {error, strong_vs_not_numeric_proplist};
-        {_, false} -> {error, weak_vs_not_numeric_proplist};
-        {true, true} ->
+    case validate_numeric_proplist(Modifiers)  of
+        false ->
+            {error, capabilties_not_numeric_proplist};
+        true ->
             gen_server:call(?SERVER, {add_weapon_type, Name, GalaxyId,
-		        DisplayName, StrongVs, WeakVs, BaseStrength})
+		        DisplayName, Modifiers, BaseStrength})
     end.           
 
 remove_weapon_type(Name, GalaxyId) ->
@@ -240,30 +239,24 @@ handle_call({remove_force_model, Name, GalaxyId}, _From, #state{
                 {reply, {error, force_model_not_found}, State}
     end;
 
-handle_call({add_weapon_type, Name, GalaxyId, DisplayName, StrongVs, 
-             WeakVs, BaseStrength}, _From, #state{implmod = ImplMod, 
+handle_call({add_weapon_type, Name, GalaxyId, DisplayName, Modifiers, 
+             BaseStrength}, _From, #state{implmod = ImplMod, 
              implstate = ImplState} = State) ->
 
     case {ImplMod:weapon_type_exists(Name, GalaxyId, ImplState),
-          verify_all_force_models_exists(StrongVs, GalaxyId, ImplMod,
-                                          ImplState),
-          verify_all_force_models_exists(WeakVs, GalaxyId, ImplMod,
+          verify_all_force_models_exists(Modifiers, GalaxyId, ImplMod,
                                           ImplState)} of
         {true, _, _} ->
             {reply, {error, weapon_type_already_exists}, State};
-        {_, {missing_force_models, WrongWeakVsForceClasses}, _} ->
+        {_, _, {missing_force_models, WrongForceClasses}} ->
             {reply, {error, {non_existing_force_models,
-                             WrongWeakVsForceClasses}}, State};
-        {_, _, {missing_force_models, WrongStrongVsForceClasses}} ->
-            {reply, {error, {non_existing_force_models,
-                             WrongStrongVsForceClasses}}, State};
-        {false, ok, ok} ->
+                             WrongForceClasses}}, State};
+        {false,  ok} ->
             WeaponType = #weapon_type{
                 name = Name,
                 galaxy_id = GalaxyId,
                 display_name = DisplayName,
-                strong_vs = StrongVs,
-                weak_vs = WeakVs,
+                modifiers = Modifiers,
                 base_strength = BaseStrength},
             ImplMod:add_weapon_type(WeaponType, ImplState),
             {reply, {ok, weapon_type_added}, State}
@@ -390,8 +383,8 @@ update_weapons_capabilities([Weapon| Weapons], Dict, ResourceAmount,
     {WeaponName, NumWeapons} = Weapon,
     {ok, WeaponType} = ImplMod:get_weapon_type(WeaponName, GalaxyId,
                                          ImplState),
-    Capabilties = WeaponType#weapon_type.strong_vs,
-    {ok, UpdatedDict} = add_capabilitites_to_dict(Capabilties,
+    Modifiers  = WeaponType#weapon_type.modifiers,
+    {ok, UpdatedDict} = add_capabilitites_to_dict(Modifiers,
                                                   ResourceAmount,
                                                   NumWeapons, Dict),
     update_weapons_capabilities(Weapons, UpdatedDict, ResourceAmount,
@@ -400,13 +393,13 @@ update_weapons_capabilities([Weapon| Weapons], Dict, ResourceAmount,
 add_capabilitites_to_dict([], _NumWeapons, _ResouceAmount, Dict) ->
     {ok, Dict};
 
-add_capabilitites_to_dict([{Capability, Strength} | Capabilties],
+add_capabilitites_to_dict([{Modifier, Strength} | Modifiers],
                           NumWeapons, ResourceAmount, Dict) ->
     UpdatedDict = dict:update_counter(
-                    Capability,
+                    Modifier,
                     Strength * NumWeapons * ResourceAmount,
                     Dict),
-    add_capabilitites_to_dict(Capabilties, NumWeapons, ResourceAmount,
+    add_capabilitites_to_dict(Modifiers, NumWeapons, ResourceAmount,
                               UpdatedDict).
 
 filter_force_model_resources(Resources, GalaxyId) ->

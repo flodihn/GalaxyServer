@@ -13,7 +13,7 @@ start() ->
 	application:start(galaxy_srv),
 	application:start(faction_srv),
 	application:start(battle_srv),
-	application:start(transport_srv),
+	application:start(economy_srv),
     application:start(sws_srv),
     galaxy_srv:start_simulation(),
     faction_srv:simulate_strategies().

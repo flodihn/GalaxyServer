@@ -1,0 +1,12 @@
+{application, force_srv,
+ [
+  {description, ""},
+  {vsn, "1"},
+  {registered, []},
+  {applications, [
+                  kernel,
+                  stdlib
+                 ]},
+  {mod, { force_srv_app, []}},
+  {env, []}
+ ]}.

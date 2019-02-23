@@ -2,10 +2,10 @@
 <html>
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
-<title>/Volumes/Work/Projects/GalaxyServer/battle_srv/.eunit/battle_srv.COVER.html</title>
+<title>/Users/cflow/LocalProjects/GalaxyServer/battle_srv/.eunit/battle_srv.COVER.html</title>
 </head><body style='background-color: white; color: black'>
 <pre>
-File generated from /Volumes/Work/Projects/GalaxyServer/battle_srv/.eunit/battle_srv.erl by COVER 2018-08-23 at 09:10:57
+File generated from /Users/cflow/LocalProjects/GalaxyServer/battle_srv/.eunit/battle_srv.erl by COVER 2019-02-18 at 07:45:12
 
 ****************************************************************************
 
@@ -49,7 +49,7 @@ File generated from /Volumes/Work/Projects/GalaxyServer/battle_srv/.eunit/battle
         |      add_force_model/5,
         |      remove_force_model/2,
         |  
-        |      add_weapon_type/6,
+        |      add_weapon_type/5,
         |      remove_weapon_type/2
         |      ]).
         |  
@@ -97,15 +97,14 @@ File generated from /Volumes/Work/Projects/GalaxyServer/battle_srv/.eunit/battle
         |  remove_force_model(Name, GalaxyId) -&gt;
 <font color=red>     0..|      gen_server:call(?SERVER, {remove_force_model, Name, GalaxyId}).</font>
         |  
-        |  add_weapon_type(Name, GalaxyId, DisplayName, StrongVs, WeakVs,
+        |  add_weapon_type(Name, GalaxyId, DisplayName, Modifiers,
         |                 BaseStrength) -&gt;
-<font color=red>     0..|      case {validate_numeric_proplist(StrongVs),</font>
-        |              validate_numeric_proplist(StrongVs)} of
-<font color=red>     0..|          {false, _} -&gt; {error, strong_vs_not_numeric_proplist};</font>
-<font color=red>     0..|          {_, false} -&gt; {error, weak_vs_not_numeric_proplist};</font>
-        |          {true, true} -&gt;
+<font color=red>     0..|      case validate_numeric_proplist(Modifiers)  of</font>
+        |          false -&gt;
+<font color=red>     0..|              {error, capabilties_not_numeric_proplist};</font>
+        |          true -&gt;
 <font color=red>     0..|              gen_server:call(?SERVER, {add_weapon_type, Name, GalaxyId,</font>
-        |  		        DisplayName, StrongVs, WeakVs, BaseStrength})
+        |  		        DisplayName, Modifiers, BaseStrength})
         |      end.           
         |  
         |  remove_weapon_type(Name, GalaxyId) -&gt;
@@ -251,30 +250,24 @@ File generated from /Volumes/Work/Projects/GalaxyServer/battle_srv/.eunit/battle
 <font color=red>     0..|                  {reply, {error, force_model_not_found}, State}</font>
         |      end;
         |  
-        |  handle_call({add_weapon_type, Name, GalaxyId, DisplayName, StrongVs, 
-        |               WeakVs, BaseStrength}, _From, #state{implmod = ImplMod, 
+        |  handle_call({add_weapon_type, Name, GalaxyId, DisplayName, Modifiers, 
+        |               BaseStrength}, _From, #state{implmod = ImplMod, 
         |               implstate = ImplState} = State) -&gt;
         |  
 <font color=red>     0..|      case {ImplMod:weapon_type_exists(Name, GalaxyId, ImplState),</font>
-        |            verify_all_force_models_exists(StrongVs, GalaxyId, ImplMod,
-        |                                            ImplState),
-        |            verify_all_force_models_exists(WeakVs, GalaxyId, ImplMod,
+        |            verify_all_force_models_exists(Modifiers, GalaxyId, ImplMod,
         |                                            ImplState)} of
         |          {true, _, _} -&gt;
 <font color=red>     0..|              {reply, {error, weapon_type_already_exists}, State};</font>
-        |          {_, {missing_force_models, WrongWeakVsForceClasses}, _} -&gt;
+        |          {_, _, {missing_force_models, WrongForceClasses}} -&gt;
 <font color=red>     0..|              {reply, {error, {non_existing_force_models,</font>
-        |                               WrongWeakVsForceClasses}}, State};
-        |          {_, _, {missing_force_models, WrongStrongVsForceClasses}} -&gt;
-<font color=red>     0..|              {reply, {error, {non_existing_force_models,</font>
-        |                               WrongStrongVsForceClasses}}, State};
-        |          {false, ok, ok} -&gt;
+        |                               WrongForceClasses}}, State};
+        |          {false,  ok} -&gt;
 <font color=red>     0..|              WeaponType = #weapon_type{</font>
         |                  name = Name,
         |                  galaxy_id = GalaxyId,
         |                  display_name = DisplayName,
-        |                  strong_vs = StrongVs,
-        |                  weak_vs = WeakVs,
+        |                  modifiers = Modifiers,
         |                  base_strength = BaseStrength},
 <font color=red>     0..|              ImplMod:add_weapon_type(WeaponType, ImplState),</font>
 <font color=red>     0..|              {reply, {ok, weapon_type_added}, State}</font>
@@ -401,8 +394,8 @@ File generated from /Volumes/Work/Projects/GalaxyServer/battle_srv/.eunit/battle
      3..|      {WeaponName, NumWeapons} = Weapon,
      3..|      {ok, WeaponType} = ImplMod:get_weapon_type(WeaponName, GalaxyId,
         |                                           ImplState),
-     3..|      Capabilties = WeaponType#weapon_type.strong_vs,
-     3..|      {ok, UpdatedDict} = add_capabilitites_to_dict(Capabilties,
+     3..|      Modifiers  = WeaponType#weapon_type.modifiers,
+     3..|      {ok, UpdatedDict} = add_capabilitites_to_dict(Modifiers,
         |                                                    ResourceAmount,
         |                                                    NumWeapons, Dict),
      3..|      update_weapons_capabilities(Weapons, UpdatedDict, ResourceAmount,
@@ -411,13 +404,13 @@ File generated from /Volumes/Work/Projects/GalaxyServer/battle_srv/.eunit/battle
         |  add_capabilitites_to_dict([], _NumWeapons, _ResouceAmount, Dict) -&gt;
      3..|      {ok, Dict};
         |  
-        |  add_capabilitites_to_dict([{Capability, Strength} | Capabilties],
+        |  add_capabilitites_to_dict([{Modifier, Strength} | Modifiers],
         |                            NumWeapons, ResourceAmount, Dict) -&gt;
-    10..|      UpdatedDict = dict:update_counter(
-        |                      Capability,
+    21..|      UpdatedDict = dict:update_counter(
+        |                      Modifier,
         |                      Strength * NumWeapons * ResourceAmount,
         |                      Dict),
-    10..|      add_capabilitites_to_dict(Capabilties, NumWeapons, ResourceAmount,
+    21..|      add_capabilitites_to_dict(Modifiers, NumWeapons, ResourceAmount,
         |                                UpdatedDict).
         |  
         |  filter_force_model_resources(Resources, GalaxyId) -&gt;

@@ -1,1 +1,1 @@
-# GameResourceServer
+# FactionSrv

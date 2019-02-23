@@ -90,6 +90,7 @@ handle_call({create_faction, Name, GalaxyId, DisplayName,
                  name = Name,
                  galaxy_id = GalaxyId,
 		         display_name = DisplayName,
+                 claims = [],
                  strategy_modules = StrategyModules},
 	case ImplMod:create_faction(Faction, ImplState) of
 		{ok, faction_created} ->

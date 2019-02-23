@@ -10,6 +10,7 @@
 -define(EXISTING_SYSTEM, <<"test_system">>).
 -define(NON_EXISTING_SYSTEM, <<"test_non_system">>).
 
+
 test_setup() ->
     meck:new(mnesia_battle, []),
     meck:new(resource_srv, [non_strict]),
@@ -117,16 +118,14 @@ get_weapon_types_mock(GalaxyId, _State) ->
         name = <<"laser_cannon">>,
         galaxy_id = GalaxyId,
         display_name = <<"Laser Cannon">>,
-        strong_vs = [
+        modifiers = [
             {<<"test_patrol_ship">>, 25},
             {<<"test_interceptor">>, 25},
-            {<<"test_bomber">>, 25}
-        ],
-        weak_vs = [
-            {<<"test_corvette">>, 25},
-            {<<"test_carrier">>, 25},
-            {<<"test_destroyer">>, 25},
-            {<<"test_battle_ship">>, 25}
+            {<<"test_bomber">>, 25},
+            {<<"test_corvette">>, -25},
+            {<<"test_carrier">>, -25},
+            {<<"test_destroyer">>, -25},
+            {<<"test_battle_ship">>, -25}
         ],
         base_strength = 25,
         metadata = undefined
@@ -135,16 +134,14 @@ get_weapon_types_mock(GalaxyId, _State) ->
         name = <<"point_defense_laser">>,
         galaxy_id = GalaxyId,
         display_name = <<"Point Defense Laser">>,
-        strong_vs = [
+        modifiers = [
             {<<"test_patrol_ship">>, 50},
             {<<"test_interceptor">>, 50},
-            {<<"test_bomber">>, 50}
-        ],
-        weak_vs = [
-            {<<"test_corvette">>, 50},
-            {<<"test_carrier">>, 50},
-            {<<"test_destroyer">>, 50},
-            {<<"test_battle_ship">>, 50}
+            {<<"test_bomber">>, 50},
+            {<<"test_corvette">>, -50},
+            {<<"test_carrier">>, -50},
+            {<<"test_destroyer">>, -50},
+            {<<"test_battle_ship">>, -50}
         ],
         base_strength = 50,
         metadata = undefined
@@ -153,16 +150,14 @@ get_weapon_types_mock(GalaxyId, _State) ->
         name = <<"turbo_laser">>,
         galaxy_id = GalaxyId,
         display_name = <<"Turbo Laser">>,
-        strong_vs = [
+        modifiers = [
             {<<"test_corvette">>, 60},
             {<<"test_carrier">>, 60},
             {<<"test_destroyer">>, 60},
-            {<<"test_battle_ship">>, 60}
-        ],
-        weak_vs = [
-            {<<"test_patrol_ship">>, 60},
-            {<<"test_interceptor">>, 60},
-            {<<"test_bomber">>, 60}
+            {<<"test_battle_ship">>, 60},
+            {<<"test_patrol_ship">>, -60},
+            {<<"test_interceptor">>, -60},
+            {<<"test_bomber">>, -60}
         ],
         base_strength = 60,
         metadata = undefined
@@ -171,16 +166,14 @@ get_weapon_types_mock(GalaxyId, _State) ->
         name = <<"heavy_turbo_laser">>,
         galaxy_id = GalaxyId,
         display_name = <<"Heavy Turbo Laser">>,
-        strong_vs = [
+        modifiers = [
             {<<"test_corvette">>, 120},
             {<<"test_carrier">>, 120},
             {<<"test_destroyer">>, 120},
-            {<<"test_battle_ship">>, 120}
-        ],
-        weak_vs = [
-            {<<"test_patrol_ship">>, 120},
-            {<<"test_interceptor">>, 120},
-            {<<"test_bomber">>, 120}
+            {<<"test_battle_ship">>, 120},
+            {<<"test_patrol_ship">>, -120},
+            {<<"test_interceptor">>, -120},
+            {<<"test_bomber">>, -120}
         ],
         base_strength = 120,
         metadata = undefined
@@ -189,16 +182,14 @@ get_weapon_types_mock(GalaxyId, _State) ->
         name = <<"torpedo_launcher">>,
         galaxy_id = GalaxyId,
         display_name = <<"Torpedo Launcher">>,
-        strong_vs = [
+        modifiers = [
             {<<"test_corvette">>, 600},
             {<<"test_carrier">>, 600},
             {<<"test_destroyer">>, 600},
-            {<<"test_battle_ship">>, 600}
-        ],
-        weak_vs = [
-            {<<"test_patrol_ship">>, 600},
-            {<<"test_interceptor">>, 600},
-            {<<"test_bomber">>, 600}
+            {<<"test_battle_ship">>, 600},
+            {<<"test_patrol_ship">>, -600},
+            {<<"test_interceptor">>, -600},
+            {<<"test_bomber">>, -600}
         ],
         base_strength = 600,
         metadata = undefined
@@ -207,16 +198,14 @@ get_weapon_types_mock(GalaxyId, _State) ->
         name = <<"missile_launcher">>,
         galaxy_id = GalaxyId,
         display_name = <<"Missile Launcher">>,
-        strong_vs = [
+        modifiers = [
             {<<"test_patrol_ship">>, 250},
             {<<"test_interceptor">>, 250},
-            {<<"test_bomber">>, 250}
-        ],
-        weak_vs = [
-            {<<"test_corvette">>, 250},
-            {<<"test_carrier">>, 250},
-            {<<"test_destroyer">>, 250},
-            {<<"test_battle_ship">>, 250}
+            {<<"test_bomber">>, 250},
+            {<<"test_corvette">>, -250},
+            {<<"test_carrier">>, -250},
+            {<<"test_destroyer">>, -250},
+            {<<"test_battle_ship">>, -250}
         ],
         base_strength = 250,
         metadata = undefined
@@ -441,7 +430,11 @@ test_calculate_force_capabilities() ->
     %% value of (2 * 25 * 2) = 100 starfighter capability.
     ?assertEqual(
         [
+            {<<"test_carrier">>, -100},
+            {<<"test_destroyer">>, -100},
             {<<"test_interceptor">>, 100},
+            {<<"test_battle_ship">>, -100},
+            {<<"test_corvette">>, -100},
             {<<"test_bomber">>, 100},
             {<<"test_patrol_ship">>, 100}
         ],
@@ -522,9 +515,12 @@ test_force_capabilties_recalculated_after_add_resources() ->
     ?assertEqual(
         [
             {<<"test_carrier">>, 1200},
+            {<<"test_interceptor">>, -1200},
             {<<"test_destroyer">>, 1200},
             {<<"test_battle_ship">>, 1200},
-            {<<"test_corvette">>, 1200}
+            {<<"test_corvette">>, 1200},
+            {<<"test_bomber">>, -1200},
+            {<<"test_patrol_ship">>, -1200}
         ],
         Result#force.capabilities).
 
