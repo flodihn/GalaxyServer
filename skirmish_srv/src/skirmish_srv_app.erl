@@ -14,7 +14,7 @@ start() ->
     observer:start().
 
 start(_StartType, _StartArgs) ->
-    skirmish_battle_sup:start_link().
+    skirmish_sup:start_link().
 
 stop(_State) ->
     ok.

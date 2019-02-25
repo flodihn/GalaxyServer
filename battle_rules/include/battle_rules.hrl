@@ -3,4 +3,4 @@
 -define(BATTLE_ENDING, battle_ending).
 
 -define(BATTLE_MODE_SKIRMISH, battle_mode_skirmish).
--define(BATTLE_MODE_ONLINEH, battle_mode_online).
+-define(BATTLE_MODE_ONLINE, battle_mode_online).
