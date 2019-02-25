@@ -1,0 +1,12 @@
+{application, battle_rules,
+ [
+  {description, ""},
+  {vsn, "1"},
+  {registered, []},
+  {applications, [
+                  kernel,
+                  stdlib
+                 ]},
+  {mod, { battle_rules_app, []}},
+  {env, []}
+ ]}.
