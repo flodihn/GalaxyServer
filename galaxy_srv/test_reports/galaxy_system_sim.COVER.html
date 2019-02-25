@@ -1,0 +1,148 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<title>/Users/cflow/LocalProjects/GalaxyServer/galaxy_srv/.eunit/galaxy_system_sim.COVER.html</title>
+</head><body style='background-color: white; color: black'>
+<pre>
+File generated from /Users/cflow/LocalProjects/GalaxyServer/galaxy_srv/.eunit/galaxy_system_sim.erl by COVER 2019-02-23 at 08:22:14
+
+****************************************************************************
+
+        |  -module(galaxy_system_sim).
+        |  -behaviour(gen_server).
+        |  
+        |  -define(SIMULATION_STEP_TIME, 2000).
+        |  
+        |  -include("galaxy_defs.hrl").
+        |  
+        |  -record(state, {
+        |      galaxy_id,
+        |      sim_callback,
+        |      system_name,
+        |      sim_proc_name,
+        |      last_run_time}).
+        |  
+        |  %% ------------------------------------------------------------------
+        |  %% API Function Exports
+        |  %% ------------------------------------------------------------------
+        |  
+        |  -export([start_link/1, start_link/2]).
+        |  
+        |  %% ------------------------------------------------------------------
+        |  %% gen_server Function Exports
+        |  %% ------------------------------------------------------------------
+        |  
+        |  -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
+        |           terminate/2, code_change/3]).
+        |  
+        |  %% ------------------------------------------------------------------
+        |  %% Internal Function Exports
+        |  %% ------------------------------------------------------------------
+        |  -export([tick/1, simulate_system/2]).
+        |  
+        |  %% ------------------------------------------------------------------
+        |  %% gen_server API Function Definitions
+        |  %% ------------------------------------------------------------------
+        |  
+        |  start_link(System) -&gt;
+<font color=red>     0..|      start_link(System, undefined).</font>
+        |  
+        |  start_link(#system{galaxy_id = GalaxyId, name = SystemName}, SimCallback) -&gt;
+<font color=red>     0..|      SimulationName = get_system_name(GalaxyId, SystemName),</font>
+<font color=red>     0..|      State = #state{</font>
+        |          galaxy_id = GalaxyId, 
+        |          sim_callback = SimCallback,
+        |          sim_proc_name = SimulationName,
+        |          system_name = SystemName},
+<font color=red>     0..|      gen_server:start_link({local, SimulationName}, ?MODULE, [State], []).</font>
+        |  
+        |  %% ------------------------------------------------------------------
+        |  %% Galaxy Simulation API Function Definitions
+        |  %% ------------------------------------------------------------------
+        |  
+        |  %% ------------------------------------------------------------------
+        |  %% gen_server Function Definitions
+        |  %% ------------------------------------------------------------------
+        |  
+        |  init([#state{sim_proc_name = SimProcName} = State]) -&gt;
+<font color=red>     0..|      spawn_link(?MODULE, tick, [SimProcName]),</font>
+<font color=red>     0..|      Now = get_run_time(),</font>
+<font color=red>     0..|      {ok, State#state{last_run_time = Now}}.</font>
+        |  
+        |  handle_call(tick, _From, #state{
+        |          sim_callback = SimCallback,
+        |          galaxy_id = GalaxyId,
+        |          system_name = SystemName,
+        |          last_run_time = LastRunTime} = State) -&gt;
+<font color=red>     0..|      Now = get_run_time(),</font>
+<font color=red>     0..|      {ok, System} = galaxy_srv:get_system(GalaxyId, SystemName),</font>
+<font color=red>     0..|      DeltaTime = get_delta_time(Now, LastRunTime),</font>
+<font color=red>     0..|      ?MODULE:simulate_system(System, DeltaTime),</font>
+<font color=red>     0..|      {reply, ok, State#state{last_run_time=Now}};</font>
+        |  
+        |  handle_call(Request, _From, GalaxyId) -&gt;
+<font color=red>     0..|      error_logger:info_report({unknown_request, Request}),</font>
+<font color=red>     0..|      {reply, ok, GalaxyId}.</font>
+        |  
+        |  handle_cast(_Msg, GalaxyId) -&gt;
+<font color=red>     0..|      {noreply, GalaxyId}.</font>
+        |  
+        |  handle_info(_Info, GalaxyId) -&gt;
+<font color=red>     0..|      {noreply, GalaxyId}.</font>
+        |  
+        |  terminate(_Reason, _GalaxyId) -&gt;
+<font color=red>     0..|      ok.</font>
+        |  
+        |  code_change(_OldVsn, GalaxyId, _Extra) -&gt;
+<font color=red>     0..|      {ok, GalaxyId}.</font>
+        |  
+        |  %% ------------------------------------------------------------------
+        |  %% Internal Function Definitions
+        |  %% ------------------------------------------------------------------
+        |  
+        |  get_system_name(GalaxyId, SystemName) -&gt;
+<font color=red>     0..|      list_to_atom(binary_to_list(GalaxyId) ++ "_" ++</font>
+        |      binary_to_list(SystemName) ++ "_system_sim").
+        |  
+        |  get_delta_time(Now, Past) -&gt;
+<font color=red>     0..|      timer:now_diff(Now, Past) / 1000000.</font>
+        |  
+        |  get_run_time() -&gt;
+<font color=red>     0..|      erlang:timestamp().</font>
+        |  
+        |  simulate_system(System, DeltaTime) -&gt;
+<font color=red>     0..|      GalaxyId = System#system.galaxy_id,</font>
+<font color=red>     0..|      Planets = System#system.planets,</font>
+<font color=red>     0..|      Structures = System#system.structures,</font>
+<font color=red>     0..|      {ok, UpdatedStructures} = resource_structure:simulate_structures(</font>
+        |          Structures, DeltaTime),
+<font color=red>     0..|      UpdatedSystem = System#system{structures=UpdatedStructures},</font>
+<font color=red>     0..|      {ok, system_updated} = galaxy_srv:update_system(UpdatedSystem),</font>
+<font color=red>     0..|      simulate_planets(Planets, GalaxyId, DeltaTime).</font>
+        |  
+        |  simulate_planets([], _GalaxyId, _DeltaTime) -&gt;
+<font color=red>     0..|      done;</font>
+        |  
+        |  simulate_planets([PlanetName | Rest], GalaxyId, DeltaTime) -&gt;
+<font color=red>     0..|      simulate_planet(GalaxyId, PlanetName, DeltaTime),</font>
+<font color=red>     0..|      simulate_planets(Rest, GalaxyId, DeltaTime).</font>
+        |  
+        |  simulate_planet(GalaxyId, PlanetName, DeltaTime) -&gt;
+<font color=red>     0..|      {ok, Planet} = galaxy_srv:get_planet(GalaxyId, PlanetName),</font>
+<font color=red>     0..|      Structures = Planet#planet.structures,</font>
+<font color=red>     0..|      {ok, UpdatedStructures} = resource_structure:simulate_structures(</font>
+        |          Structures, DeltaTime),
+<font color=red>     0..|      UpdatedPlanet = Planet#planet{structures=UpdatedStructures},</font>
+<font color=red>     0..|      {ok, planet_updated} = galaxy_srv:update_planet(UpdatedPlanet).</font>
+        |  
+        |  %% ------------------------------------------------------------------
+        |  %% Internal Tick process. 
+        |  %% ------------------------------------------------------------------
+        |  tick(SimulationProcName) -&gt;
+<font color=red>     0..|      gen_server:call(SimulationProcName, tick),</font>
+<font color=red>     0..|      timer:sleep(?SIMULATION_STEP_TIME),</font>
+<font color=red>     0..|      tick(SimulationProcName).</font>
+</pre>
+</body>
+</html>

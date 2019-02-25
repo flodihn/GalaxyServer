@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<testsuite tests="1" failures="0" errors="1" skipped="0" time="0.047" name="module 'galaxy_structure_util'">
+  <testcase time="0.000" name="fixture setup [6,1] (module 'galaxy_structure_util_tests')">
+    <error type="error">
+::in function meck:new/2
+  called as new(galaxy_srv,[])
+in call from galaxy_structure_util_tests:test_setup/0 (src/galaxy_structure_util_tests.erl, line 76)
+**error:undef
+    </error>
+    <system-out>
+    </system-out>
+  </testcase>
+</testsuite>

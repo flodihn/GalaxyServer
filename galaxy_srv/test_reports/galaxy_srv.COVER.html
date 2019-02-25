@@ -1,0 +1,430 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<title>/Users/cflow/LocalProjects/GalaxyServer/galaxy_srv/.eunit/galaxy_srv.COVER.html</title>
+</head><body style='background-color: white; color: black'>
+<pre>
+File generated from /Users/cflow/LocalProjects/GalaxyServer/galaxy_srv/.eunit/galaxy_srv.erl by COVER 2019-02-23 at 08:22:14
+
+****************************************************************************
+
+        |  -module(galaxy_srv).
+        |  -behaviour(gen_server).
+        |  
+        |  -include("galaxy_defs.hrl").
+        |  
+        |  -define(SERVER, ?MODULE).
+        |  
+        |  %% ------------------------------------------------------------------
+        |  %% API Function Exports
+        |  %% ------------------------------------------------------------------
+        |  
+        |  -export([start_link/1]).
+        |  
+        |  %% ------------------------------------------------------------------
+        |  %% gen_server Function Exports
+        |  %% ------------------------------------------------------------------
+        |  
+        |  -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
+        |           terminate/2, code_change/3]).
+        |  
+        |  -export([
+        |      start_simulation/0,
+        |      create_galaxy/2,
+        |      update_galaxy/1,
+        |  	destroy_galaxy/1,
+        |      get_galaxies/0,
+        |  	get_galaxy/1,
+        |      create_region/3,
+        |  	get_regions/1,
+        |  	create_system/1,
+        |      create_system/5,
+        |      get_systems/1,
+        |      get_system/2,
+        |      update_system/1,
+        |  	connect_systems/2,
+        |  	disconnect_systems/2,
+        |  	remove_system/2,
+        |      create_planet/5,
+        |      update_planet/1,
+        |      get_planet/2,
+        |      create_moon/3,
+        |      create_asteroid_belt/3,
+        |      add_structure/4,
+        |      remove_structure/4,
+        |      add_force_to_system/3,
+        |      remove_force_from_system/3]).
+        |  
+        |  -record(state, {simulation_callback, implmod, implstate}).
+        |  
+        |  %% ------------------------------------------------------------------
+        |  %% gen_server API Function Definitions
+        |  %% ------------------------------------------------------------------
+        |  
+        |  start_link(ImplMod) -&gt;
+<font color=red>     0..|      gen_server:start_link({local, ?SERVER}, ?MODULE, [ImplMod], []).</font>
+        |  
+        |  %% ------------------------------------------------------------------
+        |  %% Galaxy Server API Function Definitions
+        |  %% ------------------------------------------------------------------
+        |  start_simulation() -&gt;
+<font color=red>     0..|      gen_server:cast(?SERVER, start_simulation).</font>
+        |  
+        |  create_galaxy(GalaxyId, Pos) when is_binary(GalaxyId) -&gt;
+<font color=red>     0..|      gen_server:call(?SERVER, {create_galaxy, GalaxyId, Pos}).</font>
+        |  
+        |  update_galaxy(#galaxy{} = Galaxy) -&gt;
+<font color=red>     0..|      gen_server:call(?SERVER, {update_galaxy, Galaxy}).</font>
+        |  
+        |  destroy_galaxy(Id) when is_binary(Id) -&gt;
+<font color=red>     0..|      gen_server:call(?SERVER, {destroy_galaxy, Id}).</font>
+        |  
+        |  get_galaxy(GalaxyId) when is_binary(GalaxyId) -&gt;
+<font color=red>     0..|  	gen_server:call(?SERVER, {get_galaxy, GalaxyId}).</font>
+        |  
+        |  get_galaxies() -&gt;
+<font color=red>     0..|      gen_server:call(?SERVER, {get_galaxies}).</font>
+        |  
+        |  create_region(GalaxyId, Name, DisplayName) -&gt;
+<font color=red>     0..|      gen_server:call(?SERVER, {create_region, GalaxyId, Name, DisplayName}).</font>
+        |  
+        |  get_regions(GalaxyId) -&gt;
+<font color=red>     0..|      gen_server:call(?SERVER, {get_regions, GalaxyId}).</font>
+        |  
+        |  create_system(GalaxyId, Region, Name, Pos, DisplayName) -&gt;
+<font color=red>     0..|      gen_server:call(?SERVER, {create_system, GalaxyId, Region, Name, Pos,</font>
+        |          DisplayName}).
+        |  
+        |  create_system(System) -&gt;
+<font color=red>     0..|      gen_server:call(?SERVER, {create_system, System}).</font>
+        |  
+        |  update_system(System) -&gt;
+<font color=red>     0..|      gen_server:call(?SERVER, {update_system, System}).</font>
+        |  
+        |  remove_system(GalaxyId, Name) -&gt;
+<font color=red>     0..|      gen_server:call(?SERVER, {remove_system, GalaxyId, Name}).</font>
+        |  
+        |  connect_systems(GalaxyId, HyperspaceRoute) -&gt;
+<font color=red>     0..|      gen_server:call(?SERVER, {connect_systems, GalaxyId, HyperspaceRoute}).</font>
+        |  
+        |  disconnect_systems(GalaxyId, HyperspaceRoute) -&gt;
+<font color=red>     0..|      gen_server:call(?SERVER, {disconnect_systems, GalaxyId, HyperspaceRoute}).</font>
+        |  
+        |  create_planet(GalaxyId, System, Name, Orbit, DisplayName) -&gt;
+<font color=red>     0..|      gen_server:call(?SERVER, {create_planet, GalaxyId, System, Name, Orbit,</font>
+        |          DisplayName}).
+        |  
+        |  update_planet(Planet) -&gt;
+<font color=red>     0..|      gen_server:call(?SERVER, {update_planet, Planet}).</font>
+        |  
+        |  get_planet(GalaxyId, PlanetName) -&gt;
+<font color=red>     0..|      gen_server:call(?SERVER, {get_planet, GalaxyId, PlanetName}).</font>
+        |  
+        |  create_moon(GalaxyId, PlanetId, Moon) -&gt;
+<font color=red>     0..|      ok.</font>
+        |  
+        |  create_asteroid_belt(GalaxyId, LinkId, AsteroidBelt) -&gt;
+<font color=red>     0..|      ok.</font>
+        |  
+        |  get_systems(GalaxyId) -&gt;
+<font color=red>     0..|      gen_server:call(?SERVER, {get_systems, GalaxyId}).</font>
+        |  
+        |  get_system(GalaxyId, SystemName) -&gt;
+<font color=red>     0..|      gen_server:call(?SERVER, {get_system, GalaxyId, SystemName}).</font>
+        |  
+        |  add_structure(GalaxyId, Structure, LinkId, LinkType) -&gt;
+<font color=red>     0..|      gen_server:call(?SERVER, {add_structure, GalaxyId, Structure,</font>
+        |          LinkId, LinkType}).
+        |  
+        |  remove_structure(GalaxyId, StructureUid, LinkId, LinkType) -&gt;
+<font color=red>     0..|      gen_server:call(?SERVER, {remove_structure, GalaxyId, StructureUid,</font>
+        |          LinkId, LinkType}).
+        |  
+        |  add_force_to_system(GalaxyId, ForceId, SystemName) -&gt;
+<font color=red>     0..|      gen_server:call(?SERVER, {add_force_to_system, GalaxyId, ForceId,</font>
+        |                               SystemName}).
+        |  
+        |  remove_force_from_system(GalaxyId, ForceId, SystemName) -&gt;
+<font color=red>     0..|      gen_server:call(?SERVER, {remove_force_from_system, GalaxyId, ForceId,</font>
+        |                               SystemName}).
+        |  
+        |  %% ------------------------------------------------------------------
+        |  %% gen_server Function Definitions
+        |  %% ------------------------------------------------------------------
+        |  
+        |  init([ImplMod]) -&gt;
+<font color=red>     0..|      State = ImplMod:init(),</font>
+<font color=red>     0..|      {ok, #state{implmod=ImplMod, implstate=State}}.</font>
+        |  
+        |  handle_call({create_galaxy, GalaxyId, Pos}, _From,
+        |             #state{implmod=ImplMod, implstate=ImplState} = State) -&gt;
+<font color=red>     0..|      case ImplMod:get_galaxy(GalaxyId, ImplState) of</font>
+        |          {error, not_found} -&gt;
+<font color=red>     0..|              {ok, galaxy_created} = ImplMod:create_galaxy(</font>
+        |                  #galaxy{id=GalaxyId, pos=Pos, regions=[]}, ImplState),
+<font color=red>     0..|                  error_logger:info_report(</font>
+        |                    {starting_simulation, {galaxy_id, GalaxyId}}),
+<font color=red>     0..|  			    galaxy_sim_sup:start_simulation(GalaxyId),</font>
+<font color=red>     0..|                  {reply, {ok, galaxy_created}, State};</font>
+        |          {ok, _ExistingGalaxy} -&gt;
+<font color=red>     0..|              {reply, {error, galaxy_already_exists}, State}</font>
+        |      end;
+        |  
+        |  handle_call({update_galaxy, Galaxy}, _From,
+        |             #state{implmod=ImplMod, implstate=ImplState} = State) -&gt;
+<font color=red>     0..|      {ok, galaxy_updated} = ImplMod:update_galaxy(Galaxy, ImplState),</font>
+<font color=red>     0..|      {reply, {ok, galaxy_updated}, State};</font>
+        |  
+        |  handle_call({destroy_galaxy, Id}, _From,
+        |             #state{implmod=ImplMod, implstate=ImplState} = State) -&gt;
+<font color=red>     0..|      {ok, galaxy_destroyed} = ImplMod:destroy_galaxy(Id, ImplState),</font>
+<font color=red>     0..|      ok = resource_srv:destroy_resource_tables(Id),</font>
+<font color=red>     0..|      error_logger:info_report({destroy_galaxy, {galaxy_id, Id}}),</font>
+<font color=red>     0..|      {reply, {ok, galaxy_destroyed}, State};</font>
+        |  
+        |  handle_call({get_galaxies}, _From,
+        |             #state{implmod=ImplMod, implstate=ImplState} = State) -&gt;
+<font color=red>     0..|      {ok, GalaxyList} = ImplMod:get_galaxies(ImplState),</font>
+<font color=red>     0..|      {reply, {ok, GalaxyList}, State};</font>
+        |  
+        |  handle_call({get_galaxy, GalaxyId}, _From,
+        |             #state{implmod=ImplMod, implstate=ImplState} = State) -&gt;
+<font color=red>     0..|      Result = ImplMod:get_galaxy(GalaxyId, ImplState),</font>
+<font color=red>     0..|      {reply, Result, State};</font>
+        |  
+        |  handle_call({create_region, GalaxyId, Name, DisplayName}, _From,
+        |             #state{implmod=ImplMod, implstate=ImplState} = State) -&gt;
+<font color=red>     0..|  	case ImplMod:get_region(GalaxyId, Name, State) of</font>
+        |  		{error, region_not_found} -&gt;
+<font color=red>     0..|  			NewRegion = #region{name=Name, galaxy_id=GalaxyId,</font>
+        |  				display_name=DisplayName},
+<font color=red>     0..|      		{ok, region_created} = ImplMod:create_region(</font>
+        |  				NewRegion, ImplState),
+<font color=red>     0..|  			ImplMod:add_region_to_galaxy_record(GalaxyId, Name, State),</font>
+<font color=red>     0..|      		{reply, {ok, region_created}, State};</font>
+        |  		{ok, ExistingRegion} -&gt;
+<font color=red>     0..|  			UpdatedRegion = #region{name=Name, galaxy_id=GalaxyId,</font>
+        |  				display_name=DisplayName,
+        |  				systems=ExistingRegion#region.systems},
+<font color=red>     0..|      		{ok, region_created} = ImplMod:create_region(</font>
+        |  				UpdatedRegion, ImplState),
+<font color=red>     0..|      		{reply, {ok, region_updated}, State}</font>
+        |  	end;
+        |  
+        |  handle_call({get_regions, GalaxyId}, _From,
+        |             #state{implmod=ImplMod, implstate=ImplState} = State) -&gt;
+<font color=red>     0..|      Result = ImplMod:get_regions(GalaxyId, ImplState),</font>
+<font color=red>     0..|      {reply, Result, State};</font>
+        |  
+        |  handle_call({create_system, #system{} = System}, _From,
+        |              #state{implmod=ImplMod, implstate=ImplState} = State) -&gt;
+<font color=red>     0..|      {ok, system_created} = ImplMod:create_system(System, ImplState),</font>
+<font color=red>     0..|      galaxy_sim:simulate_system(System),</font>
+<font color=red>     0..|      {reply, {ok, system_created}, State};</font>
+        |  
+        |  handle_call({create_system, GalaxyId, Region, Name, Pos, DisplayName},
+        |          _From, #state{implmod=ImplMod, implstate=ImplState} = State) -&gt;
+<font color=red>     0..|      System = #system{</font>
+        |              name = Name, 
+        |              galaxy_id = GalaxyId,
+        |              region = Region,
+        |              pos = Pos,
+        |              display_name = DisplayName},
+<font color=red>     0..|  	case ImplMod:system_exists(GalaxyId, Name, ImplState) of </font>
+        |  		true -&gt;
+<font color=red>     0..|  			{reply, {error, system_already_exists}, State};</font>
+        |  		false -&gt;
+<font color=red>     0..|      		{ok, system_created} = ImplMod:create_system(System, ImplState),</font>
+<font color=red>     0..|      		galaxy_sim:simulate_system(System),</font>
+<font color=red>     0..|  			{reply, {ok, system_creaed}, State}</font>
+        |  	end;
+        |  
+        |  handle_call({update_system, System}, _From, #state{implmod=ImplMod,
+        |          implstate=ImplState} = State) -&gt;
+<font color=red>     0..|      {ok, system_updated} = ImplMod:update_system(System, ImplState),</font>
+<font color=red>     0..|      {reply, {ok, system_updated}, State};</font>
+        |      		
+        |  handle_call({remove_system, GalaxyId, Name}, _From, 
+        |  			#state{implmod=ImplMod, implstate=ImplState} = State) -&gt;
+<font color=red>     0..|      {ok, system_removed} = ImplMod:remove_system(GalaxyId, Name, ImplState),</font>
+        |  	% stop simulating here.
+        |      %galaxy_sim:simulate_system(System),
+<font color=red>     0..|      {reply, {ok, system_removed}, State};</font>
+        |  
+        |  handle_call({connect_systems, GalaxyId, #hyperspace_route{origin=SystemName, destination=SystemName}}, _From, 
+        |  			#state{implmod=ImplMod, implstate=ImplState} = State) -&gt;
+<font color=red>     0..|  	{reply, {error, origin_and_destination_same}, State};</font>
+        |  
+        |  handle_call({connect_systems, GalaxyId, HyperspaceRoute}, _From, 
+        |  			#state{implmod=ImplMod, implstate=ImplState} = State) -&gt;
+<font color=red>     0..|  	OriginSystem = HyperspaceRoute#hyperspace_route.origin,</font>
+<font color=red>     0..|  	DestinationSystem = HyperspaceRoute#hyperspace_route.destination,</font>
+<font color=red>     0..|  	case {ImplMod:system_exists(GalaxyId, OriginSystem, ImplState),</font>
+        |  			ImplMod:system_exists(GalaxyId, DestinationSystem, ImplState)} of
+        |  		{true, true} -&gt;
+<font color=red>     0..|  			case ImplMod:connect_system(GalaxyId, OriginSystem, DestinationSystem, ImplState) of</font>
+        |  				{ok, system_connected} -&gt;
+<font color=red>     0..|  					case ImplMod:connect_system(GalaxyId, DestinationSystem, OriginSystem, ImplState) of</font>
+        |  						{ok, system_connected} -&gt;
+<font color=red>     0..|  							{reply, {ok, systems_connected}, State};</font>
+        |  						{error, Reason} -&gt;
+<font color=red>     0..|  							ImplMod:disconnect_system(GalaxyId, OriginSystem, DestinationSystem, ImplState),</font>
+<font color=red>     0..|  							{reply, {error, Reason}, State}</font>
+        |  					end;
+        |  				{error, Reason2} -&gt;
+<font color=red>     0..|  					{reply, {error, Reason2}, State}</font>
+        |  			end;	
+        |  		{false, _} -&gt;
+<font color=red>     0..|  			{reply, {error, origin_systems_does_not_exist}, State};</font>
+        |  		{_, false} -&gt;
+<font color=red>     0..|  			{reply, {error, destination_systems_does_not_exist}, State}</font>
+        |  	end;
+        |  
+        |  handle_call({disconnect_systems, GalaxyId, #hyperspace_route{origin=SystemName, destination=SystemName}}, _From, 
+        |  			#state{implmod=ImplMod, implstate=ImplState} = State) -&gt;
+<font color=red>     0..|  	{reply, {error, origin_and_destination_same}, State};</font>
+        |  
+        |  handle_call({disconnect_systems, GalaxyId, HyperspaceRoute}, _From, 
+        |  			#state{implmod=ImplMod, implstate=ImplState} = State) -&gt;
+<font color=red>     0..|  	OriginSystem = HyperspaceRoute#hyperspace_route.origin,</font>
+<font color=red>     0..|  	DestinationSystem = HyperspaceRoute#hyperspace_route.destination,</font>
+<font color=red>     0..|  	case {ImplMod:system_exists(GalaxyId, OriginSystem, ImplState),</font>
+        |  			ImplMod:system_exists(GalaxyId, DestinationSystem, ImplState)} of
+        |  		{true, true} -&gt;
+<font color=red>     0..|  			case ImplMod:disconnect_system(GalaxyId, OriginSystem, DestinationSystem, ImplState) of</font>
+        |  				{ok, system_disconnected} -&gt;
+<font color=red>     0..|  					case ImplMod:disconnect_system(GalaxyId, DestinationSystem, OriginSystem, ImplState) of</font>
+        |  						{ok, system_disconnected} -&gt;
+<font color=red>     0..|  							{reply, {ok, systems_disconnected}, State};</font>
+        |  						{error, Reason} -&gt;
+<font color=red>     0..|  							ImplMod:connect_system(GalaxyId, OriginSystem, DestinationSystem, ImplState),</font>
+<font color=red>     0..|  							{reply, {error, Reason}, State}</font>
+        |  					end;
+        |  				{error, Reason2} -&gt;
+<font color=red>     0..|  					{reply, {error, Reason2}, State}</font>
+        |  			end;	
+        |  		{false, _} -&gt;
+<font color=red>     0..|  			{reply, {error, origin_systems_does_not_exist}, State};</font>
+        |  		{_, false} -&gt;
+<font color=red>     0..|  			{reply, {error, destination_systems_does_not_exist}, State}</font>
+        |  	end;
+        |  
+        |  handle_call({create_planet, GalaxyId, System, Name, Orbit, DisplayName},
+        |          _From, #state{implmod=ImplMod, implstate=ImplState} = State) -&gt;
+<font color=red>     0..|      {ok, planet_created} = ImplMod:create_planet(#planet{name=Name,</font>
+        |          galaxy_id=GalaxyId, system=System, orbit=Orbit,
+        |          display_name=DisplayName}, ImplState),
+<font color=red>     0..|      {reply, {ok, planet_created}, State};</font>
+        |  
+        |  handle_call({update_planet, Planet}, _From, #state{implmod=ImplMod,
+        |          implstate=ImplState} = State) -&gt;
+<font color=red>     0..|      {ok, planet_updated} = ImplMod:update_planet(Planet, ImplState),</font>
+<font color=red>     0..|      {reply, {ok, planet_updated}, State};</font>
+        |  
+        |  handle_call({get_planet, GalaxyId, PlanetName},
+        |          _From, #state{implmod=ImplMod, implstate=ImplState} = State) -&gt;
+<font color=red>     0..|      {ok, Planet} = ImplMod:get_planet(GalaxyId, PlanetName, ImplState),</font>
+<font color=red>     0..|      {reply, {ok, Planet}, State};</font>
+        |  
+        |  handle_call({get_systems, GalaxyId}, _From,
+        |             #state{implmod=ImplMod, implstate=ImplState} = State) -&gt;
+<font color=red>     0..|      {ok, SystemList} = ImplMod:get_systems(GalaxyId, ImplState),</font>
+<font color=red>     0..|      {reply, {ok, SystemList}, State};</font>
+        |  
+        |  handle_call({get_system, GalaxyId, SystemName}, _From,
+        |             #state{implmod=ImplMod, implstate=ImplState} = State) -&gt;
+<font color=red>     0..|      case ImplMod:get_system(GalaxyId, SystemName, ImplState) of</font>
+        |          {ok, System} -&gt;
+<font color=red>     0..|              {reply, {ok, System}, State};</font>
+        |          {error, system_not_found} -&gt;
+<font color=red>     0..|              {reply, {error, not_found}, State}</font>
+        |      end;
+        |  
+        |  handle_call({add_structure, GalaxyId, StructureType, LinkId, LinkType},
+        |          _From, #state{implmod=ImplMod, implstate=ImplState} = State) -&gt;
+<font color=red>     0..|  	StructureInstance = galaxy_util:new_structure(GalaxyId,</font>
+        |                                                    StructureType),
+        |  	
+<font color=red>     0..|  	case ImplMod:add_structure(GalaxyId, StructureInstance, LinkId,</font>
+        |              LinkType, ImplState) of
+        |  		 {ok, structure_added} -&gt; 
+<font color=red>     0..|              {reply, {ok, structure_added, StructureInstance}, State};</font>
+        |  		{error, bad_link_type} -&gt;
+<font color=red>     0..|  			{reply, {error, unknown_link_type}, State}; </font>
+        |  		{error, Reason} -&gt;
+<font color=red>     0..|  			{reply, {error, Reason}, State}</font>
+        |  	end;
+        |  
+        |  handle_call({remove_structure, GalaxyId, StructureUid, LinkId, LinkType},
+        |          _From, #state{implmod=ImplMod, implstate=ImplState} = State) -&gt;
+<font color=red>     0..|  	case ImplMod:remove_structure(GalaxyId, StructureUid, LinkId,</font>
+        |              LinkType, ImplState) of
+        |  		 {ok, structure_removed} -&gt; 
+<font color=red>     0..|              {reply, {ok, structure_removed}, State};</font>
+        |  		{error, bad_link_type} -&gt;
+<font color=red>     0..|  			{reply, {error, unknown_link_type}, State}; </font>
+        |  		{error, Reason} -&gt;
+<font color=red>     0..|  			{reply, {error, Reason}, State}</font>
+        |  	end;
+        |  
+        |  handle_call({add_force_to_system, GalaxyId, ForceId, SystemName},
+        |          _From, #state{implmod=ImplMod, implstate=ImplState} = State) -&gt;
+<font color=red>     0..|  	case ImplMod:get_system(GalaxyId, SystemName, ImplState) of</font>
+        |  		 {ok, System} -&gt; 
+<font color=red>     0..|              ForceList = System#system.forces,</font>
+<font color=red>     0..|              UpdatedForceList = lists:append([ForceId], ForceList),</font>
+<font color=red>     0..|              UpdatedSystem = System#system{forces = UpdatedForceList},</font>
+<font color=red>     0..|              {ok, system_updated} = ImplMod:update_system(UpdatedSystem,</font>
+        |                                                          ImplState),
+<font color=red>     0..|              {reply, {ok, force_added}, State};</font>
+        |  		{error, Reason} -&gt;
+<font color=red>     0..|  			{reply, {error, Reason}, State}</font>
+        |  	end;
+        |  
+        |  handle_call({remove_force_from_system, GalaxyId, ForceId, SystemName},
+        |          _From, #state{implmod=ImplMod, implstate=ImplState} = State) -&gt;
+<font color=red>     0..|  	case ImplMod:get_system(GalaxyId, SystemName, ImplState) of</font>
+        |  		 {ok, System} -&gt; 
+<font color=red>     0..|              ForceList = System#system.forces,</font>
+<font color=red>     0..|              UpdatedForceList = lists:delete(ForceId, ForceList),</font>
+<font color=red>     0..|              UpdatedSystem = System#system{forces = UpdatedForceList},</font>
+<font color=red>     0..|              {ok, system_updated} = ImplMod:update_system(UpdatedSystem,</font>
+        |                                                          ImplState),
+<font color=red>     0..|              {reply, {ok, force_removed}, State};</font>
+        |  		{error, Reason} -&gt;
+<font color=red>     0..|  			{reply, {error, Reason}, State}</font>
+        |  	end;
+        |  
+        |  handle_call(Request, _From, State) -&gt;
+<font color=red>     0..|      error_logger:info_report({unknown_request, Request}),</font>
+<font color=red>     0..|      {reply, ok, State}.</font>
+        |  
+        |  handle_cast(start_simulation,
+        |          #state{implmod = ImplMod, implstate = ImplState} = State) -&gt;
+        |      % This is not really good, but putting the wait_for_tables it into the
+        |      % ImplMod:init did not work.
+<font color=red>     0..|      timer:sleep(1000),</font>
+<font color=red>     0..|  	case ImplMod:get_galaxies(ImplState) of</font>
+        |  		{ok, []} -&gt;
+<font color=red>     0..|  			pass;</font>
+        |      	{ok, GalaxyList} -&gt;
+<font color=red>     0..|  			[galaxy_sim_sup:start_simulation(Galaxy#galaxy.id) || </font>
+<font color=red>     0..|  				Galaxy &lt;- GalaxyList]</font>
+        |  	end,
+<font color=red>     0..|      {noreply, State};</font>
+        |  
+        |  handle_cast(_Msg, State) -&gt;
+<font color=red>     0..|      {noreply, State}.</font>
+        |  
+        |  handle_info(_Info, State) -&gt;
+<font color=red>     0..|      {noreply, State}.</font>
+        |  
+        |  terminate(_Reason, _State) -&gt;
+<font color=red>     0..|      ok.</font>
+        |  
+        |  code_change(_OldVsn, State, _Extra) -&gt;
+<font color=red>     0..|      {ok, State}.</font>
+</pre>
+</body>
+</html>

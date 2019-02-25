@@ -1,0 +1,134 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<title>/Users/cflow/LocalProjects/GalaxyServer/galaxy_srv/.eunit/riak_star_system.COVER.html</title>
+</head><body style='background-color: white; color: black'>
+<pre>
+File generated from /Users/cflow/LocalProjects/GalaxyServer/galaxy_srv/.eunit/riak_star_system.erl by COVER 2019-02-23 at 08:22:14
+
+****************************************************************************
+
+        |  %% ------------------------------------------------------------------
+        |  %% @author Christian Flodihn &lt;christian@flodhn.se&gt;
+        |  %% @copyright G-bits
+        |  %% @doc
+        |  %% @end
+        |  %% ------------------------------------------------------------------
+        |  %% @hidden
+        |  -module(riak_star_system).
+        |  -include_lib("eunit/include/eunit.hrl").
+        |  
+        |  -export([
+        |      init/0,
+        |      stop/1,
+        |      create_star_system/3,
+        |      delete_star_system/2,
+        |      get_star_system/2,
+        |      update_star_system/3,
+        |      print_star_system/2,
+        |      delete_all/2
+        |      ]).
+        |  
+        |  -record(riak_state, {pid, counter}).
+        |  -define(DB_TABLE, &lt;&lt;"star_systems"&gt;&gt;).
+        |  
+        |  -record(star_system, {name, data}).
+        |  
+        |  init() -&gt;
+<font color=red>     0..|      {ok, Pid} = create_riak_client(),</font>
+<font color=red>     0..|      {ok, Pid}.</font>
+        |  
+        |  stop(#riak_state{pid = Pid}) -&gt;
+<font color=red>     0..|      riakc_pb_socket:stop(Pid).</font>
+        |  
+        |  create_riak_client() -&gt;
+<font color=red>     0..|      {ok, RiakHost} = application:get_env(galaxy_srv, riak_host),</font>
+<font color=red>     0..|      {ok, RiakPort} = application:get_env(galaxy_srv, riak_port),</font>
+<font color=red>     0..|      riakc_pb_socket:start(RiakHost, RiakPort).</font>
+        |  
+        |  create_star_system(SystemName, Data, RiakState) when 
+        |          is_binary(SystemName) -&gt;
+<font color=red>     0..|      Record = term_to_binary(#star_system{</font>
+        |          name=SystemName,
+        |          data=Data}),
+<font color=red>     0..|      NewStarSystem = riakc_obj:new(?DB_TABLE, SystemName, Record),</font>
+<font color=red>     0..|      riakc_pb_socket:put(</font>
+        |          RiakState#riak_state.pid,
+        |          NewStarSystem,
+        |          [{w, 1}, {dw, 1}, return_body]),
+<font color=red>     0..|      {ok, star_system_created, RiakState}.</font>
+        |  
+        |  delete_star_system(SystemName, RiakState) when is_binary(SystemName) -&gt;
+<font color=red>     0..|      Pid = RiakState#riak_state.pid,</font>
+<font color=red>     0..|      ok = riakc_pb_socket:delete(Pid, ?DB_TABLE, SystemName),</font>
+<font color=red>     0..|      {ok, star_system_deleted, RiakState}.</font>
+        |  
+        |  get_star_system(SystemName, RiakState) when is_binary(SystemName) -&gt;
+<font color=red>     0..|      FetchedObj = riakc_pb_socket:get(</font>
+        |          RiakState#riak_state.pid, ?DB_TABLE, SystemName),
+<font color=red>     0..|      case read_value(FetchedObj) of</font>
+<font color=red>     0..|          {error, not_found} -&gt; {error, not_found, RiakState};</font>
+<font color=red>     0..|          {ok, #star_system{data=Data}} -&gt; {ok, Data, RiakState}</font>
+        |      end.
+        |  
+        |  update_star_system(SystemName, Data, RiakState) when 
+        |          is_binary(SystemName) -&gt;
+<font color=red>     0..|      FetchedObj = riakc_pb_socket:get(</font>
+        |          RiakState#riak_state.pid, ?DB_TABLE, SystemName),
+<font color=red>     0..|      {ok, Record} = read_value(FetchedObj),</font>
+<font color=red>     0..|      write_value(RiakState#riak_state.pid, FetchedObj,</font>
+        |                  Record#star_system{data=Data}),
+<font color=red>     0..|      {ok, star_system_upated, RiakState}.</font>
+        |  
+        |  print_star_system(SystemName, RiakState) when is_binary(SystemName) -&gt;
+<font color=red>     0..|      FetchedObj = riakc_pb_socket:get(</font>
+        |          RiakState#riak_state.pid, ?DB_TABLE, SystemName),
+<font color=red>     0..|      case read_value(FetchedObj) of</font>
+        |          {error, not_found} = NotFoundError -&gt;
+<font color=red>     0..|              NotFoundError;</font>
+        |          {ok, #star_system{data=Data}} -&gt;
+<font color=red>     0..|              {ok, Data}</font>
+        |      end.
+        |  
+        |  delete_all(RiakState, _Env) -&gt;
+<font color=red>     0..|      Pid = RiakState#riak_state.pid,</font>
+<font color=red>     0..|      {ok, Keys} = riakc_pb_socket:list_keys(Pid, ?DB_TABLE),</font>
+<font color=red>     0..|      Deleted = delete_all_keys(Pid, ?DB_TABLE, Keys),</font>
+<font color=red>     0..|      {ok, {deleted_star_systems, Deleted}}.</font>
+        |  
+        |  delete_all_keys(Pid, Bucket, Keys) -&gt;
+<font color=red>     0..|      delete_all_keys(Pid, Bucket, Keys, 0).</font>
+        |  
+        |  delete_all_keys(_, _, [], Acc) -&gt;
+<font color=red>     0..|      Acc;</font>
+        |  
+        |  delete_all_keys(Pid, Bucket, [Key|Rest], Acc) -&gt;
+<font color=red>     0..|      riakc_pb_socket:delete(Pid, Bucket, Key),</font>
+<font color=red>     0..|      delete_all_keys(Pid, Bucket, Rest, Acc + 1).</font>
+        |  
+        |  read_value(FetchedObj) -&gt;
+<font color=red>     0..|      case FetchedObj of</font>
+        |          {error, notfound} -&gt;
+<font color=red>     0..|              {error, not_found};</font>
+        |          {ok, Value} -&gt;
+<font color=red>     0..|              {ok, binary_to_term(riakc_obj:get_value(Value))}</font>
+        |      end.
+        |  
+        |  write_value(Pid, Obj, NewData) -&gt;
+<font color=red>     0..|      case Obj of</font>
+        |          {error, notfound} -&gt;
+<font color=red>     0..|              {error, not_found};</font>
+        |          {ok, OldRecord} -&gt;
+<font color=red>     0..|              UpdatedRecord = riakc_obj:update_value(OldRecord, </font>
+        |                  term_to_binary(NewData)),
+<font color=red>     0..|              riakc_pb_socket:put(Pid,UpdatedRecord,</font>
+        |                  [{w, 1}, {dw, 1}, return_body])
+        |      end.
+        |  
+        |  %% ------------------------------------------------------------------
+        |  %% Unit tests
+        |  %% ------------------------------------------------------------------
+</pre>
+</body>
+</html>

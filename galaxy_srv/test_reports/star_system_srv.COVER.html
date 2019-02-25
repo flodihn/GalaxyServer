@@ -1,0 +1,76 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<title>/Users/cflow/LocalProjects/GalaxyServer/galaxy_srv/.eunit/star_system_srv.COVER.html</title>
+</head><body style='background-color: white; color: black'>
+<pre>
+File generated from /Users/cflow/LocalProjects/GalaxyServer/galaxy_srv/.eunit/star_system_srv.erl by COVER 2019-02-23 at 08:22:14
+
+****************************************************************************
+
+        |  -module(star_system_srv).
+        |  -behaviour(gen_server).
+        |  -define(SERVER, ?MODULE).
+        |  
+        |  -record(state, {mnesia_mod, riak_mod, riak_state}).
+        |  
+        |  %% ------------------------------------------------------------------
+        |  %% API Function Exports
+        |  %% ------------------------------------------------------------------
+        |  
+        |  -export([start_link/5]).
+        |  
+        |  %% ------------------------------------------------------------------
+        |  %% gen_server Function Exports
+        |  %% ------------------------------------------------------------------
+        |  
+        |  -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
+        |           terminate/2, code_change/3]).
+        |  
+        |  %% ------------------------------------------------------------------
+        |  %% API Function Definitions
+        |  %% ------------------------------------------------------------------
+        |  
+        |  start_link(MnesiaMod, RiakMod, ServerName, SystemName, Pos) -&gt;
+<font color=red>     0..|      gen_server:start_link({local, ServerName}, ?MODULE, </font>
+        |          {MnesiaMod, RiakMod, SystemName, Pos}, []).
+        |  
+        |  %% ------------------------------------------------------------------
+        |  %% gen_server Function Definitions
+        |  %% ------------------------------------------------------------------
+        |  
+        |  init({MnesiaMod, RiakMod, SystemName, Pos}) -&gt;
+<font color=red>     0..|      MnesiaMod:init(),</font>
+<font color=red>     0..|      {ok, RiakState} = RiakMod:init(),</font>
+<font color=red>     0..|      case MnesiaMod:star_system_exists(SystemName) of</font>
+        |          true -&gt;
+<font color=red>     0..|              pass;</font>
+        |          false -&gt;
+<font color=red>     0..|              ok = MnesiaMod:create_star_system(SystemName, Pos)</font>
+        |      end,
+<font color=red>     0..|      {ok, #state{mnesia_mod=MnesiaMod, riak_mod=RiakMod,</font>
+        |          riak_state=RiakState}}.
+        |  
+        |  handle_call(_Request, _From, State) -&gt;
+<font color=red>     0..|      {reply, ok, State}.</font>
+        |  
+        |  handle_cast(_Msg, State) -&gt;
+<font color=red>     0..|      {noreply, State}.</font>
+        |  
+        |  handle_info(_Info, State) -&gt;
+<font color=red>     0..|      {noreply, State}.</font>
+        |  
+        |  terminate(_Reason, _State) -&gt;
+<font color=red>     0..|      ok.</font>
+        |  
+        |  code_change(_OldVsn, State, _Extra) -&gt;
+<font color=red>     0..|      {ok, State}.</font>
+        |  
+        |  %% ------------------------------------------------------------------
+        |  %% Internal Function Definitions
+        |  %% ------------------------------------------------------------------
+        |  
+</pre>
+</body>
+</html>

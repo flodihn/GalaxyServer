@@ -1,0 +1,95 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<title>/Users/cflow/LocalProjects/GalaxyServer/faction_srv/.eunit/empire_strategy.COVER.html</title>
+</head><body style='background-color: white; color: black'>
+<pre>
+File generated from /Users/cflow/LocalProjects/GalaxyServer/faction_srv/.eunit/empire_strategy.erl by COVER 2019-02-23 at 08:20:18
+
+****************************************************************************
+
+        |  -module(empire_strategy).
+        |  
+        |  -include("../galaxy_srv/include/galaxy_defs.hrl").
+        |  -include("../battle_srv/include/battle_defs.hrl").
+        |  -include("faction_defs.hrl").
+        |  
+        |  -ifdef(TEST).
+        |  -compile(export_all).
+        |  -endif.
+        |  
+        |  -export([
+        |      init/0
+        |      ]).
+        |  
+        |  -export([
+        |  	simulate_faction/2
+        |      ]).
+        |  
+        |  init() -&gt;
+<font color=red>     0..|      mnesia:start(),</font>
+<font color=red>     0..|      {ok, []}.</font>
+        |  
+        |  simulate_faction(#faction{galaxy_id = GalaxyId,
+        |                            claims = Claims} = Faction, DeltaTime) -&gt;
+<font color=red>     0..|  	{ok, SystemList} = galaxy_srv:get_systems(GalaxyId),</font>
+<font color=red>     0..|      NonClaimedSystems = get_non_claimed_systems(SystemList, Claims),</font>
+<font color=red>     0..|      SystemsToClaim = find_systems_to_claim(NonClaimedSystems),</font>
+<font color=red>     0..|  	[dominate_system(System, Faction, DeltaTime) || </font>
+<font color=red>     0..|  		System &lt;- SystemsToClaim].</font>
+        |  
+        |  get_non_claimed_systems(SystemList, Claims) -&gt;
+<font color=red>     0..|  	AllSystemInClaimsFormat = [{system, X#system.name} || X &lt;- SystemList],</font>
+<font color=red>     0..|  	AllSystemClaims = [{ClaimType, Claim} || {ClaimType, Claim} &lt;- Claims, </font>
+<font color=red>     0..|  		ClaimType == system],</font>
+        |  	% Get all systems not claimed by the faction
+<font color=red>     0..|  	NonClaimedSystems = [X || X &lt;- AllSystemInClaimsFormat,</font>
+<font color=red>     0..|  		lists:member(X, AllSystemClaims) == false],</font>
+<font color=red>     0..|  	NonClaimedSystems.</font>
+        |  
+        |  find_systems_to_claim([]) -&gt;
+<font color=red>     0..|  	[];</font>
+        |  
+        |  find_systems_to_claim(ListOfSystems) -&gt;
+<font color=red>     0..|  	[lists:nth(1, ListOfSystems)].</font>
+        |  
+        |  dominate_system(System, Faction, DeltaTime) -&gt;
+<font color=red>     0..|      AllEnemyForces = get_enemy_forces_in_system(System, Faction),</font>
+<font color=red>     0..|      AllEnemyCapabilities = summarize_force_capabilities(AllEnemyForces),</font>
+<font color=red>     0..|      ok.</font>
+        |  
+        |  get_enemy_forces_in_system(System, Faction) -&gt;
+<font color=red>     0..|      AllForces = System#system.forces,</font>
+<font color=red>     0..|      AllEnemyForces = [Force || Force &lt;- AllForces,</font>
+<font color=red>     0..|          Force#force.faction =/= Faction#faction.name],</font>
+<font color=red>     0..|      AllEnemyForces.</font>
+        |  
+        |  summarize_force_capabilities(AllEnemyForces) -&gt;
+<font color=red>     0..|      AllEnemyCapabilities = [Force#force.capabilities || </font>
+<font color=red>     0..|          Force &lt;- AllEnemyForces],</font>
+<font color=red>     0..|      summarize_force_capabilities(AllEnemyCapabilities, dict:new()).</font>
+        |  
+        |  summarize_force_capabilities([], Acc) -&gt;
+<font color=red>     0..|      dict:to_list(Acc);</font>
+        |  
+        |  summarize_force_capabilities([CapabilityList | Rest], Acc) -&gt;
+<font color=red>     0..|      UpdatedDict = summarize_capability(CapabilityList, Acc),</font>
+<font color=red>     0..|      summarize_force_capabilities(Rest, UpdatedDict).</font>
+        |  
+        |  summarize_capability([], Acc) -&gt;
+<font color=red>     0..|      Acc;</font>
+        |  
+        |  summarize_capability([{ForceClass, Strength}| Rest], Acc) -&gt;
+<font color=red>     0..|      case dict:find(ForceClass, Acc) of</font>
+        |          {ok, Num} -&gt;
+<font color=red>     0..|              UpdatedDict = dict:store(ForceClass, Num + Strength, Acc),</font>
+<font color=red>     0..|              summarize_capability(Rest, UpdatedDict);</font>
+        |          error -&gt;
+<font color=red>     0..|              UpdatedDict = dict:store(ForceClass, Strength, Acc),</font>
+<font color=red>     0..|              summarize_capability(Rest, UpdatedDict)</font>
+        |      end.
+        |  
+</pre>
+</body>
+</html>

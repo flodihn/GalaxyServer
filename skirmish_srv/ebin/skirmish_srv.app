@@ -5,4 +5,5 @@
               {applications,[kernel,stdlib]},
               {mod,{skirmish_srv_app,[]}},
               {env,[]},
-              {modules,[skirmish_srv,skirmish_srv_app,skirmish_srv_sup]}]}.
+              {modules,[skirmish_battle,skirmish_battle_sup,skirmish_srv,
+                        skirmish_srv_app]}]}.
