@@ -1,0 +1,9 @@
+{application,account_srv,
+             [{description,[]},
+              {vsn,"1"},
+              {registered,[]},
+              {applications,[kernel,stdlib]},
+              {mod,{account_srv_app,[]}},
+              {env,[]},
+              {modules,[account_pgsql,account_riak,account_srv,
+                        account_srv_app,account_srv_sup,account_util]}]}.

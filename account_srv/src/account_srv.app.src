@@ -1,0 +1,12 @@
+{application, account_srv,
+ [
+  {description, ""},
+  {vsn, "1"},
+  {registered, []},
+  {applications, [
+                  kernel,
+                  stdlib
+                 ]},
+  {mod, { account_srv_app, []}},
+  {env, []}
+ ]}.
