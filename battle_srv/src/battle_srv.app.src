@@ -1,6 +1,6 @@
 {application, battle_srv,
  [
-  {description, ""},
+  {description, "Battle simulation server"},
   {vsn, "1"},
   {registered, []},
   {applications, [

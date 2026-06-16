@@ -1,5 +1,5 @@
 {application,skirmish_srv,
-             [{description,[]},
+             [{description,"Skirmish server"},
               {vsn,"1"},
               {registered,[]},
               {applications,[kernel,stdlib]},

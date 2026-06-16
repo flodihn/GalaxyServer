@@ -1,5 +1,5 @@
 {application,resource_srv,
-             [{description,[]},
+             [{description,"Resource and structure management for the galaxy"},
               {vsn,"1"},
               {registered,[]},
               {applications,[kernel,stdlib]},

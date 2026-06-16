@@ -1,5 +1,5 @@
 {application,galaxy_srv,
-             [{description,[]},
+             [{description,"Galaxy simulation server"},
               {vsn,"1"},
               {registered,[]},
               {applications,[kernel,stdlib]},

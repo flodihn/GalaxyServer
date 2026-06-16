@@ -1,10 +1,9 @@
 {application,sws_srv,
-             [{description,[]},
+             [{description,"SWS - Galaxy simulation server"},
               {vsn,"1"},
               {registered,[]},
-              {applications,[kernel,stdlib]},
+              {applications,[kernel,stdlib,holonet_srv]},
               {mod,{sws_srv_app,[]}},
               {env,[]},
-              {modules,[galaxy_helper,json2,rest_callback,rest_util,
-                        simulation_callback,sws_srv,sws_srv_app,
+              {modules,[galaxy_helper,simulation_callback,sws_srv,sws_srv_app,
                         sws_srv_sup]}]}.

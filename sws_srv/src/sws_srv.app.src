@@ -1,11 +1,12 @@
 {application, sws_srv,
  [
-  {description, ""},
+  {description, "SWS - Galaxy simulation server"},
   {vsn, "1"},
   {registered, []},
   {applications, [
                   kernel,
-                  stdlib
+                  stdlib,
+                  holonet_srv
                  ]},
   {mod, { sws_srv_app, []}},
   {env, []}

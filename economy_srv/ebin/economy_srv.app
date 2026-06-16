@@ -1,5 +1,5 @@
 {application,economy_srv,
-             [{description,[]},
+             [{description,"Economy server"},
               {vsn,"1"},
               {registered,[]},
               {applications,[kernel,stdlib]},

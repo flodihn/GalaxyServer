@@ -28,8 +28,6 @@ init([]) ->
     Restart = permanent,
     Shutdown = 6000,
 
-	ElliOpts = [{callback, rest_callback}, {port, 2000}],
-	
     SwsSrv = {
         sws_srv,
         {sws_srv, start_link, []},
@@ -37,13 +35,21 @@ init([]) ->
         Shutdown,
         worker,
         []},
-	
-	RestAPI = {
-        rest_api,
-        {elli, start_link, [ElliOpts]},
-        Restart,
-        Shutdown,
+
+    AcceptorSup = {
+        socket_acceptor_sup,
+        {socket_acceptor_sup, start_link, []},
+        permanent,
+        5000,
+        supervisor,
+        [socket_acceptor_sup]},
+
+    Listener = {
+        socket_listener,
+        {socket_listener, start_link, []},
+        permanent,
+        5000,
         worker,
-        []},
-	
-    {ok, {SupFlags, [SwsSrv, RestAPI]}}.
+        [socket_listener]},
+
+    {ok, {SupFlags, [SwsSrv, AcceptorSup, Listener]}}.

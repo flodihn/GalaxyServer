@@ -62,19 +62,19 @@ init(Args) ->
     %galaxy_srv:set_simulation_callback(sws_system_simulation_callback),
     {ok, Args}.
 
-handle_call({create_squadron, SquadronName, Founder, Members}, _From,
+handle_call({create_squadron, _SquadronName, _Founder, _Members}, _From,
 		State) ->
     {reply, ok, State};
 
-handle_call({upgrade_squadron_to_wing, SquadronId}, _From,
+handle_call({upgrade_squadron_to_wing, _SquadronId}, _From,
 		State) ->
     {reply, ok, State};
 
-handle_call({upgrade_wing_to_fleet, FleetId}, _From,
+handle_call({upgrade_wing_to_fleet, _FleetId}, _From,
 		State) ->
     {reply, ok, State};
 
-handle_call({disband, Id}, _From, State) ->
+handle_call({disband, _Id}, _From, State) ->
     {reply, ok, State};
 
 handle_call(_Request, _From, State) ->

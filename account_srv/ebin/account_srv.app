@@ -1,5 +1,5 @@
 {application,account_srv,
-             [{description,[]},
+             [{description,"User account server"},
               {vsn,"1"},
               {registered,[]},
               {applications,[kernel,stdlib]},

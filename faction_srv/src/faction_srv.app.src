@@ -1,6 +1,6 @@
 {application, faction_srv,
  [
-  {description, ""},
+  {description, "Faction and strategy simulation server"},
   {vsn, "1"},
   {registered, []},
   {applications, [

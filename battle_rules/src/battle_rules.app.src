@@ -1,6 +1,6 @@
 {application, battle_rules,
  [
-  {description, ""},
+  {description, "Battle rules library"},
   {vsn, "1"},
   {registered, []},
   {applications, [
