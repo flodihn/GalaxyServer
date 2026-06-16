@@ -1,0 +1,12 @@
+{application, battle_srv,
+ [
+  {description, "Battle simulation server"},
+  {vsn, "1"},
+  {registered, []},
+  {applications, [
+                  kernel,
+                  stdlib
+                 ]},
+  {mod, { battle_srv_app, []}},
+  {env, []}
+ ]}.

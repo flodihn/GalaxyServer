@@ -1,0 +1,11 @@
+{application,sws_srv,
+             [{description,"SWS - Galaxy simulation server"},
+              {vsn,"1"},
+              {registered,[]},
+              {applications,[kernel,stdlib,holonet_srv]},
+              {mod,{sws_srv_app,[]}},
+              {env,[]},
+              {modules,[galaxy_helper,simulation_callback,socket_acceptor,
+                        socket_acceptor_sup,socket_client_handler,
+                        socket_client_sup,socket_listener,sws_srv,sws_srv_app,
+                        sws_srv_sup]}]}.

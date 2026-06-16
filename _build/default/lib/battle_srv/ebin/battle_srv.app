@@ -1,0 +1,10 @@
+{application,battle_srv,
+             [{description,"Battle simulation server"},
+              {vsn,"1"},
+              {registered,[]},
+              {applications,[kernel,stdlib]},
+              {mod,{battle_srv_app,[]}},
+              {env,[]},
+              {modules,[battle_sim,battle_sim_sup,battle_srv,battle_srv_app,
+                        battle_srv_sup,battle_srv_tests,battle_validation,
+                        mnesia_battle,uuid]}]}.
