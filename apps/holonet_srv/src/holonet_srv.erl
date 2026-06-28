@@ -6,7 +6,7 @@
 
 -export([start_link/0]).
 
--export([submit_news/2, get_recent_news/0]).
+-export([add_news/2, get_recent_news/0, remove_news/1]).
 
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
          terminate/2, code_change/3]).
@@ -17,65 +17,132 @@
 start_link() ->
     gen_server:start_link({local, ?MODULE}, ?MODULE, [], []).
 
-submit_news(Title, Content) when is_binary(Title), is_binary(Content) ->
-    gen_server:call(?MODULE, {submit_news, Title, Content}).
+add_news(Title, Content) when is_binary(Title), is_binary(Content) ->
+    gen_server:call(?MODULE, {add_news, Title, Content}).
 
 get_recent_news() ->
     gen_server:call(?MODULE, get_recent_news).
 
+remove_news(Id) when is_integer(Id) ->
+    gen_server:call(?MODULE, {remove_news, Id});
+
+remove_news(all) ->
+    gen_server:call(?MODULE, {remove_news, all}).
+
 init([]) ->
-    init_mnesia(),
-    {ok, #{}}.
+    case init_mnesia() of
+        ok ->
+            {ok, #{}};
+        {error, Reason} ->
+            {stop, Reason}
+    end.
 
 init_mnesia() ->
     mnesia:start(),
-    create_news_table(),
-    create_recent_table().
-
-create_news_table() ->
-    case lists:member(?DB_NEWS_TABLE, mnesia:system_info(tables)) of
-        true -> ok;
-        false ->
-            change_to_disc_schema(),
-            mnesia:create_table(?DB_NEWS_TABLE, [
-                {record_name, news},
-                {disc_copies, [node()]},
-                {type, set},
-                {attributes, record_info(fields, news)}
-            ]),
-            ok
+    case ensure_news_table() of
+        ok ->
+            case ensure_recent_table() of
+                ok ->
+                    case wait_for_tables([?DB_NEWS_TABLE, ?DB_RECENT_TABLE]) of
+                        ok ->
+                            ensure_recent_record();
+                        Error ->
+                            Error
+                    end;
+                Error ->
+                    Error
+            end;
+        Error ->
+            Error
     end.
 
-create_recent_table() ->
-    case lists:member(?DB_RECENT_TABLE, mnesia:system_info(tables)) of
-        true -> ok;
-        false ->
-            change_to_disc_schema(),
-            mnesia:create_table(?DB_RECENT_TABLE, [
-                {record_name, recent_news},
-                {disc_copies, [node()]},
-                {type, set},
-                {attributes, record_info(fields, recent_news)}
-            ]),
-            ok
-    end,
-    ensure_recent_record().
+ensure_news_table() ->
+    ensure_table(
+        ?DB_NEWS_TABLE,
+        news,
+        record_info(fields, news)).
+
+ensure_recent_table() ->
+    ensure_table(
+        ?DB_RECENT_TABLE,
+        recent_news,
+        record_info(fields, recent_news)).
+
+ensure_table(Table, RecordName, Attrs) ->
+    change_to_disc_schema(),
+    case mnesia:create_table(Table, [
+        {record_name, RecordName},
+        {disc_copies, [node()]},
+        {type, set},
+        {attributes, Attrs}
+    ]) of
+        {atomic, ok} ->
+            ok;
+        {aborted, {already_exists, Table}} ->
+            ok;
+        {aborted, {already_exists, Table, _}} ->
+            ok;
+        {aborted, Reason} ->
+            {error, {create_table_failed, Table, Reason}}
+    end.
+
+wait_for_tables(Tables) ->
+    wait_for_tables(Tables, 10).
+
+wait_for_tables(_Tables, 0) ->
+    {error, mnesia_tables_not_ready};
+wait_for_tables(Tables, Attempts) ->
+    case mnesia:wait_for_tables(Tables, 30000) of
+        ok ->
+            ok;
+        {timeout, BadTables} ->
+            logger:warning(
+                "holonet_srv: tables not ready ~p (~p attempts left), retrying",
+                [BadTables, Attempts - 1]),
+            timer:sleep(200),
+            wait_for_tables(BadTables, Attempts - 1)
+    end.
 
 ensure_recent_record() ->
-    {atomic, _} = mnesia:transaction(fun() ->
+    ensure_recent_record(10).
+
+ensure_recent_record(0) ->
+    {error, ensure_recent_record_failed};
+ensure_recent_record(Attempts) ->
+    case mnesia:transaction(fun() ->
         case mnesia:read(?DB_RECENT_TABLE, last30) of
             [] ->
-                mnesia:write(?DB_RECENT_TABLE, #recent_news{id = last30, news_ids = []}, write);
-            _ -> ok
+                mnesia:write(
+                    ?DB_RECENT_TABLE,
+                    #recent_news{id = last30, news_ids = []},
+                    write);
+            _ ->
+                ok
         end
-    end),
-    ok.
+    end) of
+        {atomic, _} ->
+            ok;
+        {aborted, {no_exists, _}} ->
+            wait_for_tables([?DB_RECENT_TABLE], 3),
+            ensure_recent_record(Attempts - 1);
+        {aborted, Reason} ->
+            logger:error("holonet_srv: ensure_recent_record aborted: ~p", [Reason]),
+            {error, {ensure_recent_record_failed, Reason}}
+    end.
+
+read_recent_news() ->
+    case mnesia:read(?DB_RECENT_TABLE, last30) of
+        [Recent] ->
+            Recent;
+        [] ->
+            #recent_news{id = last30, news_ids = []}
+    end.
 
 change_to_disc_schema() ->
     mnesia:change_config(extra_db_nodes, [node()]),
     mnesia:change_table_copy_type(schema, node(), disc_copies).
 
-handle_call({submit_news, Title, Content}, _From, State) ->
+handle_call({add_news, Title, Content}, _From, State) ->
     Timestamp = erlang:system_time(seconds),
     NewsId = erlang:unique_integer([positive]),
     News = #news{
@@ -86,8 +153,7 @@ handle_call({submit_news, Title, Content}, _From, State) ->
     },
     Result = mnesia:transaction(fun() ->
         mnesia:write(?DB_NEWS_TABLE, News, write),
-        % Update recent
-        [Recent] = mnesia:read(?DB_RECENT_TABLE, last30),
+        Recent = read_recent_news(),
         NewIds = [NewsId | Recent#recent_news.news_ids],
         Trimmed = lists:sublist(NewIds, 30),
         mnesia:write(?DB_RECENT_TABLE, Recent#recent_news{news_ids = Trimmed}, write),
@@ -97,7 +163,7 @@ handle_call({submit_news, Title, Content}, _From, State) ->
 
 handle_call(get_recent_news, _From, State) ->
     Result = mnesia:transaction(fun() ->
-        [Recent] = mnesia:read(?DB_RECENT_TABLE, last30),
+        Recent = read_recent_news(),
         NewsList = lists:foldl(fun(Id, Acc) ->
             case mnesia:read(?DB_NEWS_TABLE, Id) of
                 [News] -> [News | Acc];
@@ -105,6 +171,37 @@ handle_call(get_recent_news, _From, State) ->
             end
         end, [], Recent#recent_news.news_ids),
         lists:reverse(NewsList)  % most recent first
+    end),
+    {reply, Result, State};
+
+handle_call({remove_news, Id}, _From, State) when is_integer(Id) ->
+    Result = mnesia:transaction(fun() ->
+        case mnesia:read(?DB_NEWS_TABLE, Id) of
+            [_News] ->
+                mnesia:delete({?DB_NEWS_TABLE, Id}),
+                Recent = read_recent_news(),
+                NewIds = lists:delete(Id, Recent#recent_news.news_ids),
+                mnesia:write(
+                    ?DB_RECENT_TABLE,
+                    Recent#recent_news{news_ids = NewIds},
+                    write),
+                ok;
+            [] ->
+                {error, not_found}
+        end
+    end),
+    {reply, Result, State};
+
+handle_call({remove_news, all}, _From, State) ->
+    Result = mnesia:transaction(fun() ->
+        lists:foreach(
+            fun(Key) -> mnesia:delete({?DB_NEWS_TABLE, Key}) end,
+            mnesia:all_keys(?DB_NEWS_TABLE)),
+        mnesia:write(
+            ?DB_RECENT_TABLE,
+            #recent_news{id = last30, news_ids = []},
+            write),
+        ok
     end),
     {reply, Result, State};
 

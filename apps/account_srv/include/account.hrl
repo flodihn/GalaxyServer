@@ -1,6 +1,5 @@
 -record(account, {
-    uid,
-    name_hash,
+    username,
     email_hash,
     encrypted_email,
     password_hash,
@@ -12,4 +11,3 @@
     deleted = false,
     data = <<"{}">>,
     characters}).
-

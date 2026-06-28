@@ -1,9 +1,0 @@
-{application,skirmish_srv,
-             [{description,"Skirmish server"},
-              {vsn,"1"},
-              {registered,[]},
-              {applications,[kernel,stdlib]},
-              {mod,{skirmish_srv_app,[]}},
-              {env,[]},
-              {modules,[skirmish_battle,skirmish_srv,skirmish_srv_app,
-                        skirmish_sup]}]}.

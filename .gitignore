@@ -10,3 +10,9 @@ rel/example_project
 *.swp
 Mnesia*
 /ebin/
+
+# Rebar3 build output (anywhere in the tree)
+_build/
+
+# Local terminal/session logs (not source)
+terminals/

@@ -1,3 +1,3 @@
 @echo off
-rebar3 shell -- -s observer start
-
+cd /d "%~dp0"
+rebar3 shell

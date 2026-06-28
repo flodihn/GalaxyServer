@@ -36,20 +36,12 @@ init([]) ->
         worker,
         []},
 
-    AcceptorSup = {
-        socket_acceptor_sup,
-        {socket_acceptor_sup, start_link, []},
+    SocketSup = {
+        socket_sup,
+        {socket_sup, start_link, []},
         permanent,
         5000,
         supervisor,
-        [socket_acceptor_sup]},
+        [socket_sup]},
 
-    Listener = {
-        socket_listener,
-        {socket_listener, start_link, []},
-        permanent,
-        5000,
-        worker,
-        [socket_listener]},
-
-    {ok, {SupFlags, [SwsSrv, AcceptorSup, Listener]}}.
+    {ok, {SupFlags, [SwsSrv, SocketSup]}}.

@@ -7,8 +7,9 @@
 start_link() ->
     supervisor:start_link({local, ?MODULE}, ?MODULE, []).
 
-start_child(ListenSocket) ->
-    supervisor:start_child(?MODULE, [ListenSocket]).
+start_child(Arg) ->
+    %% Arg can be ListenSocket (plain) or {ListenSocket, TransportModule} for TLS
+    supervisor:start_child(?MODULE, [Arg]).
 
 init([]) ->
     SupFlags = #{strategy => simple_one_for_one,
